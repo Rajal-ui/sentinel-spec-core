@@ -1,0 +1,174 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Sentinel Spec Compliance Engine",
+    "version": "1.0.0",
+    "description": "Evaluates source code snippets for security violations and architectural drift. Designed for import into watsonx Orchestrate as a reusable Agent-as-Code skill."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/evaluate": {
+      "post": {
+        "operationId": "evaluateCode",
+        "summary": "Run a compliance assessment against a source code snippet",
+        "description": "Accepts a code snippet with its file path and language, runs the Sentinel Spec compliance engine, and returns a structured ComplianceReport containing any detected violations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeSnippet"
+              },
+              "example": {
+                "content": "def configure_client():\n    aws_secret_access_key = 'AKIAIOSFODNN7EXAMPLE'\n    return aws_secret_access_key",
+                "file_path": "examples/secret_example.py",
+                "language": "python"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compliance assessment completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceReport"
+                },
+                "example": {
+                  "is_compliant": false,
+                  "violations": [
+                    {
+                      "rule_id": "SEC-001",
+                      "severity": "CRITICAL",
+                      "line_number": 2,
+                      "description": "Potential exposure of an AWS secret access key detected in source code.",
+                      "suggested_fix": "Move the secret to a secure secret manager and reference it at runtime."
+                    }
+                  ],
+                  "metadata": {
+                    "engine": "ibm",
+                    "mode": "live",
+                    "source": "watsonx",
+                    "file_path": "examples/secret_example.py",
+                    "language": "python"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request payload — missing or malformed fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal engine error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CodeSnippet": {
+        "type": "object",
+        "description": "A source code snippet submitted for compliance evaluation.",
+        "required": ["content", "file_path", "language"],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The raw source code to analyse."
+          },
+          "file_path": {
+            "type": "string",
+            "description": "The originating file name or path, used for context in violation reports."
+          },
+          "language": {
+            "type": "string",
+            "description": "The programming language of the snippet (e.g. python, javascript, go)."
+          }
+        }
+      },
+      "ComplianceViolation": {
+        "type": "object",
+        "description": "A single detected compliance or security violation.",
+        "required": ["rule_id", "severity", "line_number", "description", "suggested_fix"],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Unique identifier for the violated rule (e.g. SEC-001)."
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severity level of the violation.",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+          },
+          "line_number": {
+            "type": "integer",
+            "description": "Line number in the source file where the violation was detected.",
+            "minimum": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable explanation of the violation."
+          },
+          "suggested_fix": {
+            "type": "string",
+            "description": "Recommended remediation action."
+          }
+        }
+      },
+      "ComplianceReport": {
+        "type": "object",
+        "description": "The complete compliance assessment result returned by the engine.",
+        "required": ["is_compliant", "violations"],
+        "properties": {
+          "is_compliant": {
+            "type": "boolean",
+            "description": "True when no violations were detected; false otherwise."
+          },
+          "violations": {
+            "type": "array",
+            "description": "List of all detected compliance violations. Empty when is_compliant is true.",
+            "items": {
+              "$ref": "#/components/schemas/ComplianceViolation"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Engine diagnostics and contextual data (engine name, mode, source, file path, language).",
+            "additionalProperties": true
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message."
+          }
+        }
+      }
+    }
+  }
+}

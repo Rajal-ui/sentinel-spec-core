@@ -1,0 +1,12 @@
+# .dockerignore — keep the build context lean and credentials out of the image
+.env
+.git
+.gitignore
+__pycache__
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.bob*
+Docs/
+demo.py
+*.md
