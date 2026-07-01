@@ -1,20 +1,23 @@
 # Sentinel Spec — production dependencies
 # Pin minor versions; patch versions float to pick up security fixes.
 
-# IBM Watsonx AI SDK
+# IBM Watsonx AI SDK (Granite models)
 ibm-watsonx-ai==1.5.14
 
-# HTTP framework + server
-fastapi==0.135.3
-uvicorn==0.44.0
-starlette==1.0.0
-python-multipart==0.0.24
+# IBM Cloud Object Storage SDK
+ibm-cos-sdk==2.13.6
 
-# Pydantic (FastAPI data validation)
-pydantic==2.12.5
-pydantic-settings==2.13.1
+# HTTP framework + ASGI server
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+starlette==0.41.3
+python-multipart==0.0.20
 
-# Async + HTTP client (pulled in by ibm-watsonx-ai and FastAPI test client)
-anyio==4.13.0
+# Pydantic v2
+pydantic==2.10.4
+pydantic-settings==2.7.0
+
+# Async + HTTP client
+anyio==4.7.0
 httpx==0.28.1
-httpx-sse==0.4.3
+httpx-sse==0.4.0

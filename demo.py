@@ -4,5 +4,5 @@
 
 
 def configure_client():
-    aws_secret_access_key = "AKIAIOSFODNN7EXAMPLE"
-    return aws_secret_access_key
+    ibm_secret_access_key = "AKIAIOSFODNN7EXAMPLE"
+    return ibm_secret_access_key

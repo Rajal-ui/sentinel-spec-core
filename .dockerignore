@@ -1,12 +1,19 @@
-# .dockerignore — keep the build context lean and credentials out of the image
 .env
+.env.*
 .git
 .gitignore
 __pycache__
-**/__pycache__
-**/*.pyc
-**/*.pyo
-.bob*
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+*.egg-info
+dist/
+build/
+frontend/node_modules/
+.DS_Store
+Thumbs.db
 Docs/
-demo.py
 *.md

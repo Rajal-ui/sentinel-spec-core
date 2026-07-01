@@ -1,0 +1,77 @@
+# Sentinel Spec — IBM Code Engine application manifest
+# Declarative spec for ibmcloud ce application create/update
+# Apply with:  ibmcloud ce application create -f deploy/code-engine-app.yaml
+# ─────────────────────────────────────────────────────
+
+apiVersion: "apps/v1"
+kind: "CodeEngineApplication"
+metadata:
+  name: "sentinel-spec-api"
+  annotations:
+    description: "Sentinel Spec — IBM Granite dual-agent compliance engine"
+    version: "2.0.0"
+
+spec:
+  image: "icr.io/sentinel-ns/sentinel-spec:latest"
+  registrySecret: "icr-access"
+  port: 8080
+
+  scale:
+    minScale: 1
+    maxScale: 10
+    concurrency: 100
+
+  resources:
+    cpu: "1"
+    memory: "4G"
+
+  env:
+    # IBM Watsonx AI — set via Code Engine secrets, not plaintext
+    - name: WATSONX_APIKEY
+      valueFrom:
+        secretKeyRef:
+          name: sentinel-secrets
+          key: WATSONX_APIKEY
+    - name: WATSONX_URL
+      value: "https://eu-gb.ml.cloud.ibm.com"
+    - name: PROJECT_ID
+      valueFrom:
+        secretKeyRef:
+          name: sentinel-secrets
+          key: PROJECT_ID
+    - name: WATSONX_MODEL_ID
+      value: "ibm/granite-20b-code-instruct"
+
+    # IBM Cloud Object Storage
+    - name: COS_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: sentinel-secrets
+          key: COS_API_KEY
+    - name: COS_INSTANCE_ID
+      valueFrom:
+        secretKeyRef:
+          name: sentinel-secrets
+          key: COS_INSTANCE_ID
+    - name: COS_ENDPOINT
+      value: "https://s3.eu-gb.cloud-object-storage.appdomain.cloud"
+    - name: COS_BUCKET
+      value: "sentinel-spec-records"
+
+    # Runtime
+    - name: MOCK_MODE
+      value: "false"
+
+  livenessProbe:
+    httpGet:
+      path: "/health"
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 30
+
+  readinessProbe:
+    httpGet:
+      path: "/health"
+      port: 8080
+    initialDelaySeconds: 3
+    periodSeconds: 10
