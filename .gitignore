@@ -1,3 +1,8 @@
 .env
 
 Docs/
+__pycache__/
+*.pyc
+node_modules/
+.venv/
+venv/
