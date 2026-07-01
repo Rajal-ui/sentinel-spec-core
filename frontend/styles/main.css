@@ -1,0 +1,180 @@
+/* ============================================================
+   Sentinel Spec — main.css
+   Design tokens · Reset · Base layout
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap');
+
+/* ── Design Tokens ───────────────────────────────────────── */
+:root {
+  /* Colors */
+  --color-bg:             #0A0C0F;
+  --color-surface:        #131720;
+  --color-surface-raised: #1C2333;
+  --color-border:         #2A3347;
+  --color-primary:        #1B6CA8;
+  --color-primary-hover:  #2480C4;
+  --color-primary-glow:   rgba(27, 108, 168, 0.20);
+  --color-amber:          #E8A54B;
+  --color-amber-glow:     rgba(232, 165, 75, 0.15);
+  --color-amber-glow-sm:  rgba(232, 165, 75, 0.12);
+  --color-text:           #E8EAED;
+  --color-text-secondary: #8B95A8;
+  --color-text-muted:     #4A5568;
+  --color-code:           #A8C4E8;
+  --color-success:        #2ECC71;
+  --color-success-subtle: #1A3D2B;
+  --color-danger:         #E85D4A;
+
+  /* Typography */
+  --font-display: 'Syne', sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+  --font-body:    'Inter', sans-serif;
+
+  /* Spacing */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* Shadows */
+  --shadow-card:   0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-raised: 0 4px 24px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.4);
+  --shadow-glow-blue: 0 0 40px rgba(27,108,168,0.2);
+  --shadow-glow-amber: 0 0 24px rgba(232,165,75,0.15);
+
+  /* Transitions */
+  --transition-fast:   200ms ease;
+  --transition-slow:   400ms ease;
+  --transition-spring: 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Reset ───────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.625;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; border: none; background: none; }
+ul, ol { list-style: none; }
+
+/* ── Container ───────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: var(--space-lg);
+}
+
+/* ── Utility Typography ──────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+.font-body    { font-family: var(--font-body); }
+
+.text-primary   { color: var(--color-text); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-muted     { color: var(--color-text-muted); }
+.text-code      { color: var(--color-code); }
+.text-accent    { color: var(--color-primary); }
+.text-amber     { color: var(--color-amber); }
+.text-success   { color: var(--color-success); }
+.text-danger    { color: var(--color-danger); }
+
+/* ── Grid Helpers ────────────────────────────────────────── */
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-lg);
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .grid-4 { grid-template-columns: 1fr; }
+  .container { padding-inline: var(--space-md); }
+}
+
+/* ── Section Spacing ─────────────────────────────────────── */
+section { padding-block: var(--space-3xl); }
+.section-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin-inline: 0;
+}
+
+/* ── Section Headers ─────────────────────────────────────── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin-bottom: var(--space-md);
+}
+
+.section-heading {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 5vw, 48px);
+  font-weight: 700;
+  line-height: 1.125;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  margin-bottom: var(--space-md);
+}
+
+.section-subheading {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.667;
+  color: var(--color-text-secondary);
+  max-width: 640px;
+}
+
+.section-header-center {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.section-header-center .section-subheading {
+  margin-inline: auto;
+}

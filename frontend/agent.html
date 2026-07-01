@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sentinel Spec — Agent Chat Console" />
+  <title>Sentinel Spec — Agent Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+  <link rel="stylesheet" href="styles/animations.css" />
+</head>
+<body style="overflow: hidden; height: 100vh;">
+
+<nav id="main-nav" class="nav" role="navigation" aria-label="Main navigation">
+  <div class="container nav-inner">
+    <a href="/" class="nav-logo" aria-label="Sentinel Spec home">
+      <svg class="nav-logo-mark" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M15 2L4 7v8c0 6.075 4.697 11.763 11 13 6.303-1.237 11-6.925 11-13V7L15 2z" fill="#1B6CA8" opacity="0.15" stroke="#1B6CA8" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M10 15.5l3.5 3.5 6.5-7" stroke="#1B6CA8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Sentinel Spec
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="/">Home</a></li>
+      <li><a href="/agent.html" class="nav-active">Agent</a></li>
+      <li><a href="/skills.html">Skills</a></li>
+      <li><a href="/docs.html">Docs</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="agent-workspace">
+  <aside class="file-inspector" id="file-inspector">
+    <div class="file-inspector-header">
+      <span>File Inspector</span>
+    </div>
+    <div class="file-inspector-body" id="inspector-body">
+      <div class="inspector-empty">
+        <p>Submit code to see file structure and per-line findings.</p>
+      </div>
+      <div class="inspector-file" id="inspector-file" style="display: none;">
+        <div class="inspector-file-path" id="inspector-file-path">sandbox</div>
+        <div class="inspector-findings-count" id="inspector-findings-count"></div>
+        <div class="inspector-findings-list" id="inspector-findings-list"></div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="chat-wrapper">
+    <div class="chat-header">
+      <span>Agent Chat</span>
+      <span class="agent-status" id="agent-status-main">
+        <span class="agent-status-dot" id="agent-dot-main"></span>
+        <span id="agent-status-text-main">Idle</span>
+      </span>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-message system">
+        <div class="chat-message-label">Sentinel Spec</div>
+        <div class="chat-message-body">Press "Run Scan" below to submit code for analysis. The dual-agent pipeline will retrieve relevant policy context, classify violations, and verify each finding.</div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <textarea class="chat-input" id="chat-code-input" placeholder="Paste source code to scan..." rows="4">def process_payment(user_id, amount):
+    result = legacy_billing.charge(user_id=user_id, amount=amount)
+    return result</textarea>
+      <div class="chat-input-actions">
+        <button class="btn btn-primary" id="agent-run-btn">Run Scan</button>
+        <button class="btn btn-ghost" id="agent-clear-btn">Clear</button>
+      </div>
+    </div>
+  </main>
+
+  <aside class="thinking-log" id="thinking-log">
+    <div class="thinking-log-header" id="thinking-log-toggle">
+      <span>Agent Thinking Log</span>
+      <span class="thinking-log-count" id="thinking-log-count">0 events</span>
+      <svg class="thinking-log-chevron" viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true">
+        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="thinking-log-body" id="thinking-log-body">
+      <div style="color: var(--color-text-muted); padding: var(--space-md);">Press "Run Scan" to begin the dual-agent handoff...</div>
+    </div>
+  </aside>
+</div>
+
+<script src="scripts/main.js" defer></script>
+<script src="scripts/agent.js" defer></script>
+</body>
+</html>

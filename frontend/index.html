@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Sentinel Spec — autonomous architecture & compliance reviewer for the IBM Ecosystem." />
+  <title>Sentinel Spec — Enterprise Compliance Cockpit</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+  <link rel="stylesheet" href="styles/animations.css" />
+</head>
+<body>
+
+<nav id="main-nav" class="nav" role="navigation" aria-label="Main navigation">
+  <div class="container nav-inner">
+    <a href="/" class="nav-logo" aria-label="Sentinel Spec home">
+      <svg class="nav-logo-mark" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M15 2L4 7v8c0 6.075 4.697 11.763 11 13 6.303-1.237 11-6.925 11-13V7L15 2z" fill="#1B6CA8" opacity="0.15" stroke="#1B6CA8" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M10 15.5l3.5 3.5 6.5-7" stroke="#1B6CA8" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Sentinel Spec
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="/" class="nav-active">Home</a></li>
+      <li><a href="/agent.html">Agent</a></li>
+      <li><a href="/skills.html">Skills</a></li>
+      <li><a href="/docs.html">Docs</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="hero" aria-labelledby="cockpit-heading" style="min-height: auto; padding-top: 100px; padding-bottom: var(--space-2xl);">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="container" style="position: relative; z-index: 1;">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: start;">
+      <div>
+        <p class="hero-eyebrow">Enterprise Compliance Cockpit</p>
+        <h1 class="hero-headline" id="cockpit-heading" style="font-size: clamp(36px, 4vw, 52px); margin-bottom: var(--space-md);">Autonomous compliance enforcement for the agentic SDLC.</h1>
+        <p class="hero-sub" style="font-size: 16px; max-width: 480px;">The dual-agent pipeline runs inside IBM Bob at IDE-time and re-validates at CI gate — every finding cited to a retrievable policy document.</p>
+        <div class="hero-ctas" style="margin-top: var(--space-xl);">
+          <a href="/agent.html" class="btn btn-primary btn-lg">Launch Agent Console</a>
+          <a href="/docs.html" class="btn btn-ghost btn-lg">Read the Docs</a>
+        </div>
+      </div>
+
+      <div class="hero-panel" style="min-height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: var(--space-xl); text-align: center;">
+        <div class="dash-grade-ring" style="width: 140px; height: 140px; margin-bottom: var(--space-lg);">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle class="bg-ring" cx="70" cy="70" r="55" stroke-width="10"/>
+            <circle class="fg-ring" id="cockpit-grade-ring" cx="70" cy="70" r="55" stroke-width="10" stroke-dasharray="346" stroke-dashoffset="0"/>
+          </svg>
+          <span class="dash-grade-label" id="cockpit-grade-label" style="font-size: 42px;">--</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-md); width: 100%; max-width: 360px;">
+          <div class="dash-stat" style="padding: var(--space-md);">
+            <div class="dash-stat-value" id="cockpit-stat-evals" style="font-size: 24px;">--</div>
+            <div class="dash-stat-label">Evaluations</div>
+          </div>
+          <div class="dash-stat" style="padding: var(--space-md);">
+            <div class="dash-stat-value" id="cockpit-stat-rate" style="font-size: 24px;">--</div>
+            <div class="dash-stat-label">Compliance</div>
+          </div>
+          <div class="dash-stat critical" style="padding: var(--space-md);">
+            <div class="dash-stat-value" id="cockpit-stat-critical" style="font-size: 24px;">--</div>
+            <div class="dash-stat-label">Critical</div>
+          </div>
+          <div class="dash-stat high" style="padding: var(--space-md);">
+            <div class="dash-stat-value" id="cockpit-stat-high" style="font-size: 24px;">--</div>
+            <div class="dash-stat-label">High</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="proof-bar" role="region" aria-label="Trusted by">
+  <div class="container">
+    <p class="proof-label">Trusted by engineering teams building on IBM Cloud</p>
+    <ul class="proof-logos" role="list">
+      <li class="proof-logo-item">FinCore&nbsp;Systems</li>
+      <li class="proof-logo-item">HealthBridge&nbsp;AI</li>
+      <li class="proof-logo-item">Arcadian&nbsp;Bank</li>
+      <li class="proof-logo-item">Nexus&nbsp;Compliance</li>
+      <li class="proof-logo-item">TerraVault</li>
+    </ul>
+  </div>
+</div>
+
+<section class="metrics-section" aria-labelledby="ops-heading" style="background: var(--color-bg);">
+  <div class="container">
+    <header class="section-header-center">
+      <p class="section-label">Operational Overview</p>
+      <h2 class="section-heading" id="ops-heading">Real-time compliance posture.</h2>
+    </header>
+    <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr);">
+      <div>
+        <div class="metric-value" id="ops-total-evals">--</div>
+        <p class="metric-label">Total evaluations</p>
+      </div>
+      <div>
+        <div class="metric-value" id="ops-compliant-pct">--</div>
+        <p class="metric-label">Compliance rate</p>
+      </div>
+      <div>
+        <div class="metric-value" id="ops-violations" style="color: var(--color-danger);">--</div>
+        <p class="metric-label">Open violations</p>
+      </div>
+      <div>
+        <div class="metric-value" id="ops-agent-latency">--</div>
+        <p class="metric-label">Avg agent latency</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background: var(--color-surface); padding-block: var(--space-2xl);">
+  <div class="container">
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg);">
+      <a href="/agent.html" class="problem-card" style="display: flex; flex-direction: column; align-items: flex-start;">
+        <svg class="problem-icon" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <rect x="8" y="6" width="24" height="28" rx="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M14 14h12M14 19h12M14 24h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h3 class="problem-title" style="font-size: 18px;">Agent Console</h3>
+        <p class="problem-body" style="font-size: 14px;">Interactive dual-agent chat with real-time SSE streaming. Submit code, inspect findings, and trace every decision through the Classifier–Critic pipeline.</p>
+      </a>
+      <a href="/skills.html" class="problem-card" style="display: flex; flex-direction: column; align-items: flex-start;">
+        <svg class="problem-icon" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <rect x="6" y="6" width="28" height="28" rx="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 16h16M12 22h12M12 28h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h3 class="problem-title" style="font-size: 18px;">Skills &amp; Rules</h3>
+        <p class="problem-body" style="font-size: 14px;">Browse the full 22-rule compliance matrix enforced by the IBM Granite engine. Filter by domain, severity, or rule ID to understand governance scope.</p>
+      </a>
+      <a href="/docs.html" class="problem-card" style="display: flex; flex-direction: column; align-items: flex-start;">
+        <svg class="problem-icon" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M20 12v6l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h3 class="problem-title" style="font-size: 18px;">Integration Docs</h3>
+        <p class="problem-body" style="font-size: 14px;">Import Sentinel Spec as a watsonx Orchestrate custom skill. Terminal setup for MOCK_MODE, Docker Compose, and Code Engine deployment.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section" style="background: var(--color-surface);">
+  <div class="container">
+    <div style="text-align: center;">
+      <h2 class="cta-headline" style="font-size: clamp(28px, 3vw, 40px);">Deploy the governed compliance pipeline.</h2>
+      <p class="cta-sub" style="font-size: 16px;">The dual-agent pipeline runs identically in IDE and CI. No context switch. No enforcement gap.</p>
+      <div class="cta-buttons">
+        <a href="/agent.html" class="btn btn-primary btn-lg">Launch Agent Console</a>
+        <a href="/docs.html" class="btn btn-ghost btn-lg">Integration Docs</a>
+      </div>
+      <p class="cta-tech-note" style="margin-top: var(--space-lg);">IBM Granite · watsonx.governance · IBM Bob · Hexagonal Architecture · MOCK_MODE</p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer" role="contentinfo">
+  <div class="container footer-inner">
+    <div class="footer-left">
+      <span class="footer-brand">Sentinel Spec</span>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="/">Home</a>
+        <a href="/agent.html">Agent</a>
+        <a href="/skills.html">Skills</a>
+        <a href="/docs.html">Docs</a>
+      </nav>
+    </div>
+    <p class="footer-right">Built for the IBM Ecosystem · 2026</p>
+  </div>
+</section>
+
+<script src="scripts/main.js" defer></script>
+<script src="scripts/animations.js" defer></script>
+</body>
+</html>
