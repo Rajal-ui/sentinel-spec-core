@@ -9,14 +9,14 @@ import { useAuthStore } from '@/lib/store/auth'
 import { useSessionStore } from '@/lib/store/session'
 import type { Finding } from '@/lib/types'
 import {
-  Shield, Plus, Upload, GitBranch, Code, ArrowRight,
+  Shield, Plus, Upload, Code, ArrowRight,
   BrainCircuit, Trash2, FileText, X,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type IngestionTab = 'file' | 'github' | 'paste'
+type IngestionTab = 'file' | 'paste'
 
 interface StagedFile {
   id: string
@@ -139,7 +139,6 @@ function LeftPanel() {
   const [ingestionTab, setIngestionTab] = useState<IngestionTab>('file')
   const [isDragOver, setIsDragOver] = useState(false)
   const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([])
-  const [githubUrl, setGithubUrl] = useState('')
   const [pasteCode, setPasteCode] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -177,7 +176,6 @@ function LeftPanel() {
 
   const ingestionTabs = [
     { id: 'file', label: 'File Upload', icon: <Upload size={11} /> },
-    { id: 'github', label: 'GitHub URL', icon: <GitBranch size={11} /> },
     { id: 'paste', label: 'Paste Code', icon: <Code size={11} /> },
   ]
 
@@ -258,7 +256,7 @@ function LeftPanel() {
               className="font-mono-product"
               style={{ fontSize: 12, color: isDragOver ? 'var(--primary)' : 'var(--text-muted)', lineHeight: 1.5 }}
             >
-              Drop files, folders, or paste a GitHub URL
+              Drop files or folders, or paste code
             </div>
           </motion.div>
           <input
@@ -280,49 +278,6 @@ function LeftPanel() {
 
           {/* Tab content */}
           <AnimatePresence mode="wait">
-            {ingestionTab === 'github' && (
-              <motion.div
-                key="github"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.15 }}
-                style={{ display: 'flex', gap: 6 }}
-              >
-                <input
-                  value={githubUrl}
-                  onChange={(e) => setGithubUrl(e.target.value)}
-                  placeholder="https://github.com/org/repo/pull/42"
-                  className="font-mono-product"
-                  style={{
-                    flex: 1,
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 6,
-                    padding: '7px 10px',
-                    fontSize: 11,
-                    color: 'var(--text)',
-                    outline: 'none',
-                  }}
-                />
-                <button
-                  style={{
-                    background: 'var(--primary)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '7px 12px',
-                    fontSize: 11,
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  Fetch Diff
-                </button>
-              </motion.div>
-            )}
-
             {ingestionTab === 'paste' && (
               <motion.div
                 key="paste"
@@ -360,12 +315,28 @@ function LeftPanel() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.12 }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '6px 0' }}
               >
-                <div
+                <button
+                  onClick={() => fileInputRef.current?.click()}
                   className="font-mono-product"
-                  style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', padding: '6px 0' }}
+                  style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 6,
+                    padding: '7px 16px',
+                    fontSize: 11,
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-raised)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface)' }}
                 >
-                  No files staged
+                  Browse Files
+                </button>
+                <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                  or drag & drop files here
                 </div>
               </motion.div>
             )}
@@ -409,7 +380,7 @@ function LeftPanel() {
           )}
 
           {/* Add to Chat button */}
-          {(stagedFiles.length > 0 || pasteCode.trim() || githubUrl.trim()) && (
+          {(stagedFiles.length > 0 || pasteCode.trim()) && (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -428,14 +399,11 @@ function LeftPanel() {
                     content = fileParts.join('\n\n')
                   } else if (pasteCode.trim()) {
                     content = pasteCode
-                  } else if (githubUrl.trim()) {
-                    content = `Review this PR: ${githubUrl}`
                   }
                   if (content) {
                     await sendMessage(content, 'text')
                     setStagedFiles([])
                     setPasteCode('')
-                    setGithubUrl('')
                   }
                 }}
                 style={{
