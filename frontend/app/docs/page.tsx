@@ -456,7 +456,7 @@ function CapabilityCard({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function DocsPage() {
-  const { openLoginModal } = useAuthStore()
+  const { isAuthenticated, openLoginModal } = useAuthStore()
   const [openCapId, setOpenCapId] = useState<string | null>(null)
   const [tocOpen, setTocOpen] = useState(false)
   const sectionIds = TOC_SECTIONS.map((s) => s.id)
@@ -549,37 +549,61 @@ export default function DocsPage() {
 
         {/* Right actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button
-            onClick={() => openLoginModal()}
-            style={{
-              background: 'none',
-              border: '1px solid var(--border)',
-              borderRadius: 6,
-              padding: '6px 14px',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => openLoginModal()}
-            style={{
-              background: 'var(--primary)',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 16px',
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'Archivo, sans-serif',
-              fontWeight: 700,
-            }}
-          >
-            Get Access
-          </button>
+          {isAuthenticated ? (
+            <Link href="/dashboard"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'var(--primary)',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 16px',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'Archivo, sans-serif',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <button
+                onClick={() => openLoginModal()}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  padding: '6px 14px',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => openLoginModal()}
+                style={{
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'Archivo, sans-serif',
+                  fontWeight: 700,
+                }}
+              >
+                Get Access
+              </button>
+            </>
+          )}
         </div>
       </nav>
 

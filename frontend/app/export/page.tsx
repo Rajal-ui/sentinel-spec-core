@@ -361,37 +361,61 @@ export default function ExportPage() {
 
         {/* Auth buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <button
-            onClick={() => openLoginModal()}
-            style={{
-              background: 'none',
-              border: '1px solid var(--border)',
-              borderRadius: 6,
-              padding: '6px 14px',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'Inter, sans-serif',
-            }}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => openLoginModal()}
-            style={{
-              background: 'var(--primary)',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 16px',
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: 13,
-              fontFamily: 'Archivo, sans-serif',
-              fontWeight: 700,
-            }}
-          >
-            Get Access
-          </button>
+          {isAuthenticated ? (
+            <Link href="/dashboard"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: 'var(--primary)',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 16px',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'Archivo, sans-serif',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <button
+                onClick={() => openLoginModal()}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  padding: '6px 14px',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => openLoginModal()}
+                style={{
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'Archivo, sans-serif',
+                  fontWeight: 700,
+                }}
+              >
+                Get Access
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
