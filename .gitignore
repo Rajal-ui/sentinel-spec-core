@@ -1,8 +1,11 @@
 .env
 
-Docs/
+Documentation
+
 __pycache__/
 *.pyc
 node_modules/
 .venv/
 venv/
+
+.bob
