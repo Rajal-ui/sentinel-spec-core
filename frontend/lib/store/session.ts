@@ -1,0 +1,288 @@
+'use client'
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import type { AuditSession, Finding, Message, InputMode } from '@/lib/types'
+import { MOCK_FINDINGS } from '@/lib/mock-data'
+
+// ── Mock analysis engine helpers ──────────────────────────────────────────────
+
+interface AnalysisMatch {
+  finding: Finding
+  domain: string
+}
+
+let findingIdCounter = 100
+
+function makeFinding(overrides: Partial<Finding> & { title: string; description: string; tier: Finding['tier']; confidence: number }): Finding {
+  findingIdCounter++
+  return {
+    id: `f-dyn-${findingIdCounter}`,
+    tier: overrides.tier,
+    confidence: overrides.confidence,
+    title: overrides.title,
+    description: overrides.description,
+    cited_adr: overrides.cited_adr ?? 'ADR-0017',
+    cited_text: overrides.cited_text ?? '',
+    source_document: overrides.source_document ?? 'docs/adr/ADR-0017-secrets-management.md',
+    diff_old: overrides.diff_old ?? '',
+    diff_new: overrides.diff_new ?? '',
+    trace_id: `trace-${Date.now()}-${findingIdCounter}`,
+    timestamp: new Date().toISOString(),
+    record_id: `rec-dyn-${findingIdCounter}`,
+  }
+}
+
+const SECRET_FINDING_TEMPLATE = {
+  tier: 'blocking' as const,
+  confidence: 0.94,
+  title: 'Hard-coded cloud credential in source code (SEC-001)',
+  description: 'A hard-coded cloud credential (access key / secret key) was detected in the source code. This violates ADR-0017 which mandates all credentials be resolved at runtime from a vault or environment injection.',
+  cited_adr: 'ADR-0017',
+  cited_text: 'All cloud credentials MUST be injected at runtime via environment variables or IBM Secrets Manager. Hard-coded credentials are prohibited and will be flagged as BLOCKING in CI.',
+  source_document: 'docs/adr/ADR-0017-secrets-management.md',
+  diff_old: 'ibm_secret_access_key = "AKIAIOSFODNN7EXAMPLE"',
+  diff_new: 'ibm_secret_access_key = os.getenv("IBM_SECRET_ACCESS_KEY")',
+}
+
+const MISLEADING_NAME_TEMPLATE = {
+  tier: 'logged_only' as const,
+  confidence: 0.65,
+  title: 'Misleading variable naming: ibm_ prefix with AWS key pattern (SEC-013)',
+  description: 'A variable with an "ibm_" prefix contains an AWS IAM key value (AKIA...). This naming mismatch can cause confusion during audits and incident response.',
+  cited_adr: 'ADR-0017',
+  cited_text: 'Variable names MUST accurately reflect the provider and purpose of the secret. Misleading naming patterns should be avoided.',
+  source_document: 'docs/adr/ADR-0017-secrets-management.md',
+  diff_old: 'ibm_secret_access_key = "AKIAIOSFODNN7EXAMPLE"',
+  diff_new: 'aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")',
+}
+
+const LINE_PATTERNS: { pattern: RegExp; finding: AnalysisMatch; lineKey: string }[] = [
+  {
+    pattern: /(?:ibm_secret_access_key|aws_secret_access_key|secret_access_key)\s*=\s*['"]/i,
+    finding: { finding: makeFinding(SECRET_FINDING_TEMPLATE), domain: 'secrets management (ADR-0017)' },
+    lineKey: 'credential',
+  },
+  {
+    pattern: /AKIA[0-9A-Z]{16}/,
+    finding: { finding: makeFinding(SECRET_FINDING_TEMPLATE), domain: 'secrets management (ADR-0017)' },
+    lineKey: 'credential',
+  },
+  {
+    pattern: /api[_\-]?key\s*=\s*['\"][A-Za-z0-9\-_]{20,}['\"]/i,
+    finding: { finding: makeFinding({ ...SECRET_FINDING_TEMPLATE, title: 'Hard-coded API key in source code (SEC-002)', confidence: 0.88, tier: 'blocking' }), domain: 'secrets management (ADR-0017)' },
+    lineKey: 'credential',
+  },
+  {
+    pattern: /ibm_.*=\s*['\"]AKIA/,
+    finding: { finding: makeFinding(MISLEADING_NAME_TEMPLATE), domain: 'naming convention (SEC-013)' },
+    lineKey: 'misleading-name',
+  },
+]
+
+function findContentLine(content: string, pattern: RegExp): number {
+  const lines = content.split('\n')
+  for (let i = 0; i < lines.length; i++) {
+    if (pattern.test(lines[i])) return i + 1
+  }
+  return 1
+}
+
+interface SessionStore {
+  sessions: AuditSession[]
+  activeSessionId: string | null
+  messages: Message[]
+  messagesBySessionId: Record<string, Message[]>
+  isStreaming: boolean
+  thinkingStepsVisible: boolean
+  createSession: () => void
+  deleteSession: (id: string) => void
+  renameSession: (id: string, name: string) => void
+  setActiveSession: (id: string) => void
+  sendMessage: (content: string, mode: InputMode) => Promise<void>
+  setThinkingVisible: (v: boolean) => void
+}
+
+let messageCounter = 0
+
+export const useSessionStore = create<SessionStore>()(
+  persist(
+    (set, get) => ({
+      sessions: [],
+      activeSessionId: null,
+      messages: [],
+      messagesBySessionId: {},
+      isStreaming: false,
+      thinkingStepsVisible: false,
+
+      createSession: () => {
+        const { activeSessionId, messages } = get()
+        const id = `session-${Date.now()}`
+        const session: AuditSession = {
+          id,
+          name: `Analysis ${get().sessions.length + 1}`,
+          created_at: new Date().toISOString(),
+          status: 'PENDING',
+          finding_count: 0,
+        }
+        // Save current messages before switching to new session
+        const pendingMessages: Record<string, Message[]> = {}
+        if (activeSessionId && messages.length > 0) {
+          pendingMessages[activeSessionId] = messages
+        }
+        set((s) => ({
+          sessions: [session, ...s.sessions],
+          activeSessionId: id,
+          messages: [],
+          messagesBySessionId: { ...s.messagesBySessionId, ...pendingMessages },
+        }))
+      },
+
+      deleteSession: (id) =>
+        set((s) => {
+          const { [id]: _, ...rest } = s.messagesBySessionId
+          return {
+            sessions: s.sessions.filter((x) => x.id !== id),
+            activeSessionId: s.activeSessionId === id ? null : s.activeSessionId,
+            messages: s.activeSessionId === id ? [] : s.messages,
+            messagesBySessionId: rest,
+          }
+        }),
+
+      renameSession: (id, name) =>
+        set((s) => ({
+          sessions: s.sessions.map((x) => (x.id === id ? { ...x, name } : x)),
+        })),
+
+      setActiveSession: (id) => {
+        const { activeSessionId, messages, messagesBySessionId } = get()
+        const pendingMessages = { ...messagesBySessionId }
+        // Save current session's messages
+        if (activeSessionId && activeSessionId !== id && messages.length > 0) {
+          pendingMessages[activeSessionId] = messages
+        }
+        // Load target session's messages
+        const targetMessages = pendingMessages[id] || []
+        set({
+          activeSessionId: id,
+          messages: targetMessages,
+          messagesBySessionId: pendingMessages,
+        })
+      },
+
+      sendMessage: async (content, mode) => {
+        if (!content.trim()) return
+        messageCounter++
+        const userMsg: Message = {
+          id: `msg-${messageCounter}`,
+          role: 'user',
+          content,
+          timestamp: new Date().toISOString(),
+        }
+        set((s) => ({ messages: [...s.messages, userMsg], isStreaming: true }))
+
+        await new Promise((r) => setTimeout(r, 1800))
+
+        // ── Dynamic mock analysis engine ──
+        const contentLower = content.toLowerCase()
+        const matchedFindings: Finding[] = []
+        const matchedDomains: string[] = []
+        const matchedKeys = new Set<string>()
+
+        // 1. Scan content line-by-line for security/credential patterns
+        for (const entry of LINE_PATTERNS) {
+          if (matchedKeys.has(entry.lineKey)) continue
+          if (entry.pattern.test(content)) {
+            matchedFindings.push(entry.finding.finding)
+            matchedDomains.push(entry.finding.domain)
+            matchedKeys.add(entry.lineKey)
+          }
+        }
+
+        // 2. Architecture / code pattern heuristics (MOCK_FINDINGS)
+        if (/billing|charge|payment|invoice/.test(contentLower)) {
+          matchedFindings.push(MOCK_FINDINGS[0])
+          matchedDomains.push('billing abstraction (ADR-0042)')
+        }
+        if (/pii|email|log.*mask|logger\.(info|warn|error)/.test(contentLower)) {
+          matchedFindings.push(MOCK_FINDINGS[1])
+          matchedDomains.push('PII handling (ADR-0019)')
+        }
+        if (/deprecated|legacy_sdk|internal\.(legacy|old)/.test(contentLower)) {
+          matchedFindings.push(MOCK_FINDINGS[2])
+          matchedDomains.push('SDK migration (ADR-0031)')
+        }
+
+        // 3. File-name based heuristics (when only filenames provided)
+        if (/Files:/.test(content)) {
+          const fileNames = content.replace('Files: ', '').split(', ')
+          for (const name of fileNames) {
+            if (/secret|credential|key|access/.test(name.toLowerCase())) {
+              if (!matchedKeys.has('credential')) {
+                matchedFindings.push(makeFinding(SECRET_FINDING_TEMPLATE))
+                matchedDomains.push('secrets management (ADR-0017)')
+                matchedKeys.add('credential')
+              }
+            }
+            if (/billing|charge|payment/.test(name.toLowerCase())) {
+              matchedFindings.push(MOCK_FINDINGS[0])
+              matchedDomains.push('billing abstraction (ADR-0042)')
+            }
+            if (/user|auth|pii|log/.test(name.toLowerCase())) {
+              matchedFindings.push(MOCK_FINDINGS[1])
+              matchedDomains.push('PII handling (ADR-0019)')
+            }
+            if (/sdk|internal|deprecated/.test(name.toLowerCase())) {
+              matchedFindings.push(MOCK_FINDINGS[2])
+              matchedDomains.push('SDK migration (ADR-0031)')
+            }
+          }
+        }
+
+        const isQuestion = /^(what|how|why|can|could|would|should|is|are|do|does|describe|explain|check|review|scan)/i.test(content.trim())
+        const hasCodeContent = matchedFindings.length > 0 || /import|function|const|let|class|def|export|interface|type|impl|fn /.test(contentLower)
+
+        const summary = matchedFindings.length > 0
+          ? (matchedFindings.length === 1
+              ? `Analysis complete. I found 1 policy violation in the submitted code related to ${matchedDomains[0]}.`
+              : `Analysis complete. I found ${matchedFindings.length} policy violations in the submitted code related to ${matchedDomains.join(', ')}.`)
+          : !hasCodeContent || isQuestion
+            ? `I understand your question. To perform a compliance analysis, please provide the actual code or files you'd like me to review. I can check for ADR violations, PII handling, deprecated API usage, and architectural compliance issues.`
+            : `Analysis complete. I did not find any policy violations in the submitted code. It appears to comply with all relevant ADRs.`
+
+        messageCounter++
+        const agentMsg: Message = {
+          id: `msg-${messageCounter}`,
+          role: 'agent',
+          content: summary,
+          timestamp: new Date().toISOString(),
+          findings: matchedFindings,
+          model_badge: 'granite-3-8b',
+          tokens: 847,
+          duration_ms: 2300,
+        }
+        set((s) => {
+          const updatedMessages = [...s.messages, agentMsg]
+          const updatedMessagesBySessionId = s.activeSessionId
+            ? { ...s.messagesBySessionId, [s.activeSessionId]: updatedMessages }
+            : s.messagesBySessionId
+          return {
+            messages: updatedMessages,
+            isStreaming: false,
+            messagesBySessionId: updatedMessagesBySessionId,
+            sessions: s.sessions.map((x) =>
+              x.id === s.activeSessionId
+                ? { ...x, status: matchedFindings.some(f => f.tier === 'blocking' || f.tier === 'warning') ? 'VIOLATIONS' as const : 'PASSED' as const, finding_count: matchedFindings.length }
+                : x
+            ),
+          }
+        })
+      },
+
+      setThinkingVisible: (v) => set({ thinkingStepsVisible: v }),
+    }),
+    {
+      name: 'sentinel-sessions',
+      partialize: (state) => ({ sessions: state.sessions, messagesBySessionId: state.messagesBySessionId }),
+    }
+  )
+)
