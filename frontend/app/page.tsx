@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, useInView, useReducedMotion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Shield, ArrowRight, ChevronRight } from 'lucide-react'
+import { Shield, ArrowRight, ChevronRight, ChevronDown, LogOut, User, Settings } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
 import FindingCard from '@/components/shared/FindingCard'
 import LoginModal from '@/components/layout/LoginModal'
@@ -235,12 +235,8 @@ function RevealSection({ children, delay = 0 }: { children: React.ReactNode; del
 // ── Main Landing Page ──
 export default function LandingPage() {
   const router = useRouter()
-  const { openLoginModal, isAuthenticated } = useAuthStore()
-
-  // If already signed in, go straight to dashboard
-  useEffect(() => {
-    if (isAuthenticated) router.replace('/dashboard')
-  }, [isAuthenticated, router])
+  const { openLoginModal, isAuthenticated, user, logout } = useAuthStore()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const metricsRef = useRef<HTMLDivElement>(null)
   const metricsInView = useInView(metricsRef, { once: true, margin: '-15% 0px' })
@@ -299,14 +295,159 @@ export default function LandingPage() {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={() => openLoginModal('/dashboard')}
-            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
-            Sign In
-          </button>
-          <button onClick={() => openLoginModal('/dashboard')}
-            style={{ background: 'var(--cyber-pink, #FF007A)', border: 'none', borderRadius: 6, padding: '6px 16px', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'Archivo, sans-serif', fontWeight: 700 }}>
-            Get Access
-          </button>
+          {isAuthenticated && user ? (
+            <>
+              <Link href="/dashboard"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'var(--cyber-pink, #FF007A)',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'Archivo, sans-serif',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                Dashboard
+              </Link>
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: 'none',
+                    border: '1px solid var(--border)',
+                    borderRadius: 6,
+                    padding: '4px 10px',
+                    cursor: 'pointer',
+                    color: 'var(--text)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: 'var(--primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: '#fff',
+                      fontFamily: 'Archivo, sans-serif',
+                    }}
+                  >
+                    {user.name.charAt(0)}
+                  </div>
+                  <span style={{ fontSize: 13, fontFamily: 'Inter, sans-serif' }}>{user.name}</span>
+                  <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} />
+                </button>
+
+                {profileOpen && (
+                  <div
+                    className="glass-raised"
+                    style={{
+                      position: 'absolute',
+                      top: '110%',
+                      right: 0,
+                      minWidth: 180,
+                      borderRadius: 8,
+                      padding: 6,
+                      zIndex: 100,
+                    }}
+                  >
+                    <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+                      <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
+                      <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.email}</div>
+                    </div>
+                    <button
+                      onClick={() => setProfileOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        width: '100%',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--text)',
+                        padding: '7px 12px',
+                        borderRadius: 4,
+                        fontSize: 13,
+                        fontFamily: 'Inter, sans-serif',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <User size={13} />
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={() => setProfileOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        width: '100%',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--text)',
+                        padding: '7px 12px',
+                        borderRadius: 4,
+                        fontSize: 13,
+                        fontFamily: 'Inter, sans-serif',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <Settings size={13} />
+                      Settings
+                    </button>
+                    <button
+                      onClick={() => { logout(); setProfileOpen(false) }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        width: '100%',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--danger)',
+                        padding: '7px 12px',
+                        borderRadius: 4,
+                        fontSize: 13,
+                        fontFamily: 'Inter, sans-serif',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <LogOut size={13} />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <button onClick={() => openLoginModal('/')}
+                style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+                Sign In
+              </button>
+              <button onClick={() => openLoginModal('/')}
+                style={{ background: 'var(--cyber-pink, #FF007A)', border: 'none', borderRadius: 6, padding: '6px 16px', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'Archivo, sans-serif', fontWeight: 700 }}>
+                Get Access
+              </button>
+            </>
+          )}
         </div>
       </nav>
 
@@ -333,7 +474,7 @@ export default function LandingPage() {
               Autonomous architecture and compliance review, inside IBM Bob IDE, with an immutable audit trail for every decision.
             </p>
             <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
-              <button onClick={() => openLoginModal('/dashboard')}
+              <button onClick={() => openLoginModal('/')}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FF007A', color: '#fff', border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 15, fontFamily: 'Archivo, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
                 Get Early Access <ArrowRight size={15} />
               </button>
@@ -566,7 +707,7 @@ export default function LandingPage() {
                 Not ignored in Confluence. Not caught in PR review. Enforced at the moment of authorship.
               </p>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
-                <button onClick={() => openLoginModal('/dashboard')}
+                <button onClick={() => openLoginModal('/')}
                   style={{ background: '#FF007A', color: '#fff', border: 'none', borderRadius: 6, padding: '14px 28px', fontSize: 16, fontFamily: 'Archivo, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
                   Get Early Access
                 </button>
