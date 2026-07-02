@@ -25,8 +25,8 @@ def main() -> None:
     engine = bootstrap_engine(mock_mode)
 
     sample_code = CodeSnippet(
-        content="def configure_client():\n    aws_secret_access_key = 'AKIAIOSFODNN7EXAMPLE'\n    return aws_secret_access_key",
-        file_path="examples/secret_example.py",
+        content="def configure_client():\n    ibm_secret_access_key = 'AKIAIOSFODNN7EXAMPLE'\n    return ibm_secret_access_key",
+        file_path="demo.py",
         language="python",
     )
 

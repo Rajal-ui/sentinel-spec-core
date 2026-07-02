@@ -72,6 +72,13 @@ _STATIC_RULES: list[dict] = [
         "suggested_fix": "Replace with SHA-256 or stronger. For passwords, use bcrypt/argon2.",
     },
     {
+        "rule_id": "SEC-013",
+        "severity": "MEDIUM",
+        "patterns": [r"ibm_.*=\s*['\"]AKIA"],
+        "description": "Misleading variable naming: 'ibm_' prefixed variable holds an AWS key pattern.",
+        "suggested_fix": "Rename the variable to reflect the actual cloud provider (e.g., 'aws_secret_access_key') or use a provider-agnostic name like 'cloud_secret_access_key'.",
+    },
+    {
         "rule_id": "SEC-012",
         "severity": "HIGH",
         "patterns": [r"logging\.info\s*\(.*password", r"print\s*\(.*password", r"logger\.(info|debug)\s*\(.*email"],
