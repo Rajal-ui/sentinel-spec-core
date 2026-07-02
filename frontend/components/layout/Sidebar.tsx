@@ -4,13 +4,12 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
-  MessageSquare, Shield, BarChart3, BookOpen, Package, FileText,
+  MessageSquare, Shield, BookOpen, Package, FileText,
   Settings2, LifeBuoy, ChevronLeft, ChevronRight, Sun, Moon,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store/auth'
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', icon: BarChart3, href: '/dashboard' },
   { label: 'Agent Workspace', icon: MessageSquare, href: '/agent' },
   { label: 'Audit Console', icon: Shield, href: '/audit' },
   { label: 'Analytics', icon: BookOpen, href: '/analytics' },
