@@ -369,48 +369,44 @@ export default function LandingPage() {
                       <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
                       <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.email}</div>
                     </div>
-                    <button
+                    <Link
+                      href="/profile"
                       onClick={() => setProfileOpen(false)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
                         width: '100%',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'var(--text)',
                         padding: '7px 12px',
                         borderRadius: 4,
                         fontSize: 13,
                         fontFamily: 'Inter, sans-serif',
-                        textAlign: 'left',
+                        color: 'var(--text)',
+                        textDecoration: 'none',
                       }}
                     >
                       <User size={13} />
                       Edit Profile
-                    </button>
-                    <button
+                    </Link>
+                    <Link
+                      href="/settings"
                       onClick={() => setProfileOpen(false)}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: 8,
                         width: '100%',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'var(--text)',
                         padding: '7px 12px',
                         borderRadius: 4,
                         fontSize: 13,
                         fontFamily: 'Inter, sans-serif',
-                        textAlign: 'left',
+                        color: 'var(--text)',
+                        textDecoration: 'none',
                       }}
                     >
                       <Settings size={13} />
                       Settings
-                    </button>
+                    </Link>
                     <button
                       onClick={() => { logout(); setProfileOpen(false) }}
                       style={{
