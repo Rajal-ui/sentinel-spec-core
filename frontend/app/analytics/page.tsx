@@ -3,9 +3,12 @@ import AppShell from '@/components/layout/AppShell'
 import { useAuthStore } from '@/lib/store/auth'
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import StatsRow from '@/components/shared/StatsRow'
+import type { StatItem } from '@/components/shared/StatsRow'
+import Leaderboard from '@/components/shared/Leaderboard'
+import type { LeaderboardRow } from '@/components/shared/Leaderboard'
 import {
-  LineChart, Line, BarChart, Bar, AreaChart, Area,
+  BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Cell,
 } from 'recharts'
 import api from '@/lib/api'
@@ -15,14 +18,6 @@ import api from '@/lib/api'
 interface TrendPoint { date: string; blocking: number; warning: number }
 interface DomainPoint { domain: string; count: number }
 interface OverrideTrendPoint { week: string; rate: number }
-interface LeaderboardRow {
-  repo: string
-  team: string
-  violations: number
-  override_rate: number
-  capture_rate: number
-  top_domain: string
-}
 
 interface AnalyticsSummary {
   total_analyses: number
@@ -40,8 +35,6 @@ interface AnalyticsSummary {
 
 type DateRange = '7d' | '30d' | '90d' | 'custom'
 type GroupBy = 'repo' | 'team' | 'policy_domain' | 'week'
-type SortKey = 'repo' | 'team' | 'violations' | 'override_rate' | 'capture_rate' | 'top_domain'
-type SortDir = 'asc' | 'desc'
 
 // ── Domain colour map ──────────────────────────────────────────────────────────
 
@@ -50,6 +43,75 @@ const DOMAIN_COLORS: Record<string, string> = {
   data_residency: '#FF007A',
   api_contract: '#2ECC71',
   architecture: '#8B95A8',
+}
+
+// ── Date helpers ───────────────────────────────────────────────────────────────
+
+function dateRangeToParams(range: DateRange): { dateFrom?: string } {
+  if (range === 'custom') return {}
+  const now = new Date()
+  const days = range === '7d' ? 7 : range === '30d' ? 30 : 90
+  const from = new Date(now.getTime() - days * 86400000)
+  return { dateFrom: from.toISOString() }
+}
+
+// ── CSV export ─────────────────────────────────────────────────────────────────
+
+function exportCSV(summary: AnalyticsSummary) {
+  const rows: string[][] = []
+
+  // KPI section
+  rows.push(['Metric', 'Value'])
+  rows.push(['Total Analyses', String(summary.total_analyses)])
+  rows.push(['Violations Blocked %', String(summary.violations_blocked_pct)])
+  rows.push(['Override Rate %', String(summary.override_rate_pct)])
+  rows.push(['Resolution Rate %', String(summary.resolution_rate_pct)])
+  rows.push(['Avg Confidence', String(summary.avg_confidence)])
+  rows.push([])
+
+  // Trend section
+  if (summary.trend_data.length > 0) {
+    rows.push(['Trend Date', 'Blocking', 'Warning'])
+    for (const pt of summary.trend_data) {
+      rows.push([pt.date, String(pt.blocking), String(pt.warning)])
+    }
+    rows.push([])
+  }
+
+  // Domain section
+  if (summary.domain_data.length > 0) {
+    rows.push(['Domain', 'Count'])
+    for (const d of summary.domain_data) {
+      rows.push([d.domain, String(d.count)])
+    }
+    rows.push([])
+  }
+
+  // Override trend
+  if (summary.override_trend.length > 0) {
+    rows.push(['Week', 'Override Rate %'])
+    for (const o of summary.override_trend) {
+      rows.push([o.week, String(o.rate)])
+    }
+    rows.push([])
+  }
+
+  // Leaderboard
+  if (summary.leaderboard.length > 0) {
+    rows.push(['Repo', 'Team', 'Violations', 'Override Rate %', 'Capture Rate %', 'Top Domain'])
+    for (const lb of summary.leaderboard) {
+      rows.push([lb.repo, lb.team, String(lb.violations), String(lb.override_rate), String(lb.capture_rate), lb.top_domain])
+    }
+  }
+
+  const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `sentinel-analytics-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
 }
 
 // ── Custom dark tooltip ────────────────────────────────────────────────────────
@@ -119,49 +181,6 @@ function ChartPanel({ title, subtitle, children, delay = 0 }: PanelProps) {
   )
 }
 
-// ── KPI strip ─────────────────────────────────────────────────────────────────
-
-function KpiStrip({ data }: { data: AnalyticsSummary }) {
-  const items = [
-    { label: 'Total Analyses', value: data.total_analyses.toLocaleString(), sub: 'this month' },
-    { label: 'Violations Blocked', value: `${data.violations_blocked_pct}%`, sub: 'of total findings' },
-    { label: 'Override Rate', value: `${data.override_rate_pct}%`, sub: 'below 5% goal' },
-    { label: 'Resolution Rate', value: `${data.resolution_rate_pct}%`, sub: 'of findings resolved' },
-    { label: 'Avg Confidence', value: `${Math.round(data.avg_confidence * 100)}%`, sub: 'classifier score' },
-  ]
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
-        gap: 12,
-        marginBottom: 20,
-      }}
-    >
-      {items.map((k, i) => (
-        <motion.div
-          key={k.label}
-          className="glass"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18, delay: i * 0.05 }}
-          style={{ borderRadius: 8, padding: '14px 16px' }}
-        >
-          <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {k.label}
-          </div>
-          <div className="font-display" style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>
-            {k.value}
-          </div>
-          <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-            {k.sub}
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  )
-}
-
 // ── Top controls ───────────────────────────────────────────────────────────────
 
 const DATE_RANGE_OPTIONS: { id: DateRange; label: string }[] = [
@@ -183,9 +202,10 @@ interface TopControlsProps {
   groupBy: GroupBy
   onDateRange: (v: DateRange) => void
   onGroupBy: (v: GroupBy) => void
+  onExport: () => void
 }
 
-function TopControls({ dateRange, groupBy, onDateRange, onGroupBy }: TopControlsProps) {
+function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: TopControlsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -266,6 +286,7 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy }: TopControls
 
       {/* Export button */}
       <button
+        onClick={onExport}
         className="font-mono-product"
         style={{
           padding: '6px 16px',
@@ -344,91 +365,7 @@ function ViolationTrendPanel({ data }: { data: TrendPoint[] }) {
   )
 }
 
-// ── Chart Panel 3: Pre-PR Capture Rate ────────────────────────────────────────
-
-function CaptureRatePanel({ data }: { data: Array<{ week: string; ide_time: number; ci_time: number; missed: number }> }) {
-  return (
-    <ChartPanel
-      title="Pre-PR Capture Rate"
-      subtitle="violations caught before PR open · ide_time + ci_time + missed"
-      delay={0.16}
-    >
-      <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-          <defs>
-            <linearGradient id="ideGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#FF007A" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="#FF007A" stopOpacity={0.05} />
-            </linearGradient>
-            <linearGradient id="ciGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8B95A8" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#8B95A8" stopOpacity={0.04} />
-            </linearGradient>
-            <linearGradient id="missedGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="rgba(74,85,104,0.3)" stopOpacity={1} />
-              <stop offset="95%" stopColor="rgba(74,85,104,0.3)" stopOpacity={0.3} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,32,41,0.8)" />
-          <XAxis
-            dataKey="week"
-            tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, fill: '#4A5568' }}
-            tickLine={false}
-            axisLine={{ stroke: '#1F2029' }}
-          />
-          <YAxis
-            tick={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, fill: '#4A5568' }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend wrapperStyle={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, paddingTop: 8 }} />
-          <ReferenceLine
-            y={60}
-            stroke="rgba(139,149,168,0.5)"
-            strokeDasharray="4 3"
-            label={{
-              value: 'Goal 60%',
-              fontFamily: 'IBM Plex Mono, monospace',
-              fontSize: 10,
-              fill: '#8B95A8',
-              position: 'insideTopRight',
-            }}
-          />
-          <Area
-            type="monotone"
-            dataKey="ide_time"
-            name="ide_time"
-            stackId="1"
-            stroke="#FF007A"
-            strokeWidth={1.5}
-            fill="url(#ideGradient)"
-          />
-          <Area
-            type="monotone"
-            dataKey="ci_time"
-            name="ci_time"
-            stackId="1"
-            stroke="#8B95A8"
-            strokeWidth={1.5}
-            fill="url(#ciGradient)"
-          />
-          <Area
-            type="monotone"
-            dataKey="missed"
-            name="missed"
-            stackId="1"
-            stroke="rgba(74,85,104,0.6)"
-            strokeWidth={1}
-            fill="url(#missedGradient)"
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </ChartPanel>
-  )
-}
-
-// ── Chart Panel 4: Override Rate Trend ────────────────────────────────────────
+// ── Chart Panel 3: Override Rate Trend ────────────────────────────────────────
 
 function OverrideRatePanel({ data }: { data: OverrideTrendPoint[] }) {
   const hasHighRate = data.some((d) => d.rate > 5)
@@ -555,168 +492,7 @@ function DomainBarPanelFilled({ data }: { data: DomainPoint[] }) {
   )
 }
 
-// ── Leaderboard table ──────────────────────────────────────────────────────────
-
-function Leaderboard({ rows }: { rows: LeaderboardRow[] }) {
-  const router = useRouter()
-  const [sortKey, setSortKey] = useState<SortKey>('violations')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
-
-  function handleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
-    } else {
-      setSortKey(key)
-      setSortDir('desc')
-    }
-  }
-
-  const sorted = [...rows].sort((a, b) => {
-    const av = a[sortKey]
-    const bv = b[sortKey]
-    const cmp = typeof av === 'number' && typeof bv === 'number'
-      ? av - bv
-      : String(av).localeCompare(String(bv))
-    return sortDir === 'asc' ? cmp : -cmp
-  })
-
-  const COLS: { key: SortKey; label: string }[] = [
-    { key: 'repo', label: 'Repo' },
-    { key: 'team', label: 'Team' },
-    { key: 'violations', label: 'Violations' },
-    { key: 'override_rate', label: 'Override Rate %' },
-    { key: 'capture_rate', label: 'Capture Rate %' },
-    { key: 'top_domain', label: 'Top Domain' },
-  ]
-
-  return (
-    <motion.div
-      className="glass"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: 0.28 }}
-      style={{ borderRadius: 10, padding: 20, marginTop: 20 }}
-    >
-      <h2 className="font-display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
-        Team / Repo Leaderboard
-      </h2>
-      <p className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 16px' }}>
-        click row to view audit detail · click header to sort
-      </p>
-
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-          <colgroup>
-            <col style={{ width: '22%' }} />
-            <col style={{ width: '12%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '16%' }} />
-            <col style={{ width: '16%' }} />
-            <col style={{ width: '20%' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              {COLS.map((col) => {
-                const active = sortKey === col.key
-                return (
-                  <th
-                    key={col.key}
-                    onClick={() => handleSort(col.key)}
-                    className="font-mono-product"
-                    style={{
-                      padding: '8px 10px',
-                      textAlign: 'left',
-                      fontSize: 11,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: active ? 'var(--primary)' : 'var(--text-muted)',
-                      borderBottom: '1px solid var(--border)',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {col.label}
-                    {active && (
-                      <span style={{ marginLeft: 4 }}>{sortDir === 'asc' ? '↑' : '↓'}</span>
-                    )}
-                  </th>
-                )
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((row, i) => (
-              <tr
-                key={row.repo}
-                onClick={() => router.push('/audit')}
-                style={{
-                  cursor: 'pointer',
-                  borderBottom: i < sorted.length - 1 ? '1px solid rgba(31,32,41,0.6)' : 'none',
-                  transition: 'background 0.12s ease',
-                }}
-                onMouseEnter={(e) => {
-                  ;(e.currentTarget as HTMLTableRowElement).style.background = 'var(--surface-raised)'
-                }}
-                onMouseLeave={(e) => {
-                  ;(e.currentTarget as HTMLTableRowElement).style.background = 'transparent'
-                }}
-              >
-                <td
-                  className="font-mono-product"
-                  style={{ padding: '10px 10px', fontSize: 13, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-                >
-                  {row.repo}
-                </td>
-                <td style={{ padding: '10px 10px', fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>
-                  {row.team}
-                </td>
-                <td
-                  className="font-mono-product"
-                  style={{ padding: '10px 10px', fontSize: 13, color: 'var(--text)', textAlign: 'right' }}
-                >
-                  {row.violations}
-                </td>
-                <td
-                  className="font-mono-product"
-                  style={{
-                    padding: '10px 10px',
-                    fontSize: 13,
-                    textAlign: 'right',
-                    color: 'var(--text)',
-                  }}
-                >
-                  {row.override_rate}%
-                </td>
-                <td
-                  className="font-mono-product"
-                  style={{ padding: '10px 10px', fontSize: 13, color: 'var(--success)', textAlign: 'right' }}
-                >
-                  {row.capture_rate}%
-                </td>
-                <td style={{ padding: '10px 10px' }}>
-                  <span
-                    className="font-mono-product"
-                    style={{
-                      fontSize: 11,
-                      padding: '2px 7px',
-                      borderRadius: 4,
-                      border: `1px solid ${DOMAIN_COLORS[row.top_domain] ?? 'var(--border)'}`,
-                      color: DOMAIN_COLORS[row.top_domain] ?? 'var(--text-muted)',
-                      background: `${DOMAIN_COLORS[row.top_domain] ?? 'transparent'}18`,
-                    }}
-                  >
-                    {row.top_domain}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </motion.div>
-  )
-}
+// ── (Leaderboard moved to components/shared/Leaderboard.tsx) ──────────────────
 
 // ── Insight cards ─────────────────────────────────────────────────────────────
 
@@ -819,28 +595,21 @@ export default function AnalyticsPage() {
   const fetchSummary = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.get('/v1/analytics/summary')
+      const params = dateRangeToParams(dateRange)
+      const res = await api.get('/v1/analytics/summary', { params })
       setSummary(res.data)
     } catch {
       setSummary(null)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [dateRange])
 
   useEffect(() => {
     fetchSummary()
   }, [fetchSummary])
 
-  // Slice trend data based on selected date range
-  const trendData = summary?.trend_data ?? []
-  const slicedTrend = dateRange === '7d'
-    ? trendData.slice(-7)
-    : dateRange === '90d'
-      ? trendData
-      : trendData
-
-  if (loading) {
+  if (loading && !summary) {
     return (
       <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
         <AuthGate>
@@ -852,13 +621,34 @@ export default function AnalyticsPage() {
     )
   }
 
+  const empty = !summary || summary.total_analyses === 0
+  const statsItems: StatItem[] = empty
+    ? [
+        { label: 'Total Analyses', value: '0', sub: 'this month' },
+        { label: 'Violations Blocked', value: '0%', sub: 'of total findings' },
+        { label: 'Override Rate', value: '0%', sub: 'below 5% goal' },
+        { label: 'Resolution Rate', value: '0%', sub: 'of findings resolved' },
+        { label: 'Avg Confidence', value: 'N/A', sub: 'classifier score' },
+      ]
+    : [
+        { label: 'Total Analyses', value: summary!.total_analyses.toLocaleString(), sub: 'this month' },
+        { label: 'Violations Blocked', value: `${summary!.violations_blocked_pct}%`, sub: 'of total findings' },
+        { label: 'Override Rate', value: `${summary!.override_rate_pct}%`, sub: 'below 5% goal' },
+        { label: 'Resolution Rate', value: `${summary!.resolution_rate_pct}%`, sub: 'of findings resolved' },
+        { label: 'Avg Confidence', value: `${Math.round(summary!.avg_confidence * 100)}%`, sub: 'classifier score' },
+      ]
+
+  const handleExport = () => {
+    if (summary) exportCSV(summary)
+  }
+
   return (
     <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
       <AuthGate>
         <div style={{ padding: '24px 28px', maxWidth: 1600, margin: '0 auto' }}>
 
           {/* KPI strip */}
-          {summary && <KpiStrip data={summary} />}
+          <StatsRow items={statsItems} />
 
           {/* Top controls */}
           <TopControls
@@ -866,6 +656,7 @@ export default function AnalyticsPage() {
             groupBy={groupBy}
             onDateRange={setDateRange}
             onGroupBy={setGroupBy}
+            onExport={handleExport}
           />
 
           {/* Main content: charts (left/centre) + insights (right rail) */}
@@ -887,14 +678,14 @@ export default function AnalyticsPage() {
                   gap: 16,
                 }}
               >
-                <ViolationTrendPanel data={slicedTrend} />
+                <ViolationTrendPanel data={summary?.trend_data ?? []} />
                 <DomainBarPanelFilled data={summary?.domain_data ?? []} />
                 <OverrideRatePanel data={summary?.override_trend ?? []} />
               </div>
 
               {/* Leaderboard */}
               {summary && summary.leaderboard.length > 0 && (
-                <Leaderboard rows={summary.leaderboard} />
+                <Leaderboard rows={summary.leaderboard} groupBy={groupBy} />
               )}
             </div>
 
