@@ -42,10 +42,10 @@ function tokenize(line: string): React.ReactNode[] {
     const text = line.slice(match.idx, match.idx + match.len)
     const color =
       match.kind === 'keyword'
-        ? '#A8C4E8'
+        ? 'var(--code-keyword)'
         : match.kind === 'string'
-        ? '#2ECC71'
-        : '#4A5568'
+        ? 'var(--code-string)'
+        : 'var(--code-comment)'
     parts.push(
       <span key={match.idx} style={{ color }}>
         {text}

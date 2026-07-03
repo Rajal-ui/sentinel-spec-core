@@ -692,7 +692,7 @@ export default function ExportPage() {
         <section
           style={{
             padding: '80px 32px',
-            background: 'var(--surface-muted)',
+            background: 'transparent',
           }}
         >
           <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -1042,11 +1042,10 @@ export default function ExportPage() {
           </div>
         </section>
 
-        {/* ── API KEY SECTION ── */}
         <section
           style={{
             padding: '80px 32px',
-            background: 'var(--surface-muted)',
+            background: 'transparent',
           }}
         >
           <div style={{ maxWidth: 700, margin: '0 auto' }}>

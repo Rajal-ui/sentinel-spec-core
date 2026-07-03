@@ -23,8 +23,8 @@ export default function AppShell({ children, title, breadcrumb }: Props) {
       <div className="border-r border-slate-200/60 dark:border-[#1F2029]/70">
         <Sidebar />
       </div>
-      {/* Content area with alternating background */}
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0 bg-slate-50/50 dark:bg-[#0F0F14]/60">
+      {/* Content area — transparent so body gradient shows through */}
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0 bg-transparent">
         <TopBar title={title} breadcrumb={breadcrumb} />
         <main className="flex-1 overflow-hidden">
           {children}

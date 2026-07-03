@@ -184,7 +184,7 @@ function HeroDemoPanel() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            style={{ margin: '0 14px 14px', background: '#06080A', borderRadius: 4, padding: 10 }}
+            style={{ margin: '0 14px 14px', background: 'var(--code-bg)', borderRadius: 4, padding: 10 }}
           >
             {DIFF_TEXT.slice(0, diffChars).split('\n').map((line, i) => (
               <div
@@ -562,7 +562,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section style={{ padding: '96px 32px', background: 'rgba(255,237,213,0.18)' }}>
+      <section style={{ padding: '96px 32px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <RevealSection>
             <h2 className="font-display" style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', textAlign: 'center', marginBottom: 8 }}>
@@ -641,7 +641,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── DUAL-STACK TABLE ── */}
-      <section style={{ padding: '80px 32px', background: 'rgba(204,251,241,0.18)' }}>
+      <section style={{ padding: '80px 32px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <RevealSection>
             <h2 className="font-display" style={{ fontSize: 32, fontWeight: 700, color: 'var(--text)', textAlign: 'center', marginBottom: 32 }}>
@@ -699,7 +699,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FINDING CARD SPOTLIGHT ── */}
-      <section style={{ padding: '80px 32px', background: 'rgba(255,237,213,0.18)' }}>
+      <section style={{ padding: '80px 32px' }}>
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <RevealSection>
             <h2 className="font-display" style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: 'var(--text)', textAlign: 'center', marginBottom: 8 }}>

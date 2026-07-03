@@ -155,13 +155,11 @@ function LeftPanel() {
 
   return (
     <div
-      className="flex flex-col w-[280px] flex-shrink-0 h-full overflow-hidden"
+      className="flex flex-col w-[280px] flex-shrink-0 h-full overflow-hidden border-l border-r border-slate-200/60 dark:border-[#1F2029]/70"
       style={{
-        borderLeft: '1px solid var(--border)',
-        borderRight: '1px solid var(--border)',
-        background: 'var(--surface-muted)',
-        backdropFilter: 'blur(16px) saturate(1.6)',
-        WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
+        background: 'var(--glass-bg)',
+        backdropFilter: 'blur(20px) saturate(1.8)',
+        WebkitBackdropFilter: 'blur(20px) saturate(1.8)',
       }}
     >
       {/* New Analysis button */}
@@ -262,26 +260,18 @@ function LeftPanel() {
                   value={pasteCode}
                   onChange={(e) => setPasteCode(e.target.value)}
                   placeholder="Paste code here..."
-                  className="font-mono-product w-full"
+                  className="font-mono-product w-full bg-white/30 dark:bg-zinc-900/30 text-slate-950 dark:text-zinc-50 border border-slate-200 dark:border-zinc-800/80 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF5C00] focus:border-[#FF5C00] placeholder-slate-400 dark:placeholder-zinc-500 transition-[border-color,box-shadow] duration-150"
                   style={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 6,
                     padding: 8,
                     fontSize: 11,
-                    color: 'var(--text)',
                     fontFamily: 'IBM Plex Mono, monospace',
                     resize: 'vertical',
                     minHeight: 80,
-                    outline: 'none',
                     boxSizing: 'border-box',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
                     width: '100%',
                     backdropFilter: 'blur(4px)',
                     WebkitBackdropFilter: 'blur(4px)',
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#FF5C00'; e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255,92,0,0.15)' }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
                 />
               </motion.div>
             )}
@@ -297,21 +287,12 @@ function LeftPanel() {
               >
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="font-mono-product"
+                  className="font-mono-product bg-white/30 dark:bg-zinc-900/30 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800/80 hover:border-[#FF5C00] hover:text-[#FF5C00] rounded-md transition-[background,border-color,color] duration-150 backdrop-blur-sm"
                   style={{
-                    background: 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 6,
                     padding: '6px 16px',
                     fontSize: 11,
-                    color: 'var(--text)',
                     cursor: 'pointer',
-                    transition: 'background 0.15s, border-color 0.15s',
-                    backdropFilter: 'blur(4px)',
-                    WebkitBackdropFilter: 'blur(4px)',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-raised)'; e.currentTarget.style.borderColor = 'var(--text-muted)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
                   Browse Files
                 </button>
@@ -573,12 +554,8 @@ function ChatCanvas() {
 
       {/* ── Input area ── */}
       <div
-        className="flex-shrink-0"
+        className="flex-shrink-0 bg-white/40 dark:bg-[#08080A]/50 backdrop-blur-xl border-t border-slate-200/40 dark:border-zinc-800/40"
         style={{
-          background: 'var(--glass-bg)',
-          borderTop: '1px solid var(--glass-border)',
-          backdropFilter: 'blur(12px) saturate(1.5)',
-          WebkitBackdropFilter: 'blur(12px) saturate(1.5)',
           padding: '12px 16px 14px',
         }}
       >
@@ -591,20 +568,11 @@ function ChatCanvas() {
             onKeyDown={handleKeyDown}
             placeholder={'Ask a question or describe what to review...'}
             disabled={isStreaming}
-            className="flex-1 font-sans text-sm resize-none outline-none leading-[1.55] min-h-[42px] max-h-[200px] transition-[border-color,box-shadow] duration-150 rounded-lg"
+            className="flex-1 font-sans text-sm resize-none leading-[1.55] min-h-[42px] max-h-[200px] transition-[border-color,box-shadow] duration-150 rounded-lg outline-none bg-white/30 dark:bg-zinc-900/30 text-slate-950 dark:text-zinc-50 border border-slate-200 dark:border-zinc-800/80 placeholder-slate-400 dark:placeholder-zinc-500 focus:ring-1 focus:ring-[#FF5C00] focus:border-[#FF5C00]"
             style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text)',
               padding: '10px 12px',
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#FF5C00'
-              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255,92,0,0.15)'
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--border)'
-              e.currentTarget.style.boxShadow = 'none'
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
             }}
             rows={1}
           />

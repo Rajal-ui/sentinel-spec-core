@@ -109,14 +109,11 @@ export default function TopBar({ title, breadcrumb }: Props) {
 
   return (
     <header
-      className="w-full max-w-[100vw] px-6 mx-auto bg-white/70 dark:bg-[#111116]/80 backdrop-blur-xl border-b border-white/60 dark:border-[#1F2029]/80 shadow-sm dark:shadow-none"
+      className="w-full max-w-[100vw] px-6 mx-auto sticky top-0 z-50 transition-all bg-white/60 dark:bg-[#08080A]/60 backdrop-blur-xl border-b border-slate-200/40 dark:border-zinc-800/40"
       style={{
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
-        position: 'sticky',
-        top: 0,
-        zIndex: 30,
       }}
     >
       {/* Main bar */}

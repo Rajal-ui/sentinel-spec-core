@@ -16,11 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           __html: `(function(){try{var t=localStorage.getItem('sentinel-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.className=t}}catch(e){}})()`
         }} />
       </head>
-      <body className="min-h-screen relative antialiased transition-colors duration-300
-        bg-[#F8FAFC] text-[#0F172A]
-        bg-[radial-gradient(at_top_right,_var(--tw-gradient-stops))] from-[#FFEDD5]/30 via-[#F8FAFC] to-[#CCFBF1]/20
-        dark:bg-[#08080A] dark:text-[#E8EAED]
-        dark:bg-[radial-gradient(at_top_right,_var(--tw-gradient-stops))] dark:from-[#FF7A59]/5 dark:via-[#08080A] dark:to-[#5FD9C6]/5">
+      <body className="min-h-screen relative antialiased transition-colors duration-300 bg-[#FAF8F6] text-[#09090B] bg-[radial-gradient(at_top_right,_var(--tw-gradient-stops))] from-[#FFEDD5]/30 via-[#FAF8F6] to-[#CCFBF1]/20 dark:bg-[#08080A] dark:text-[#E8EAED] dark:bg-[radial-gradient(at_top_right,_var(--tw-gradient-stops))] dark:from-[#FF7A59]/5 dark:via-[#08080A] dark:to-[#5FD9C6]/5">
         <div className="relative z-10 w-full min-h-screen flex flex-col">
           <ThemeInit />
           <AuthSyncProvider>
