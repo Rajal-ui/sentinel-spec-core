@@ -15,6 +15,7 @@ const STORAGE_KEY = 'sentinel-theme'
 function applyTheme(t: Theme) {
   if (typeof document === 'undefined') return
   document.documentElement.setAttribute('data-theme', t)
+  document.documentElement.className = t
   try { localStorage.setItem(STORAGE_KEY, t) } catch {}
 }
 

@@ -67,6 +67,8 @@ function TabBar({
         display: 'flex',
         gap: 2,
         background: 'var(--surface-muted)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
         borderRadius: 6,
         padding: 3,
         border: '1px solid var(--border)',
@@ -89,7 +91,8 @@ function TabBar({
             fontWeight: 500,
             transition: 'background 0.15s, color 0.15s',
             background: active === tab.id ? 'var(--surface-raised)' : 'transparent',
-            color: active === tab.id ? 'var(--text)' : 'var(--text-muted)',
+            color: active === tab.id ? 'var(--text)' : 'var(--text-secondary)',
+            boxShadow: active === tab.id ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
           }}
         >
           {tab.icon}
@@ -152,21 +155,20 @@ function LeftPanel() {
 
   return (
     <div
+      className="flex flex-col w-[280px] flex-shrink-0 h-full overflow-hidden"
       style={{
-        width: 280,
-        flexShrink: 0,
-        height: '100%',
+        borderLeft: '1px solid var(--border)',
         borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
         background: 'var(--surface-muted)',
+        backdropFilter: 'blur(16px) saturate(1.6)',
+        WebkitBackdropFilter: 'blur(16px) saturate(1.6)',
       }}
     >
       {/* New Analysis button */}
       <div style={{ padding: '16px 14px 12px' }}>
         <button
           onClick={() => createSession()}
+          className="font-display"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -178,7 +180,6 @@ function LeftPanel() {
             border: 'none',
             borderRadius: 8,
             padding: '9px 14px',
-            fontFamily: 'Archivo, sans-serif',
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
@@ -193,7 +194,7 @@ function LeftPanel() {
       </div>
 
       {/* Scrollable content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px' }}>
+      <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: '0 14px' }}>
 
         {/* ── INGESTION HUB ── */}
         <div style={{ marginBottom: 24 }}>
@@ -212,20 +213,20 @@ function LeftPanel() {
             onDragLeave={handleDragLeave}
             onClick={() => fileInputRef.current?.click()}
             style={{
-              border: `1px dashed ${isDragOver ? 'var(--primary)' : 'var(--border)'}`,
+              border: `1px dashed ${isDragOver ? '#FF5C00' : 'var(--border)'}`,
               borderRadius: 8,
               padding: '14px 12px',
               textAlign: 'center',
               cursor: 'pointer',
-              background: isDragOver ? 'rgba(255,0,122,0.07)' : 'transparent',
+              background: isDragOver ? 'rgba(255,92,0,0.07)' : 'var(--surface)',
               transition: 'border-color 0.15s, background 0.15s',
               marginBottom: 10,
             }}
           >
-            <Upload size={18} style={{ color: isDragOver ? 'var(--primary)' : 'var(--text-muted)', marginBottom: 6 }} />
+            <Upload size={18} style={{ color: isDragOver ? '#FF5C00' : 'var(--text-muted)', marginBottom: 6 }} />
             <div
               className="font-mono-product"
-              style={{ fontSize: 12, color: isDragOver ? 'var(--primary)' : 'var(--text-muted)', lineHeight: 1.5 }}
+              style={{ fontSize: 12, color: isDragOver ? '#FF5C00' : 'var(--text-muted)', lineHeight: 1.5 }}
             >
               Click to upload a file
             </div>
@@ -261,20 +262,26 @@ function LeftPanel() {
                   value={pasteCode}
                   onChange={(e) => setPasteCode(e.target.value)}
                   placeholder="Paste code here..."
-                  className="font-mono-product"
+                  className="font-mono-product w-full"
                   style={{
-                    width: '100%',
                     background: 'var(--surface)',
                     border: '1px solid var(--border)',
                     borderRadius: 6,
-                    padding: '8px 10px',
+                    padding: 8,
                     fontSize: 11,
                     color: 'var(--text)',
+                    fontFamily: 'IBM Plex Mono, monospace',
                     resize: 'vertical',
                     minHeight: 80,
                     outline: 'none',
                     boxSizing: 'border-box',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                    width: '100%',
+                    backdropFilter: 'blur(4px)',
+                    WebkitBackdropFilter: 'blur(4px)',
                   }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#FF5C00'; e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255,92,0,0.15)' }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none' }}
                 />
               </motion.div>
             )}
@@ -286,7 +293,7 @@ function LeftPanel() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.12 }}
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '6px 0' }}
+                className="flex flex-col items-center gap-2 py-1.5"
               >
                 <button
                   onClick={() => fileInputRef.current?.click()}
@@ -295,14 +302,16 @@ function LeftPanel() {
                     background: 'var(--surface)',
                     border: '1px solid var(--border)',
                     borderRadius: 6,
-                    padding: '7px 16px',
+                    padding: '6px 16px',
                     fontSize: 11,
                     color: 'var(--text)',
                     cursor: 'pointer',
-                    transition: 'background 0.15s',
+                    transition: 'background 0.15s, border-color 0.15s',
+                    backdropFilter: 'blur(4px)',
+                    WebkitBackdropFilter: 'blur(4px)',
                   }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface-raised)' }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface)' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-raised)'; e.currentTarget.style.borderColor = 'var(--text-muted)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)' }}
                 >
                   Browse Files
                 </button>
@@ -319,21 +328,23 @@ function LeftPanel() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 7,
-                    padding: '5px 8px',
-                    background: 'var(--surface)',
+                    gap: 6,
+                    padding: 6,
+                    background: 'var(--surface-raised)',
                     border: '1px solid var(--border)',
                     borderRadius: 5,
+                    backdropFilter: 'blur(4px)',
+                    WebkitBackdropFilter: 'blur(4px)',
                   }}
                 >
-                  <FileText size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                  <FileText size={12} style={{ color: 'var(--text-secondary)', flexShrink: 0 }} />
                   <span
                     className="font-mono-product"
                     style={{ fontSize: 11, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                   >
                     {file.name}
                   </span>
-                  <span className="font-mono-product" style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>
+                  <span className="font-mono-product" style={{ fontSize: 10, color: 'var(--text-secondary)', flexShrink: 0 }}>
                     {formatBytes(file.size)}
                   </span>
                   <button
@@ -480,32 +491,31 @@ function ChatCanvas() {
       }}
     >
       {/* Message area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+      <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: '24px 28px' }}>
         {isEmpty ? (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.4, ease: 'easeOut' }}
+            className="flex flex-col items-center justify-center text-center rounded-2xl"
             style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
               minHeight: '60vh',
               gap: 16,
-              textAlign: 'center',
+              padding: '48px 24px',
+              margin: '24px 0',
+              background: 'var(--glass-bg)',
+              border: '1px solid var(--glass-border)',
+              backdropFilter: 'blur(12px) saturate(1.5)',
+              WebkitBackdropFilter: 'blur(12px) saturate(1.5)',
             }}
           >
             <div
+              className="flex items-center justify-center rounded-full"
               style={{
                 width: 72,
                 height: 72,
-                borderRadius: '50%',
-                border: '1px solid var(--border)',
-                background: 'rgba(255,0,122,0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                background: 'var(--surface-raised)',
+                border: '1px solid var(--glass-border)',
               }}
             >
               <Shield size={36} style={{ color: 'var(--primary)' }} />
@@ -519,12 +529,12 @@ function ChatCanvas() {
               </h2>
               <p
                 className="font-mono-product"
-                style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}
+                style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}
               >
                 Drop code, paste a diff, or type a question.
               </p>
             </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 540 }}>
+            <div className="flex flex-wrap gap-2 justify-center" style={{ maxWidth: 540 }}>
               {EXAMPLE_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
@@ -533,24 +543,22 @@ function ChatCanvas() {
                   style={{
                     background: 'var(--surface)',
                     border: '1px solid var(--border)',
-                    borderRadius: 20,
-                    padding: '7px 14px',
+                    borderRadius: 9999,
+                    padding: '6px 14px',
                     fontSize: 12,
                     color: 'var(--text-secondary)',
                     cursor: 'pointer',
                     transition: 'border-color 0.15s, color 0.15s, background 0.15s',
                   }}
                   onMouseEnter={(e) => {
-                    const el = e.currentTarget as HTMLButtonElement
-                    el.style.borderColor = 'var(--primary)'
-                    el.style.color = 'var(--text)'
-                    el.style.background = 'rgba(255,0,122,0.08)'
+                    e.currentTarget.style.borderColor = 'var(--primary)'
+                    e.currentTarget.style.color = 'var(--text)'
+                    e.currentTarget.style.background = 'var(--surface-raised)'
                   }}
                   onMouseLeave={(e) => {
-                    const el = e.currentTarget as HTMLButtonElement
-                    el.style.borderColor = 'var(--border)'
-                    el.style.color = 'var(--text-secondary)'
-                    el.style.background = 'var(--surface)'
+                    e.currentTarget.style.borderColor = 'var(--border)'
+                    e.currentTarget.style.color = 'var(--text-secondary)'
+                    e.currentTarget.style.background = 'var(--surface)'
                   }}
                 >
                   {prompt}
@@ -565,11 +573,13 @@ function ChatCanvas() {
 
       {/* ── Input area ── */}
       <div
-        className="glass"
+        className="flex-shrink-0"
         style={{
-          borderTop: '1px solid var(--border)',
+          background: 'var(--glass-bg)',
+          borderTop: '1px solid var(--glass-border)',
+          backdropFilter: 'blur(12px) saturate(1.5)',
+          WebkitBackdropFilter: 'blur(12px) saturate(1.5)',
           padding: '12px 16px 14px',
-          flexShrink: 0,
         }}
       >
         {/* Textarea + send row */}
@@ -581,24 +591,21 @@ function ChatCanvas() {
             onKeyDown={handleKeyDown}
             placeholder={'Ask a question or describe what to review...'}
             disabled={isStreaming}
+            className="flex-1 font-sans text-sm resize-none outline-none leading-[1.55] min-h-[42px] max-h-[200px] transition-[border-color,box-shadow] duration-150 rounded-lg"
             style={{
-              flex: 1,
               background: 'var(--surface)',
               border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: '10px 12px',
-              fontSize: 13,
-              fontFamily: 'Inter, sans-serif',
               color: 'var(--text)',
-              resize: 'none',
-              minHeight: 42,
-              maxHeight: 200,
-              outline: 'none',
-              lineHeight: 1.55,
-              transition: 'border-color 0.15s',
+              padding: '10px 12px',
             }}
-            onFocus={(e) => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--primary)' }}
-            onBlur={(e) => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--border)' }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = '#FF5C00'
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(255,92,0,0.15)'
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
             rows={1}
           />
 
@@ -613,9 +620,9 @@ function ChatCanvas() {
               width: 42,
               height: 42,
               borderRadius: 8,
-              border: 'none',
+              border: '1px solid var(--border)',
               background:
-                !inputValue.trim() || isStreaming ? 'var(--surface-raised)' : 'var(--primary)',
+                !inputValue.trim() || isStreaming ? 'var(--surface-muted)' : 'var(--primary)',
               color: !inputValue.trim() || isStreaming ? 'var(--text-muted)' : '#fff',
               cursor: !inputValue.trim() || isStreaming ? 'not-allowed' : 'pointer',
               transition: 'background 0.15s, color 0.15s',
@@ -695,7 +702,7 @@ export default function AgentWorkspacePage() {
 
   return (
     <AppShell title="Agent Workspace" breadcrumb="sentinel-spec / agent">
-      <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+      <div className="flex h-full w-full overflow-hidden" style={{ background: 'transparent' }}>
         <LeftPanel />
         <ChatCanvas />
       </div>

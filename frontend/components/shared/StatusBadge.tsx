@@ -2,30 +2,6 @@ import type { FindingTier } from '@/lib/types'
 
 interface Props { tier: FindingTier; label?: string }
 
-// AMBER RULE: amber styles exclusively for BLOCKING/WARNING — lint: no-amber-outside-findings
-const BADGE_STYLES: Record<FindingTier, React.CSSProperties> = {
-  blocking: {
-    background: 'rgba(220,38,38,0.15)',
-    color: '#E85D4A',
-    borderColor: 'rgba(220,38,38,0.3)',
-  },
-  warning: {
-    background: 'rgba(232,165,75,0.15)',
-    color: 'var(--amber)',
-    borderColor: 'rgba(232,165,75,0.3)',
-  },
-  logged_only: {
-    background: 'rgba(74,85,104,0.15)',
-    color: 'var(--text-muted)',
-    borderColor: 'rgba(74,85,104,0.3)',
-  },
-  rejected: {
-    background: 'rgba(46,204,113,0.15)',
-    color: 'var(--success)',
-    borderColor: 'rgba(46,204,113,0.3)',
-  },
-}
-
 const BADGE_LABELS: Record<FindingTier, string> = {
   blocking: 'BLOCKING',
   warning: 'WARNING',
@@ -33,22 +9,52 @@ const BADGE_LABELS: Record<FindingTier, string> = {
   rejected: 'PASSED',
 }
 
+const BADGE_CLASSES: Record<FindingTier, string> = {
+  blocking:
+    'bg-rose-500/10 text-rose-600 border border-rose-500/20 ' +
+    'dark:text-rose-400 dark:border-rose-500/10',
+  warning:
+    'bg-amber-500/10 text-amber-600 border border-amber-500/20 ' +
+    'dark:text-amber-400 dark:border-amber-500/10',
+  logged_only:
+    'bg-zinc-500/10 text-zinc-600 border border-zinc-500/20 ' +
+    'dark:text-zinc-400 dark:border-zinc-500/10',
+  rejected:
+    'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 ' +
+    'dark:text-emerald-400 dark:border-emerald-500/10',
+}
+
 type StatusType = 'BLOCKING' | 'WARNING' | 'PASSED' | 'PENDING' | 'RESOLVED' | 'OVERRIDDEN' | 'NEEDS REVIEW'
-const STATUS_STYLES: Record<StatusType, React.CSSProperties> = {
-  BLOCKING: { background: 'rgba(220,38,38,0.15)', color: '#E85D4A', borderColor: 'rgba(220,38,38,0.3)' },
-  WARNING: { background: 'rgba(232,165,75,0.15)', color: 'var(--amber)', borderColor: 'rgba(232,165,75,0.3)' },
-  PASSED: { background: 'rgba(46,204,113,0.15)', color: 'var(--success)', borderColor: 'rgba(46,204,113,0.3)' },
-  PENDING: { background: 'rgba(255,0,122,0.15)', color: 'var(--primary)', borderColor: 'rgba(255,0,122,0.3)' },
-  RESOLVED: { background: 'rgba(0,188,212,0.15)', color: '#00BCD4', borderColor: 'rgba(0,188,212,0.3)' },
-  OVERRIDDEN: { background: 'rgba(74,85,104,0.15)', color: 'var(--text-muted)', borderColor: 'rgba(74,85,104,0.3)' },
-  'NEEDS REVIEW': { background: 'rgba(124,92,216,0.15)', color: '#9B7EDB', borderColor: 'rgba(124,92,216,0.3)' },
+
+const STATUS_CLASSES: Record<StatusType, string> = {
+  BLOCKING:
+    'bg-rose-500/10 text-rose-600 border border-rose-500/20 ' +
+    'dark:text-rose-400 dark:border-rose-500/10',
+  WARNING:
+    'bg-amber-500/10 text-amber-600 border border-amber-500/20 ' +
+    'dark:text-amber-400 dark:border-amber-500/10',
+  PASSED:
+    'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 ' +
+    'dark:text-emerald-400 dark:border-emerald-500/10',
+  PENDING:
+    'bg-teal-500/10 text-teal-600 border border-teal-500/20 ' +
+    'dark:text-teal-400 dark:border-teal-500/10',
+  RESOLVED:
+    'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 ' +
+    'dark:text-emerald-400 dark:border-emerald-500/10',
+  OVERRIDDEN:
+    'bg-zinc-500/10 text-zinc-600 border border-zinc-500/20 ' +
+    'dark:text-zinc-400 dark:border-zinc-500/10',
+  'NEEDS REVIEW':
+    'bg-violet-500/10 text-violet-600 border border-violet-500/20 ' +
+    'dark:text-violet-400 dark:border-violet-500/10',
 }
 
 export default function StatusBadge({ tier, label }: Props) {
-  const style = BADGE_STYLES[tier]
+  const cls = BADGE_CLASSES[tier]
   const text = label ?? BADGE_LABELS[tier]
   return (
-    <span className="badge" style={style}>
+    <span className={`badge ${cls}`}>
       {text}
     </span>
   )
@@ -56,7 +62,7 @@ export default function StatusBadge({ tier, label }: Props) {
 
 export function StatusLabel({ status }: { status: StatusType }) {
   return (
-    <span className="badge" style={STATUS_STYLES[status]}>
+    <span className={`badge ${STATUS_CLASSES[status]}`}>
       {status}
     </span>
   )

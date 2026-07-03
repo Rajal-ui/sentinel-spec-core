@@ -2,7 +2,7 @@
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import LoginModal from './LoginModal'
-import ShaderBackground from '@/components/shared/ShaderBackground'
+
 import { useThemeStore } from '@/lib/store/theme'
 
 interface Props {
@@ -17,13 +17,16 @@ export default function AppShell({ children, title, breadcrumb }: Props) {
   return (
     <div
       data-theme={theme}
-      style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}
+      style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'transparent' }}
     >
-      <ShaderBackground variant="app" />
-      <Sidebar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+      {/* Sidebar with micro-border separation */}
+      <div className="border-r border-slate-200/60 dark:border-[#1F2029]/70">
+        <Sidebar />
+      </div>
+      {/* Content area with alternating background */}
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0 bg-slate-50/50 dark:bg-[#0F0F14]/60">
         <TopBar title={title} breadcrumb={breadcrumb} />
-        <main style={{ flex: 1, overflowY: 'auto', padding: 0 }}>
+        <main className="flex-1 overflow-hidden">
           {children}
         </main>
       </div>

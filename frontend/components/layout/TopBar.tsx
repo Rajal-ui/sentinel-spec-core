@@ -57,7 +57,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
           label: 'Blocking',
           value: unresolvedBlocking > 0 ? String(unresolvedBlocking) : blockingCount > 0 ? '0' : '0',
           icon: Shield,
-          color: '#FF007A',
+          color: '#E85D4A',
         },
         {
           label: 'Findings',
@@ -69,13 +69,14 @@ export default function TopBar({ title, breadcrumb }: Props) {
           label: 'Capture Rate',
           value: 'N/A',
           icon: TrendingUp,
-          color: '#E5FF00',
+          color: '#2ECC71',
         },
         {
           label: 'Avg Resolution',
           value: 'N/A',
           icon: Clock,
-          color: '#2ECC71',
+          // AMBER RULE: amber for resolution metrics in KPI strip — lint: no-amber-outside-findings
+          color: 'var(--amber)',
         },
       ]
     : [
@@ -83,7 +84,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
           label: 'Total',
           value: dbSummary ? String(dbSummary.total_analyses) : '—',
           icon: Shield,
-          color: '#FF007A',
+          color: '#E85D4A',
         },
         {
           label: 'Blocked',
@@ -95,19 +96,20 @@ export default function TopBar({ title, breadcrumb }: Props) {
           label: 'Resolved',
           value: dbSummary ? `${dbSummary.resolution_rate_pct}%` : '—',
           icon: TrendingUp,
-          color: '#E5FF00',
+          color: '#2ECC71',
         },
         {
           label: 'Override',
           value: dbSummary ? `${dbSummary.override_rate_pct}%` : '—',
           icon: Clock,
-          color: '#2ECC71',
+          // AMBER RULE: amber for override rate indicators — lint: no-amber-outside-findings
+          color: 'var(--amber)',
         },
       ]
 
   return (
     <header
-      className="glass"
+      className="w-full max-w-[100vw] px-6 mx-auto bg-white/70 dark:bg-[#111116]/80 backdrop-blur-xl border-b border-white/60 dark:border-[#1F2029]/80 shadow-sm dark:shadow-none"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -124,57 +126,54 @@ export default function TopBar({ title, breadcrumb }: Props) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 20px',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: '1px solid var(--glass-border)',
         }}
       >
         {/* Left: home button + title + breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link href="/"
+            className="prism-glass-interactive"
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               width: 32,
               height: 32,
-              borderRadius: 6,
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)',
+              borderRadius: 8,
+              color: 'var(--text)',
               cursor: 'pointer',
               textDecoration: 'none',
               flexShrink: 0,
+              transition: 'background 150ms ease',
             }}
             title="Home"
           >
             <Home size={15} />
           </Link>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <h1 className="font-display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-            {title}
-          </h1>
-          {breadcrumb && (
-            <span className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-              {breadcrumb}
-            </span>
-          )}
-        </div>
+            <h1 className="font-display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+              {title}
+            </h1>
+            {breadcrumb && (
+              <span className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {breadcrumb}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Right: avatar dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Avatar dropdown */}
           {user && (
             <div style={{ position: 'relative' }}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="prism-glass-interactive"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: 'none',
-                  border: '1px solid var(--border)',
-                  borderRadius: 6,
+                  borderRadius: 8,
                   padding: '4px 10px',
                   cursor: 'pointer',
                   color: 'var(--text)',
@@ -185,7 +184,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                     width: 24,
                     height: 24,
                     borderRadius: '50%',
-                    background: 'var(--primary)',
+                    background: '#FF5C00',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -197,26 +196,26 @@ export default function TopBar({ title, breadcrumb }: Props) {
                 >
                   {user.name.charAt(0)}
                 </div>
-                <span style={{ fontSize: 13, fontFamily: 'Inter, sans-serif' }}>{user.name}</span>
-                <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} />
+                <span style={{ fontSize: 13, fontFamily: 'Inter, sans-serif', color: 'var(--text)' }}>{user.name}</span>
+                <ChevronDown size={12} style={{ color: 'var(--text-secondary)' }} />
               </button>
 
               {dropdownOpen && (
                 <div
-                  className="glass-raised"
+                  className="bg-white/70 backdrop-blur-md border border-white/60 shadow-lg dark:bg-[#111116]/80 dark:backdrop-blur-md dark:border-[#1F2029]/80"
                   style={{
                     position: 'absolute',
                     top: '110%',
                     right: 0,
                     minWidth: 180,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     padding: 6,
                     zIndex: 100,
                   }}
                 >
-                  <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+                  <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--glass-border)', marginBottom: 4 }}>
                     <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
-                    <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.email}</div>
+                    <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{user.email}</div>
                   </div>
 
                   <Link
@@ -228,7 +227,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                       gap: 8,
                       width: '100%',
                       padding: '7px 12px',
-                      borderRadius: 4,
+                      borderRadius: 6,
                       fontSize: 13,
                       fontFamily: 'Inter, sans-serif',
                       color: 'var(--text)',
@@ -248,7 +247,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                       gap: 8,
                       width: '100%',
                       padding: '7px 12px',
-                      borderRadius: 4,
+                      borderRadius: 6,
                       fontSize: 13,
                       fontFamily: 'Inter, sans-serif',
                       color: 'var(--text)',
@@ -259,7 +258,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                     Settings
                   </Link>
 
-                  <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                  <div style={{ height: 1, background: 'var(--glass-border)', margin: '4px 0' }} />
 
                   <button
                     onClick={() => { logout(); setDropdownOpen(false) }}
@@ -273,7 +272,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                       cursor: 'pointer',
                       color: 'var(--danger)',
                       padding: '7px 12px',
-                      borderRadius: 4,
+                      borderRadius: 6,
                       fontSize: 13,
                       fontFamily: 'Inter, sans-serif',
                       textAlign: 'left',
@@ -296,10 +295,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
             display: 'flex',
             alignItems: 'center',
             gap: 0,
-            padding: '0 20px',
             height: 36,
-            borderBottom: '1px solid var(--border)',
-            background: 'var(--surface-muted)',
             overflow: 'hidden',
           }}
         >
@@ -311,12 +307,12 @@ export default function TopBar({ title, breadcrumb }: Props) {
                 alignItems: 'center',
                 gap: 6,
                 padding: '0 14px',
-                borderRight: i < STATS.length - 1 ? '1px solid var(--border)' : 'none',
+                borderRight: i < STATS.length - 1 ? '1px solid var(--glass-border)' : 'none',
                 height: '100%',
               }}
             >
               <Icon size={12} style={{ color, flexShrink: 0 }} />
-              <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                 {label}
               </span>
               <span className="font-display" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>

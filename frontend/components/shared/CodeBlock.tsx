@@ -80,7 +80,7 @@ export default function CodeBlock({ code, language = 'python', showLineNumbers =
           justifyContent: 'space-between',
           padding: '6px 14px',
           borderBottom: '1px solid var(--border)',
-          background: '#0D0F12',
+          background: 'var(--surface)',
         }}
       >
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

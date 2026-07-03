@@ -17,7 +17,7 @@ type SortDir = 'asc' | 'desc'
 
 const DOMAIN_COLORS: Record<string, string> = {
   security: '#E85D4A',
-  data_residency: '#FF007A',
+  data_residency: '#FF5C00',
   api_contract: '#2ECC71',
   architecture: '#8B95A8',
 }

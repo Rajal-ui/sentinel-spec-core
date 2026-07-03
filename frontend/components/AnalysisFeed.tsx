@@ -72,7 +72,7 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
           >
             {msg.role === 'user' ? (
               <div
-                className="glass"
+                className="bg-white/40 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 backdrop-blur-[12px]"
                 style={{
                   maxWidth: '68%',
                   padding: '11px 15px',
@@ -83,6 +83,7 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
                   color: 'var(--text)',
                   lineHeight: 1.6,
                   wordBreak: 'break-word',
+                  WebkitBackdropFilter: 'blur(12px) saturate(1.5)',
                 }}
               >
                 {msg.content}
@@ -90,11 +91,11 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
             ) : (
               <div style={{ flex: 1, maxWidth: '92%', minWidth: 0 }}>
                 <div
-                  style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}
                 >
                   <span
                     className="font-mono-product"
-                    style={{ fontSize: 11, color: 'var(--text-muted)' }}
+                    style={{ fontSize: 11, color: 'var(--text-secondary)' }}
                   >
                     {formatTime(msg.timestamp)}
                   </span>

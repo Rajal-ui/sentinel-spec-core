@@ -23,24 +23,38 @@ export default function ViolationCard({
   const [expanded, setExpanded] = useState(false)
 
   const tierLabel = {
-    blocking: '\u26A0 POLICY VIOLATION \u00B7 HIGH',
-    warning: '\u26A0 POLICY VIOLATION \u00B7 MEDIUM',
-    logged_only: '\u25CB POLICY NOTE \u00B7 LOW',
-    rejected: '\u2713 CLEAN \u00B7 REJECTED',
+    blocking: '⚠ POLICY VIOLATION · HIGH',
+    warning: '⚠ POLICY VIOLATION · MEDIUM',
+    logged_only: '○ POLICY NOTE · LOW',
+    rejected: '✓ CLEAN · REJECTED',
   }[finding.tier]
 
   const confidencePct = Math.round(finding.confidence * 100)
 
   const borderColor = isResolved
-    ? 'rgba(34,197,94,0.25)'
+    ? 'rgba(34,197,94,0.30)'
     : {
-        blocking: 'rgba(232,165,75,0.25)',
-        warning: 'rgba(202,138,4,0.25)',
-        logged_only: 'rgba(74,85,104,0.4)',
-        rejected: 'rgba(74,85,104,0.3)',
+        blocking: 'rgba(232,93,74,0.28)',
+        warning: 'rgba(232,165,75,0.25)',
+        logged_only: 'rgba(100,116,139,0.20)',
+        rejected: 'rgba(100,116,139,0.15)',
       }[finding.tier]
 
-  const isPulsing = !isResolved && finding.tier === 'blocking' && !prefersReducedMotion
+  const headerBg = isResolved
+    ? 'rgba(46,204,113,0.07)'
+    : finding.tier === 'blocking'
+      ? 'rgba(232,93,74,0.06)'
+      : finding.tier === 'warning'
+        ? 'rgba(232,165,75,0.06)'
+        : 'rgba(148,163,184,0.06)'
+
+  const labelColor = isResolved
+    ? 'var(--success)'
+    : finding.tier === 'blocking'
+      ? 'var(--danger)'
+      : finding.tier === 'warning'
+        ? 'var(--amber)'
+        : 'var(--text-secondary)'
 
   const handleDownload = useCallback(() => {
     if (!finding.diff_new) return
@@ -55,45 +69,30 @@ export default function ViolationCard({
 
   return (
     <motion.div
-      className="rounded-lg overflow-hidden"
+      className="prism-glass-card rounded-xl overflow-hidden"
       style={{
-        background: isResolved ? 'rgba(34,197,94,0.04)' : 'rgba(26,26,35,0.88)',
-        backdropFilter: 'blur(12px) saturate(1.4)',
         border: `1px solid ${borderColor}`,
-        opacity: isResolved ? 0.8 : 1,
+        opacity: isResolved ? 0.82 : 1,
       }}
-      animate={
-        isPulsing
-          ? {
-              boxShadow: [
-                '0 0 16px rgba(232,165,75,0.10)',
-                '0 0 28px rgba(232,165,75,0.22)',
-                '0 0 16px rgba(232,165,75,0.10)',
-              ],
-            }
-          : {}
+      whileHover={
+        prefersReducedMotion
+          ? {}
+          : { y: -2, boxShadow: '0 8px 28px rgba(255,92,0,0.08), 0 2px 6px rgba(0,0,0,0.05)' }
       }
-      transition={
-        isPulsing
-          ? { duration: 3, repeat: Infinity, ease: 'easeInOut' as const }
-          : { type: 'spring', stiffness: 300, damping: 20 }
-      }
+      transition={{ type: 'spring', stiffness: 340, damping: 24 }}
     >
       {/* ── Clickable header ── */}
       <div
         onClick={() => setExpanded(!expanded)}
         style={{
-          background: isResolved
-            ? 'rgba(34,197,94,0.08)'
-            : finding.tier === 'blocking' || finding.tier === 'warning'
-              ? 'rgba(232,165,75,0.08)'
-              : 'rgba(74,85,104,0.08)',
+          background: headerBg,
           padding: '8px 14px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           cursor: 'pointer',
           userSelect: 'none',
+          borderBottom: expanded ? '1px solid var(--glass-border)' : 'none',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
@@ -108,15 +107,11 @@ export default function ViolationCard({
               fontSize: 11,
               fontWeight: 500,
               letterSpacing: '0.04em',
-              color: isResolved
-                ? '#22c55e'
-                : finding.tier === 'blocking' || finding.tier === 'warning'
-                  ? '#E8A54B'
-                  : 'var(--text-muted)',
+              color: labelColor,
               whiteSpace: 'nowrap',
             }}
           >
-            {isResolved ? '\u2713 RESOLVED' : `${tierLabel} \u00B7 ${confidencePct}% confidence`}
+            {isResolved ? '✓ RESOLVED' : `${tierLabel} · ${confidencePct}% confidence`}
           </span>
           {!expanded && (
             <span
@@ -151,9 +146,9 @@ export default function ViolationCard({
             <div style={{ padding: '14px 16px 16px' }}>
               <div
                 className="font-mono-product"
-                style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}
+                style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}
               >
-                sentinel://finding/{finding.record_id} {'\u00B7'} {finding.cited_adr}
+                sentinel://finding/{finding.record_id} {'·'} {finding.cited_adr}
               </div>
 
               <h3
@@ -170,34 +165,34 @@ export default function ViolationCard({
                 {finding.title}
               </h3>
 
+              {/* Cited text block */}
               <div
+                className="prism-glass-card"
                 style={{
-                  background: '#0A0C0F',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
+                  borderRadius: 6,
                   padding: '10px 12px',
                   marginBottom: 10,
                 }}
               >
                 <div
                   className="font-mono-product"
-                  style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}
+                  style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}
                 >
                   {finding.source_document}
                 </div>
                 <p
                   className="font-mono-product"
-                  style={{ fontSize: 13, color: 'var(--text-code)', lineHeight: 1.5, margin: 0 }}
+                  style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5, margin: 0 }}
                 >
                   {finding.cited_text}
                 </p>
               </div>
 
+              {/* Diff block */}
               <div
+                className="prism-glass-card"
                 style={{
-                  background: '#0A0C0F',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
+                  borderRadius: 6,
                   padding: '8px 12px',
                   marginBottom: 12,
                 }}
@@ -206,7 +201,7 @@ export default function ViolationCard({
                   className="font-mono-product diff-removed"
                   style={{ fontSize: 13, padding: '2px 4px', borderRadius: 3 }}
                 >
-                  {'\u2212'} {finding.diff_old}
+                  {'−'} {finding.diff_old}
                 </div>
                 <div
                   className={`font-mono-product ${isResolved ? 'diff-added' : ''}`}
@@ -218,20 +213,22 @@ export default function ViolationCard({
 
               <ConfidenceBar confidence={finding.confidence} tier={finding.tier} />
 
+              {/* Action buttons */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
                 {!isResolved ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); onApplyFix(finding.id) }}
+                    className="border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-300 hover:border-[#FF5C00] hover:text-[#FF5C00] dark:hover:border-[#FF5C00] dark:hover:text-[#FF5C00]"
                     style={{
-                      background: 'var(--primary)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 4,
-                      padding: '6px 14px',
+                      background: 'transparent',
+                      borderRadius: 6,
+                      padding: '6px 16px',
                       fontSize: 12,
                       fontFamily: 'IBM Plex Mono, monospace',
                       cursor: 'pointer',
-                      fontWeight: 500,
+                      fontWeight: 600,
+                      letterSpacing: '0.02em',
+                      transition: 'border-color 150ms ease, color 150ms ease',
                     }}
                   >
                     Apply Fix
@@ -239,14 +236,13 @@ export default function ViolationCard({
                 ) : (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDownload() }}
+                    className="prism-glass-interactive"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 5,
-                      background: 'transparent',
                       color: 'var(--text-secondary)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 4,
+                      borderRadius: 6,
                       padding: '6px 14px',
                       fontSize: 12,
                       fontFamily: 'IBM Plex Mono, monospace',
@@ -262,7 +258,7 @@ export default function ViolationCard({
               {isResolved && resolvedAt && (
                 <div
                   className="font-mono-product"
-                  style={{ fontSize: 11, color: '#22c55e', marginTop: 10 }}
+                  style={{ fontSize: 11, color: 'var(--success)', marginTop: 10 }}
                 >
                   Resolved at{' '}
                   {new Date(resolvedAt).toLocaleTimeString('en-US', {
@@ -276,8 +272,8 @@ export default function ViolationCard({
                 className="font-mono-product"
                 style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}
               >
-                trace_id: {finding.trace_id} {'\u00B7'} logged to watsonx.governance
-                {isResolved ? ' \u00B7 fix applied' : ' \u00B7 approver required'}
+                trace_id: {finding.trace_id} {'·'} logged to watsonx.governance
+                {isResolved ? ' · fix applied' : ' · approver required'}
               </div>
             </div>
           </motion.div>
