@@ -1,13 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import {
   MessageSquare, Shield, BookOpen, Package, FileText,
-  Settings2, LifeBuoy, ChevronLeft, ChevronRight, Sun, Moon,
+  ChevronLeft, ChevronRight, Sun, Moon,
 } from 'lucide-react'
-import { useAuthStore } from '@/lib/store/auth'
 
 const NAV_ITEMS = [
   { label: 'Agent Workspace', icon: MessageSquare, href: '/agent' },
@@ -17,18 +16,11 @@ const NAV_ITEMS = [
   { label: 'Documentation', icon: FileText, href: '/docs' },
 ]
 
-const BOTTOM_ITEMS = [
-  { label: 'Settings', icon: Settings2, href: '/settings' },
-  { label: 'Support', icon: LifeBuoy, href: '/support' },
-]
-
 interface Props { theme: 'light' | 'dark'; onThemeToggle: () => void }
 
 export default function Sidebar({ theme, onThemeToggle }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
-  const { user, logout } = useAuthStore()
   const prefersReducedMotion = useReducedMotion()
 
   const container = {
@@ -164,39 +156,6 @@ export default function Sidebar({ theme, onThemeToggle }: Props) {
 
       {/* Bottom section */}
       <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
-        {BOTTOM_ITEMS.map(({ label, icon: Icon, href }) => (
-          <Link
-            key={href}
-            href={href}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: collapsed ? '8px 0' : '8px 16px',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              textDecoration: 'none',
-              color: 'var(--text-muted)',
-              fontSize: 14,
-              transition: 'color 0.15s',
-            }}
-          >
-            <Icon size={15} style={{ flexShrink: 0 }} />
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.12 }}
-                  style={{ overflow: 'hidden', whiteSpace: 'nowrap' }}
-                >
-                  {label}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </Link>
-        ))}
-
         {/* Theme toggle */}
         <button
           onClick={onThemeToggle}
@@ -229,58 +188,6 @@ export default function Sidebar({ theme, onThemeToggle }: Props) {
             )}
           </AnimatePresence>
         </button>
-
-        {/* User */}
-        {user && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: collapsed ? '10px 0' : '10px 16px',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              borderTop: '1px solid var(--border)',
-              marginTop: 4,
-            }}
-          >
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: '50%',
-                background: 'var(--primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
-                fontWeight: 700,
-                color: '#fff',
-                flexShrink: 0,
-                fontFamily: 'Archivo, sans-serif',
-              }}
-            >
-              {user.name.charAt(0)}
-            </div>
-            <AnimatePresence>
-              {!collapsed && (
-                <motion.div
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.12 }}
-                  style={{ overflow: 'hidden', minWidth: 0 }}
-                >
-                  <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif', whiteSpace: 'nowrap' }}>
-                    {user.name}
-                  </div>
-                  <div className="font-mono-product" style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                    {user.role}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
       </div>
     </motion.aside>
   )
