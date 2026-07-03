@@ -30,11 +30,10 @@ function StreamingCursor() {
 }
 
 interface AnalysisFeedProps {
-  onOpenThinking: () => void
   onApplyFix: (id: string) => void
 }
 
-export default function AnalysisFeed({ onOpenThinking, onApplyFix }: AnalysisFeedProps) {
+export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
   const { messages, isStreaming, resolvedFindings, activeSessionId } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -107,7 +106,6 @@ export default function AnalysisFeed({ onOpenThinking, onApplyFix }: AnalysisFee
                     summary={msg.content}
                     resolvedFindings={sessionResolvedMap}
                     onApplyFix={onApplyFix}
-                    onViewReasoning={() => onOpenThinking()}
                   />
                 ) : (
                   <div
