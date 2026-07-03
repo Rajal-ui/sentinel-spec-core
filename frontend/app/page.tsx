@@ -91,11 +91,11 @@ function HeroDemoPanel() {
       style={{
         background: '#0A0C0F',
         borderRadius: 10,
-        border: `1px solid ${isViolation ? 'rgba(232,165,75,0.35)' : 'rgba(27,108,168,0.25)'}`,
+        border: `1px solid ${isViolation ? 'rgba(232,165,75,0.35)' : 'rgba(255,0,122,0.25)'}`,
         // AMBER RULE: amber glow here exclusively for violation demo panel
         boxShadow: isViolation
           ? '0 0 40px rgba(232,165,75,0.18), 0 0 80px rgba(232,165,75,0.06)'
-          : '0 0 40px rgba(27,108,168,0.12)',
+          : '0 0 40px rgba(255,0,122,0.12)',
         overflow: 'hidden',
         transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
         maxWidth: 520,
@@ -581,7 +581,7 @@ export default function LandingPage() {
           </div>
           {/* CI callout */}
           <RevealSection delay={0.2}>
-            <div style={{ marginTop: 40, padding: '16px 20px', borderLeft: '3px solid var(--primary)', background: 'rgba(27,108,168,0.08)', borderRadius: '0 6px 6px 0' }}>
+            <div style={{ marginTop: 40, padding: '16px 20px', borderLeft: '3px solid var(--primary)', background: 'rgba(255,0,122,0.08)', borderRadius: '0 6px 6px 0' }}>
               <span className="font-display" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginRight: 8 }}>CI Gate Enforcement</span>
               <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>
                 BLOCKING findings fail the pipeline. WARNINGS log to governance. Every decision is immutable, timestamped, and approver-attributed.

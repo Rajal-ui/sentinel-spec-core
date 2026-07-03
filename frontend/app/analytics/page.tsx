@@ -21,7 +21,7 @@ type SortDir = 'asc' | 'desc'
 
 const DOMAIN_COLORS: Record<string, string> = {
   security: '#E85D4A',
-  data_residency: '#1B6CA8',
+  data_residency: '#FF007A',
   api_contract: '#2ECC71',
   architecture: '#8B95A8',
 }
@@ -188,7 +188,7 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy }: TopControls
                 fontSize: 12,
                 cursor: 'pointer',
                 border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
-                background: active ? 'rgba(27,108,168,0.18)' : 'transparent',
+                background: active ? 'rgba(255,0,122,0.18)' : 'transparent',
                 color: active ? 'var(--primary)' : 'var(--text-muted)',
                 transition: 'all 0.12s ease',
                 fontWeight: active ? 600 : 400,
@@ -222,7 +222,7 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy }: TopControls
                   fontSize: 12,
                   cursor: 'pointer',
                   border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
-                  background: active ? 'rgba(27,108,168,0.18)' : 'transparent',
+                  background: active ? 'rgba(255,0,122,0.18)' : 'transparent',
                   color: active ? 'var(--primary)' : 'var(--text-muted)',
                   transition: 'all 0.12s ease',
                   fontWeight: active ? 600 : 400,
@@ -331,8 +331,8 @@ function CaptureRatePanel({ data }: { data: typeof MOCK_CAPTURE_DATA }) {
         <AreaChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="ideGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#1B6CA8" stopOpacity={0.35} />
-              <stop offset="95%" stopColor="#1B6CA8" stopOpacity={0.05} />
+              <stop offset="5%" stopColor="#FF007A" stopOpacity={0.35} />
+              <stop offset="95%" stopColor="#FF007A" stopOpacity={0.05} />
             </linearGradient>
             <linearGradient id="ciGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#8B95A8" stopOpacity={0.3} />
@@ -374,7 +374,7 @@ function CaptureRatePanel({ data }: { data: typeof MOCK_CAPTURE_DATA }) {
             dataKey="ide_time"
             name="ide_time"
             stackId="1"
-            stroke="#1B6CA8"
+            stroke="#FF007A"
             strokeWidth={1.5}
             fill="url(#ideGradient)"
           />

@@ -14,16 +14,16 @@
   --text-secondary: #8B95A8;
   --text-muted: #4A5568;
   --text-code: #A8C4E8;
-  --primary: #1B6CA8;
-  --primary-hover: #2480C4;
+  --primary: #FF007A;
+  --primary-hover: #FF1A8C;
   /* AMBER RULE: var(--amber) ONLY for findings/violations/warnings — lint: no-amber-outside-findings */
   --amber: #E8A54B;
   --success: #2ECC71;
   --danger: #E85D4A;
-  /* Brand accent palette */
+  /* Multi-color theme */
   --cyber-pink: #FF007A;
-  --coral-orange: #FF5C00;
-  --neon-citrus: #E5FF00;
+  --primary-lime: #CCFF00;
+  --primary-coral: #FF7F50;
 }
 
 [data-theme="light"] {
@@ -35,7 +35,7 @@
   --text: #09090B;
   --text-secondary: #52525B;
   --text-muted: #A1A1AA;
-  --text-code: #1B6CA8;
+  --text-code: #FF007A;
 }
 
 /* ── Base ── */
@@ -159,12 +159,12 @@ html, body {
   --color-text-secondary: #8B95A8;
   --color-text-muted: #4A5568;
   --color-text-code: #A8C4E8;
-  --color-primary: #1B6CA8;
-  --color-primary-hover: #2480C4;
+  --color-primary: #FF007A;
+  --color-primary-hover: #FF1A8C;
   --color-amber: #E8A54B;
   --color-success: #2ECC71;
   --color-danger: #E85D4A;
   --color-cyber-pink: #FF007A;
-  --color-coral-orange: #FF5C00;
-  --color-neon-citrus: #E5FF00;
+  --color-primary-lime: #CCFF00;
+  --color-primary-coral: #FF7F50;
 }
