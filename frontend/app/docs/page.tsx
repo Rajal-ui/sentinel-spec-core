@@ -210,19 +210,19 @@ function ArchitectureDiagram() {
 
       {/* ── connecting lines ── */}
       {/* center → LLMPort */}
-      <line x1="300" y1="175" x2="200" y2="100" stroke="#1B6CA8" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+      <line x1="300" y1="175" x2="200" y2="100" stroke="#FF007A" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
       {/* center → VectorStorePort */}
-      <line x1="300" y1="175" x2="400" y2="100" stroke="#1B6CA8" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+      <line x1="300" y1="175" x2="400" y2="100" stroke="#FF007A" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
       {/* center → GovernancePort */}
-      <line x1="300" y1="225" x2="200" y2="300" stroke="#1B6CA8" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+      <line x1="300" y1="225" x2="200" y2="300" stroke="#FF007A" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
       {/* center → OrchestrationPort */}
-      <line x1="300" y1="225" x2="400" y2="300" stroke="#1B6CA8" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
+      <line x1="300" y1="225" x2="400" y2="300" stroke="#FF007A" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
 
       {/* IBM side connector lines (port → service) */}
-      <line x1="155" y1="88"  x2="68"  y2="88"  stroke="#1B6CA8" strokeWidth="1" opacity="0.4" />
-      <line x1="155" y1="88"  x2="68"  y2="136" stroke="#1B6CA8" strokeWidth="1" opacity="0.4" />
-      <line x1="155" y1="288" x2="68"  y2="248" stroke="#1B6CA8" strokeWidth="1" opacity="0.4" />
-      <line x1="155" y1="288" x2="68"  y2="296" stroke="#1B6CA8" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="88"  x2="68"  y2="88"  stroke="#FF007A" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="88"  x2="68"  y2="136" stroke="#FF007A" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="288" x2="68"  y2="248" stroke="#FF007A" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="288" x2="68"  y2="296" stroke="#FF007A" strokeWidth="1" opacity="0.4" />
 
       {/* Fallback side connector lines (port → fallback) */}
       <line x1="445" y1="88"  x2="532" y2="88"  stroke="#4A5568" strokeWidth="1" opacity="0.4" />
@@ -231,47 +231,47 @@ function ArchitectureDiagram() {
       <line x1="445" y1="288" x2="532" y2="296" stroke="#4A5568" strokeWidth="1" opacity="0.4" />
 
       {/* ── Domain Core (center) ── */}
-      <rect x="230" y="155" width="140" height="90" rx="6" fill="#1A1A23" stroke="#1B6CA8" strokeWidth="2" />
+      <rect x="230" y="155" width="140" height="90" rx="6" fill="#1A1A23" stroke="#FF007A" strokeWidth="2" />
       <text x="300" y="192" textAnchor="middle" fill="#E8EAED" fontFamily="IBM Plex Mono, monospace" fontSize="13" fontWeight="600">Domain Core</text>
       <text x="300" y="210" textAnchor="middle" fill="#8B95A8" fontFamily="IBM Plex Mono, monospace" fontSize="9">ComplianceAnalyser</text>
       <text x="300" y="225" textAnchor="middle" fill="#8B95A8" fontFamily="IBM Plex Mono, monospace" fontSize="9">PolicyRetriever</text>
 
       {/* ── Port boxes ── */}
       {/* LLMPort — top left */}
-      <rect x="120" y="65" width="110" height="46" rx="4" fill="#111116" stroke="#1B6CA8" strokeWidth="1.5" />
+      <rect x="120" y="65" width="110" height="46" rx="4" fill="#111116" stroke="#FF007A" strokeWidth="1.5" />
       <text x="175" y="83" textAnchor="middle" fill="#A8C4E8" fontFamily="IBM Plex Mono, monospace" fontSize="10" fontWeight="500">LLMPort</text>
       <text x="175" y="99" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">classify · critique</text>
 
       {/* VectorStorePort — top right */}
-      <rect x="370" y="65" width="130" height="46" rx="4" fill="#111116" stroke="#1B6CA8" strokeWidth="1.5" />
+      <rect x="370" y="65" width="130" height="46" rx="4" fill="#111116" stroke="#FF007A" strokeWidth="1.5" />
       <text x="435" y="83" textAnchor="middle" fill="#A8C4E8" fontFamily="IBM Plex Mono, monospace" fontSize="10" fontWeight="500">VectorStorePort</text>
       <text x="435" y="99" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">upsert · query</text>
 
       {/* GovernancePort — bottom left */}
-      <rect x="110" y="265" width="130" height="46" rx="4" fill="#111116" stroke="#1B6CA8" strokeWidth="1.5" />
+      <rect x="110" y="265" width="130" height="46" rx="4" fill="#111116" stroke="#FF007A" strokeWidth="1.5" />
       <text x="175" y="283" textAnchor="middle" fill="#A8C4E8" fontFamily="IBM Plex Mono, monospace" fontSize="10" fontWeight="500">GovernancePort</text>
       <text x="175" y="299" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">record · lineage</text>
 
       {/* OrchestrationPort — bottom right */}
-      <rect x="360" y="265" width="140" height="46" rx="4" fill="#111116" stroke="#1B6CA8" strokeWidth="1.5" />
+      <rect x="360" y="265" width="140" height="46" rx="4" fill="#111116" stroke="#FF007A" strokeWidth="1.5" />
       <text x="430" y="283" textAnchor="middle" fill="#A8C4E8" fontFamily="IBM Plex Mono, monospace" fontSize="10" fontWeight="500">OrchestrationPort</text>
       <text x="430" y="299" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">pipeline · dispatch</text>
 
       {/* ── Left column header: IBM Services ── */}
-      <text x="8" y="40" fill="#1B6CA8" fontFamily="IBM Plex Mono, monospace" fontSize="9" fontWeight="600" letterSpacing="0.08em">IBM SERVICES</text>
+      <text x="8" y="40" fill="#FF007A" fontFamily="IBM Plex Mono, monospace" fontSize="9" fontWeight="600" letterSpacing="0.08em">IBM SERVICES</text>
 
       {/* IBM service labels */}
-      <rect x="4" y="72" width="56" height="22" rx="3" fill="rgba(27,108,168,0.15)" stroke="#1B6CA8" strokeWidth="1" />
-      <text x="32" y="87" textAnchor="middle" fill="#1B6CA8" fontFamily="IBM Plex Mono, monospace" fontSize="8">watsonx.ai</text>
+      <rect x="4" y="72" width="56" height="22" rx="3" fill="rgba(255,0,122,0.15)" stroke="#FF007A" strokeWidth="1" />
+      <text x="32" y="87" textAnchor="middle" fill="#FF007A" fontFamily="IBM Plex Mono, monospace" fontSize="8">watsonx.ai</text>
 
-      <rect x="4" y="120" width="60" height="22" rx="3" fill="rgba(27,108,168,0.15)" stroke="#1B6CA8" strokeWidth="1" />
-      <text x="34" y="135" textAnchor="middle" fill="#1B6CA8" fontFamily="IBM Plex Mono, monospace" fontSize="8">Milvus / wx.data</text>
+      <rect x="4" y="120" width="60" height="22" rx="3" fill="rgba(255,0,122,0.15)" stroke="#FF007A" strokeWidth="1" />
+      <text x="34" y="135" textAnchor="middle" fill="#FF007A" fontFamily="IBM Plex Mono, monospace" fontSize="8">Milvus / wx.data</text>
 
-      <rect x="4" y="232" width="60" height="22" rx="3" fill="rgba(27,108,168,0.15)" stroke="#1B6CA8" strokeWidth="1" />
-      <text x="34" y="247" textAnchor="middle" fill="#1B6CA8" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx.governance</text>
+      <rect x="4" y="232" width="60" height="22" rx="3" fill="rgba(255,0,122,0.15)" stroke="#FF007A" strokeWidth="1" />
+      <text x="34" y="247" textAnchor="middle" fill="#FF007A" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx.governance</text>
 
-      <rect x="4" y="280" width="60" height="22" rx="3" fill="rgba(27,108,168,0.15)" stroke="#1B6CA8" strokeWidth="1" />
-      <text x="34" y="295" textAnchor="middle" fill="#1B6CA8" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx Orchestrate</text>
+      <rect x="4" y="280" width="60" height="22" rx="3" fill="rgba(255,0,122,0.15)" stroke="#FF007A" strokeWidth="1" />
+      <text x="34" y="295" textAnchor="middle" fill="#FF007A" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx Orchestrate</text>
 
       {/* ── Right column header: Local Fallbacks ── */}
       <text x="540" y="40" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="9" fontWeight="600" letterSpacing="0.06em" textAnchor="end">LOCAL FALLBACKS</text>
@@ -360,8 +360,8 @@ function CapabilityCard({
             flexShrink: 0,
             width: 36,
             height: 36,
-            background: 'rgba(27,108,168,0.12)',
-            border: '1px solid rgba(27,108,168,0.3)',
+            background: 'rgba(255,0,122,0.12)',
+            border: '1px solid rgba(255,0,122,0.3)',
             borderRadius: 6,
             display: 'flex',
             alignItems: 'center',
@@ -749,8 +749,8 @@ export default function DocsPage() {
               style={{
                 fontSize: 11,
                 color: 'var(--primary)',
-                borderColor: 'rgba(27,108,168,0.4)',
-                background: 'rgba(27,108,168,0.1)',
+                borderColor: 'rgba(255,0,122,0.4)',
+                background: 'rgba(255,0,122,0.1)',
               }}
             >
               v4.0
@@ -872,7 +872,7 @@ export default function DocsPage() {
                 style={{
                   padding: '14px 18px',
                   borderLeft: '3px solid var(--primary)',
-                  background: 'rgba(27,108,168,0.08)',
+                  background: 'rgba(255,0,122,0.08)',
                   borderRadius: '0 6px 6px 0',
                   marginTop: 24,
                 }}
@@ -982,8 +982,8 @@ export default function DocsPage() {
                       width: 12,
                       height: 12,
                       borderRadius: 2,
-                      background: 'rgba(27,108,168,0.2)',
-                      border: '1.5px solid #1B6CA8',
+                      background: 'rgba(255,0,122,0.2)',
+                      border: '1.5px solid #FF007A',
                     }}
                   />
                   <span
@@ -1015,7 +1015,7 @@ export default function DocsPage() {
                     style={{
                       width: 24,
                       height: 2,
-                      background: '#1B6CA8',
+                      background: '#FF007A',
                       opacity: 0.5,
                     }}
                   />
@@ -1309,9 +1309,9 @@ export default function DocsPage() {
                     fontSize: 11,
                     color: 'var(--primary)',
                     padding: '4px 12px',
-                    border: '1px solid rgba(27,108,168,0.35)',
+                    border: '1px solid rgba(255,0,122,0.35)',
                     borderRadius: 4,
-                    background: 'rgba(27,108,168,0.08)',
+                    background: 'rgba(255,0,122,0.08)',
                     whiteSpace: 'nowrap',
                     margin: '0 12px',
                   }}
@@ -1454,7 +1454,7 @@ export default function DocsPage() {
                   marginTop: 36,
                   padding: '14px 18px',
                   borderLeft: '3px solid var(--primary)',
-                  background: 'rgba(27,108,168,0.08)',
+                  background: 'rgba(255,0,122,0.08)',
                   borderRadius: '0 6px 6px 0',
                 }}
               >

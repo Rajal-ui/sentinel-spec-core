@@ -11,7 +11,6 @@ interface Props {
 }
 
 function tokenize(line: string): React.ReactNode[] {
-  // Minimal syntax highlighting: keywords blue, strings green, comments muted
   const parts: React.ReactNode[] = []
   const keywordRe = /\b(def|class|import|from|return|if|else|elif|for|while|in|and|or|not|True|False|None|async|await|with|as|try|except|raise|yield|lambda|const|let|var|function|=>|interface|type|export|default|extends|implements)\b/g
   const stringRe = /("(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g
@@ -74,7 +73,6 @@ export default function CodeBlock({ code, language = 'python', showLineNumbers =
 
   return (
     <div className={`code-block ${className ?? ''}`} style={{ overflow: 'hidden' }}>
-      {/* Header */}
       <div
         style={{
           display: 'flex',
@@ -91,10 +89,10 @@ export default function CodeBlock({ code, language = 'python', showLineNumbers =
             style={{
               fontSize: 11,
               color: 'var(--primary)',
-              background: 'rgba(27,108,168,0.15)',
+              background: 'rgba(255,0,122,0.15)',
               padding: '2px 7px',
               borderRadius: 3,
-              border: '1px solid rgba(27,108,168,0.3)',
+              border: '1px solid rgba(255,0,122,0.3)',
             }}
           >
             {language}
@@ -123,7 +121,6 @@ export default function CodeBlock({ code, language = 'python', showLineNumbers =
         </button>
       </div>
 
-      {/* Code content */}
       <div style={{ overflowX: 'auto', padding: '10px 0' }}>
         <table style={{ borderCollapse: 'collapse', minWidth: '100%' }}>
           <tbody>

@@ -51,7 +51,6 @@ export default function ThinkingDrawer({ open, onClose, steps = DEMO_STEPS }: Pr
             position: 'relative',
           }}
         >
-          {/* Header */}
           <div
             style={{
               display: 'flex',
@@ -66,7 +65,7 @@ export default function ThinkingDrawer({ open, onClose, steps = DEMO_STEPS }: Pr
                 AI Reasoning
               </div>
               <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                granite-3-8b · agent pipeline trace
+                agent pipeline trace
               </div>
             </div>
             <button
@@ -77,7 +76,6 @@ export default function ThinkingDrawer({ open, onClose, steps = DEMO_STEPS }: Pr
             </button>
           </div>
 
-          {/* Steps */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px' }}>
             {steps.map((step, i) => (
               <div
@@ -89,7 +87,6 @@ export default function ThinkingDrawer({ open, onClose, steps = DEMO_STEPS }: Pr
                   position: 'relative',
                 }}
               >
-                {/* Connector */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <div
                     style={{
@@ -107,7 +104,7 @@ export default function ThinkingDrawer({ open, onClose, steps = DEMO_STEPS }: Pr
                         step.status === 'done'
                           ? 'rgba(46,204,113,0.15)'
                           : step.status === 'active'
-                          ? 'rgba(27,108,168,0.15)'
+                          ? 'rgba(255,0,122,0.15)'
                           : 'transparent',
                       display: 'flex',
                       alignItems: 'center',
@@ -134,7 +131,6 @@ export default function ThinkingDrawer({ open, onClose, steps = DEMO_STEPS }: Pr
                   )}
                 </div>
 
-                {/* Content */}
                 <div style={{ paddingBottom: 24, flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', marginRight: 8 }}>

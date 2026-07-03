@@ -217,7 +217,7 @@ function LeftPanel() {
               padding: '14px 12px',
               textAlign: 'center',
               cursor: 'pointer',
-              background: isDragOver ? 'rgba(27,108,168,0.07)' : 'transparent',
+              background: isDragOver ? 'rgba(255,0,122,0.07)' : 'transparent',
               transition: 'border-color 0.15s, background 0.15s',
               marginBottom: 10,
             }}
@@ -502,7 +502,7 @@ function ChatCanvas() {
                 height: 72,
                 borderRadius: '50%',
                 border: '1px solid var(--border)',
-                background: 'rgba(27,108,168,0.08)',
+                background: 'rgba(255,0,122,0.08)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -544,7 +544,7 @@ function ChatCanvas() {
                     const el = e.currentTarget as HTMLButtonElement
                     el.style.borderColor = 'var(--primary)'
                     el.style.color = 'var(--text)'
-                    el.style.background = 'rgba(27,108,168,0.08)'
+                    el.style.background = 'rgba(255,0,122,0.08)'
                   }}
                   onMouseLeave={(e) => {
                     const el = e.currentTarget as HTMLButtonElement

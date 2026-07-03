@@ -56,9 +56,9 @@ export default function HistoryPanel() {
                 padding: '8px 10px',
                 borderRadius: 6,
                 cursor: 'pointer',
-                border: `1px solid ${activeSessionId === session.id ? 'rgba(27,108,168,0.4)' : 'var(--border)'}`,
+                border: `1px solid ${activeSessionId === session.id ? 'rgba(255,0,122,0.4)' : 'var(--border)'}`,
                 background: activeSessionId === session.id
-                  ? 'rgba(27,108,168,0.08)'
+                  ? 'rgba(255,0,122,0.08)'
                   : 'var(--surface)',
                 transition: 'background 0.15s, border-color 0.15s',
               }}

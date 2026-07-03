@@ -193,7 +193,7 @@ function FilterPanel({ filters, onChange, onRun, onExport }: FilterPanelProps) {
                     padding: '4px 9px',
                     borderRadius: 4,
                     border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
-                    background: active ? 'rgba(27,108,168,0.18)' : 'var(--surface-muted)',
+                    background: active ? 'rgba(255,0,122,0.18)' : 'var(--surface-muted)',
                     color: active ? 'var(--primary)' : 'var(--text-muted)',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
@@ -753,9 +753,9 @@ function PendingOverrideCard({ override: ov }: { override: (typeof MOCK_OVERRIDE
               fontSize: 10,
               padding: '2px 7px',
               borderRadius: 4,
-              background: 'rgba(27,108,168,0.15)',
+              background: 'rgba(255,0,122,0.15)',
               color: 'var(--primary)',
-              border: '1px solid rgba(27,108,168,0.3)',
+              border: '1px solid rgba(255,0,122,0.3)',
               flexShrink: 0,
             }}
           >
@@ -1073,7 +1073,7 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
     padding: '6px 14px',
     border: active ? '1px solid var(--primary)' : '1px solid transparent',
     borderRadius: 5,
-    background: active ? 'rgba(27,108,168,0.14)' : 'transparent',
+    background: active ? 'rgba(255,0,122,0.14)' : 'transparent',
     color: active ? 'var(--primary)' : 'var(--text-muted)',
     cursor: 'pointer',
     transition: 'all 0.15s',
@@ -1102,7 +1102,7 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
             <span
               style={{
                 marginLeft: 6,
-                background: 'rgba(27,108,168,0.25)',
+                background: 'rgba(255,0,122,0.25)',
                 color: 'var(--primary)',
                 borderRadius: 8,
                 padding: '1px 6px',

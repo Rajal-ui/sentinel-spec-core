@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Download, Eye, Copy, Check, ChevronLeft, ChevronRight, Key, RefreshCw } from 'lucide-react'
+import { Shield, Download, Eye, Copy, Check, ChevronLeft, ChevronRight, Key, RefreshCw, ChevronDown, LogOut } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
 import CodeBlock from '@/components/shared/CodeBlock'
 import LoginModal from '@/components/layout/LoginModal'
@@ -228,7 +228,8 @@ function CopyButton({ text, label = 'Copy YAML' }: { text: string; label?: strin
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function ExportPage() {
-  const { isAuthenticated, openLoginModal } = useAuthStore()
+  const { isAuthenticated, user, logout, openLoginModal } = useAuthStore()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   // Hero strip state
   const [downloaded, setDownloaded] = useState(false)
@@ -361,26 +362,104 @@ export default function ExportPage() {
 
         {/* Auth buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {isAuthenticated ? (
-            <Link href="/dashboard"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'var(--primary)',
-                border: 'none',
-                borderRadius: 6,
-                padding: '6px 16px',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'Archivo, sans-serif',
-                fontWeight: 700,
-                textDecoration: 'none',
-              }}
-            >
-              Dashboard
-            </Link>
+          {isAuthenticated && user ? (
+            <>
+              <Link href="/dashboard"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'Archivo, sans-serif',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                Dashboard
+              </Link>
+              <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'none',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  color: 'var(--text)',
+                }}
+              >
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: 'var(--primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#fff',
+                    fontFamily: 'Archivo, sans-serif',
+                  }}
+                >
+                  {user.name.charAt(0)}
+                </div>
+                <span style={{ fontSize: 13, fontFamily: 'Inter, sans-serif' }}>{user.name}</span>
+                <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} />
+              </button>
+              {profileOpen && (
+                <div
+                  className="glass-raised"
+                  style={{
+                    position: 'absolute',
+                    top: '110%',
+                    right: 0,
+                    minWidth: 180,
+                    borderRadius: 8,
+                    padding: 6,
+                    zIndex: 100,
+                  }}
+                >
+                  <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
+                    <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.email}</div>
+                  </div>
+                  <button
+                    onClick={() => { logout(); setProfileOpen(false) }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--danger)',
+                      padding: '7px 12px',
+                      borderRadius: 4,
+                      fontSize: 13,
+                      fontFamily: 'Inter, sans-serif',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <LogOut size={13} />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+            </>
           ) : (
             <>
               <button
@@ -660,7 +739,7 @@ export default function ExportPage() {
                         width: 56,
                         height: 56,
                         borderRadius: '50%',
-                        background: 'rgba(27,108,168,0.12)',
+                        background: 'rgba(255,0,122,0.12)',
                         border: '2px solid var(--primary)',
                         display: 'flex',
                         alignItems: 'center',
@@ -842,10 +921,10 @@ export default function ExportPage() {
                       style={{
                         fontSize: 11,
                         color: 'var(--primary)',
-                        background: 'rgba(27,108,168,0.15)',
+                        background: 'rgba(255,0,122,0.15)',
                         padding: '2px 7px',
                         borderRadius: 3,
-                        border: '1px solid rgba(27,108,168,0.3)',
+                        border: '1px solid rgba(255,0,122,0.3)',
                       }}
                     >
                       yaml
@@ -1009,8 +1088,8 @@ export default function ExportPage() {
                     width: 48,
                     height: 48,
                     borderRadius: '50%',
-                    background: 'rgba(27,108,168,0.1)',
-                    border: '1px solid rgba(27,108,168,0.25)',
+                    background: 'rgba(255,0,122,0.1)',
+                    border: '1px solid rgba(255,0,122,0.25)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
