@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { motion, useInView, useReducedMotion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -234,9 +235,18 @@ function RevealSection({ children, delay = 0 }: { children: React.ReactNode; del
 
 // ── Main Landing Page ──
 export default function LandingPage() {
+  const pathname = usePathname()
   const router = useRouter()
   const { openLoginModal, isAuthenticated, user, logout } = useAuthStore()
   const [profileOpen, setProfileOpen] = useState(false)
+
+  useEffect(() => {
+    const sectionId = pathname === '/how-it-works' ? 'how-it-works' : pathname === '/ibm-integration' ? 'ibm-integration' : null
+    if (sectionId) {
+      const el = document.getElementById(sectionId)
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth' }), 200)
+    }
+  }, [pathname])
 
   const metricsRef = useRef<HTMLDivElement>(null)
   const metricsInView = useInView(metricsRef, { once: true, margin: '-15% 0px' })
@@ -274,25 +284,26 @@ export default function LandingPage() {
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 32 }}>
           {[
-            { label: 'How it Works', href: '#how-it-works' },
-            { label: 'IBM Integration', href: '#ibm-integration' },
+            { label: 'How it Works', href: '/how-it-works' },
+            { label: 'IBM Integration', href: '/ibm-integration' },
             { label: 'Docs', href: '/docs' },
             { label: 'Export', href: '/export' },
-          ].map(({ label, href }) =>
-            href.startsWith('/') ? (
+          ].map(({ label, href }) => {
+            const isActive = pathname === href
+            return (
               <Link key={label} href={href}
-                style={{ fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'none', fontFamily: 'Inter, sans-serif' }}
+                style={{
+                  fontSize: 13, color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                  textDecoration: 'none', fontFamily: 'Inter, sans-serif',
+                  fontWeight: isActive ? 500 : 400,
+                  borderBottom: isActive ? '1px solid var(--primary)' : 'none',
+                  paddingBottom: isActive ? 1 : 0, transition: 'color 0.15s ease',
+                } as React.CSSProperties}
               >
                 {label}
               </Link>
-            ) : (
-              <a key={label} href={href}
-                style={{ fontSize: 13, color: 'var(--text-secondary)', textDecoration: 'none', fontFamily: 'Inter, sans-serif' }}
-              >
-                {label}
-              </a>
             )
-          )}
+          })}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated && user ? (

@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Download, Eye, Copy, Check, ChevronLeft, ChevronRight, Key, RefreshCw, ChevronDown, LogOut } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
@@ -228,6 +229,7 @@ function CopyButton({ text, label = 'Copy YAML' }: { text: string; label?: strin
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function ExportPage() {
+  const pathname = usePathname()
   const { isAuthenticated, user, logout, openLoginModal } = useAuthStore()
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -337,27 +339,27 @@ export default function ExportPage() {
           }}
         >
           {[
-            ['How it Works', '/#how-it-works'],
-            ['IBM Integration', '/#ibm-integration'],
+            ['How it Works', '/how-it-works'],
+            ['IBM Integration', '/ibm-integration'],
             ['Docs', '/docs'],
             ['Export', '/export'],
-          ].map(([label, href]) => (
-            <Link
-              key={label}
-              href={href}
-              style={{
-                fontSize: 13,
-                color: label === 'Export' ? 'var(--text)' : 'var(--text-secondary)',
-                textDecoration: 'none',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: label === 'Export' ? 500 : 400,
-                borderBottom: label === 'Export' ? '1px solid var(--primary)' : 'none',
-                paddingBottom: label === 'Export' ? 1 : 0,
-              }}
-            >
-              {label}
-            </Link>
-          ))}
+          ].map(([label, href]) => {
+            const isActive = pathname === href || pathname.startsWith(href + '/')
+            return (
+              <Link key={label} href={href}
+                style={{
+                  fontSize: 13, textDecoration: 'none', fontFamily: 'Inter, sans-serif',
+                  transition: 'color 0.15s ease',
+                  color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontWeight: isActive ? 500 : 400,
+                  borderBottom: isActive ? '1px solid var(--primary)' : 'none',
+                  paddingBottom: isActive ? 1 : 0,
+                } as React.CSSProperties}
+              >
+                {label}
+              </Link>
+            )
+          })}
         </div>
 
         {/* Auth buttons */}
@@ -1276,7 +1278,7 @@ export default function ExportPage() {
             ['Docs', '/docs'],
             ['Architecture', '/docs'],
             ['Export', '/export'],
-            ['Privacy', '#'],
+          
           ].map(([label, href]) => (
             <Link
               key={label}
