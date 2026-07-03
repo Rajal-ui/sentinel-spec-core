@@ -1,6 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, ChevronDown, ChevronRight, ExternalLink, LogOut, User, Settings } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
@@ -456,6 +457,7 @@ function CapabilityCard({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function DocsPage() {
+  const pathname = usePathname()
   const { isAuthenticated, openLoginModal } = useAuthStore()
   const [openCapId, setOpenCapId] = useState<string | null>(null)
   const [tocOpen, setTocOpen] = useState(false)
@@ -526,25 +528,26 @@ export default function DocsPage() {
           }}
         >
           {[
-            ['How it Works', '/#how-it-works'],
-            ['IBM Integration', '/#ibm-integration'],
+            ['How it Works', '/how-it-works'],
+            ['IBM Integration', '/ibm-integration'],
             ['Docs', '/docs'],
-            ['Export', '#'],
-          ].map(([label, href]) => (
-            <Link
-              key={label}
-              href={href}
-              style={{
-                fontSize: 13,
-                color: label === 'Docs' ? 'var(--text)' : 'var(--text-secondary)',
-                textDecoration: 'none',
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: label === 'Docs' ? 500 : 400,
-              }}
-            >
-              {label}
-            </Link>
-          ))}
+            ['Export', '/export'],
+          ].map(([label, href]) => {
+            const isActive = pathname === href || pathname.startsWith(href + '/')
+            return (
+              <Link key={label} href={href}
+                style={{
+                  fontSize: 13, color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                  textDecoration: 'none', fontFamily: 'Inter, sans-serif',
+                  fontWeight: isActive ? 500 : 400,
+                  borderBottom: isActive ? '1px solid var(--primary)' : 'none',
+                  paddingBottom: isActive ? 1 : 0, transition: 'color 0.15s ease',
+                } as React.CSSProperties}
+              >
+                {label}
+              </Link>
+            )
+          })}
         </div>
 
         {/* Right actions */}
