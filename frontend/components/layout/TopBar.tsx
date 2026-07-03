@@ -1,9 +1,8 @@
 'use client'
 import Link from 'next/link'
-import { Bell, Search, ChevronDown, LogOut, Shield, AlertTriangle, TrendingUp, Clock, Home } from 'lucide-react'
+import { ChevronDown, LogOut, Shield, AlertTriangle, TrendingUp, Clock, Home } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '@/lib/store/auth'
-import { useFindingsStore } from '@/lib/store/findings'
 import { useSessionStore } from '@/lib/store/session'
 
 interface Props {
@@ -13,7 +12,6 @@ interface Props {
 
 export default function TopBar({ title, breadcrumb }: Props) {
   const { user, logout } = useAuthStore()
-  const { pendingOverrides } = useFindingsStore()
   const { messages, activeSessionId, resolvedFindings } = useSessionStore()
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
@@ -117,62 +115,8 @@ export default function TopBar({ title, breadcrumb }: Props) {
         </div>
         </div>
 
-        {/* Right: search + notifications + avatar */}
+        {/* Right: avatar dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Search */}
-          <button
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 6,
-              padding: '5px 12px',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-            }}
-          >
-            <Search size={13} />
-            <span className="font-mono-product" style={{ fontSize: 12 }}>Cmd+K</span>
-          </button>
-
-          {/* Notifications — AMBER RULE: amber count badge for pending findings */}
-          <button
-            style={{
-              position: 'relative',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)',
-              padding: 4,
-            }}
-          >
-            <Bell size={17} />
-            {pendingOverrides.length > 0 && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: -2,
-                  right: -2,
-                  width: 16,
-                  height: 16,
-                  borderRadius: '50%',
-                  background: 'var(--amber)',
-                  color: '#000',
-                  fontSize: 9,
-                  fontFamily: 'IBM Plex Mono, monospace',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {pendingOverrides.length}
-              </span>
-            )}
-          </button>
-
           {/* Avatar dropdown */}
           {user && (
             <div style={{ position: 'relative' }}>
