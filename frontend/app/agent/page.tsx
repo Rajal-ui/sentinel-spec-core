@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback, type DragEvent, type KeyboardEvent } from 'react'
 import AppShell from '@/components/layout/AppShell'
-import ThinkingDrawer from '@/components/layout/ThinkingDrawer'
 import HistoryPanel from '@/components/HistoryPanel'
 import AnalysisFeed from '@/components/AnalysisFeed'
 import { useAuthStore } from '@/lib/store/auth'
 import { useSessionStore } from '@/lib/store/session'
 import {
   Shield, Plus, Upload, Code, ArrowRight,
-  BrainCircuit, FileText, X,
+  FileText, X,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
@@ -421,7 +420,7 @@ function LeftPanel() {
 
 // ── Chat Canvas ────────────────────────────────────────────────────────────────
 
-function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
+function ChatCanvas() {
   const { messages, isStreaming, activeSessionId, sendMessage, createSession, resolveFinding } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -563,7 +562,7 @@ function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
             </div>
           </motion.div>
         ) : (
-          <AnalysisFeed onOpenThinking={onOpenThinking} onApplyFix={handleApplyFix} />
+          <AnalysisFeed onApplyFix={handleApplyFix} />
         )}
       </div>
 
@@ -667,8 +666,6 @@ function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
 
 export default function AgentWorkspacePage() {
   const { isAuthenticated, openLoginModal } = useAuthStore()
-  const { thinkingStepsVisible, setThinkingVisible } = useSessionStore()
-  const prefersReducedMotion = useReducedMotion()
 
   // Auth gate — open login modal if not authenticated
   useEffect(() => {
@@ -702,66 +699,9 @@ export default function AgentWorkspacePage() {
   return (
     <AppShell title="Agent Workspace" breadcrumb="sentinel-spec / agent">
       <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-
-        {/* ── Left content panel: 280px ── */}
         <LeftPanel />
-
-        {/* ── Center chat canvas: flex-1 ── */}
-        <ChatCanvas onOpenThinking={() => setThinkingVisible(true)} />
-
-        {/* ── Thinking Drawer: slides from right ── */}
-        <ThinkingDrawer
-          open={thinkingStepsVisible}
-          onClose={() => setThinkingVisible(false)}
-        />
+        <ChatCanvas />
       </div>
-
-      {/* ── View AI Reasoning ghost button ── */}
-      <AnimatePresence>
-        {!thinkingStepsVisible && (
-          <motion.button
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-            onClick={() => setThinkingVisible(true)}
-            className="font-mono-product"
-            style={{
-              position: 'fixed',
-              bottom: 24,
-              right: 24,
-              zIndex: 30,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 7,
-              padding: '8px 14px',
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              fontSize: 12,
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              transition: 'border-color 0.15s, color 0.15s, background 0.15s',
-              backdropFilter: 'blur(12px)',
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.borderColor = 'var(--primary)'
-              el.style.color = 'var(--text)'
-              el.style.background = 'rgba(27,108,168,0.08)'
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget as HTMLButtonElement
-              el.style.borderColor = 'var(--border)'
-              el.style.color = 'var(--text-secondary)'
-              el.style.background = 'var(--surface)'
-            }}
-          >
-            <BrainCircuit size={13} />
-            View AI Reasoning
-          </motion.button>
-        )}
-      </AnimatePresence>
     </AppShell>
   )
 }
