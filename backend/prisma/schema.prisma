@@ -48,3 +48,57 @@ model RefreshToken {
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+// ── Findings & Overrides ─────────────────────────────────────────────────────
+
+model Finding {
+  id              String    @id @default(cuid())
+  recordId        String    @unique @map("record_id")
+  tier            String    @map("finding_tier")
+  policyDomain    String?   @map("policy_domain")
+  confidence      Float
+  title           String
+  description     String    @db.Text
+  citedAdr        String    @map("cited_adr")
+  citedText       String    @map("cited_text") @db.Text
+  sourceDocument  String    @map("source_document")
+  diffOld         String    @map("diff_old") @db.Text
+  diffNew         String    @map("diff_new") @db.Text
+  traceId         String    @map("trace_id")
+  timestamp       DateTime  @default(now())
+  actor           String
+  repo            String
+  trigger         String
+  diffId          String    @map("diff_id")
+  violatesPolicy  Boolean   @map("violates_policy") @default(true)
+  criticEntailed  Boolean?  @map("critic_entailed")
+  criticReasoning String?   @map("critic_reasoning") @db.Text
+  status          String    @default("OPEN")
+  resolvedAt      DateTime? @map("resolved_at")
+  patchDiff       String?   @map("patch_diff")
+  userId          String?   @map("user_id")
+
+  overrides       Override[]
+
+  @@index([status])
+  @@index([tier])
+  @@index([policyDomain])
+  @@index([timestamp])
+  @@map("findings")
+}
+
+model Override {
+  id              String   @id @default(cuid())
+  findingId       String   @map("finding_id")
+  finding         Finding  @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  findingTitle    String   @map("finding_title")
+  actor           String
+  justification   String   @db.Text
+  status          String   @default("PENDING")
+  submittedAt     DateTime @map("submitted_at") @default(now())
+  resolvedAt      DateTime? @map("resolved_at")
+  resolver        String?
+  rejectionReason String?  @map("rejection_reason")
+
+  @@map("overrides")
+}

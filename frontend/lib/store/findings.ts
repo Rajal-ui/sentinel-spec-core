@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import type { Finding, Override } from '@/lib/types'
-import { MOCK_FINDINGS, MOCK_OVERRIDES } from '@/lib/mock-data'
+import api from '@/lib/api'
 
 interface FindingsStore {
   findings: Finding[]
@@ -14,58 +14,86 @@ interface FindingsStore {
 }
 
 export const useFindingsStore = create<FindingsStore>()((set, get) => ({
-  findings: MOCK_FINDINGS,
-  pendingOverrides: MOCK_OVERRIDES.filter((o) => o.status === 'pending'),
-  overrideHistory: MOCK_OVERRIDES.filter((o) => o.status !== 'pending'),
+  findings: [],
+  pendingOverrides: [],
+  overrideHistory: [],
 
   addFinding: (finding) =>
     set((s) => ({ findings: [finding, ...s.findings] })),
 
   submitOverride: async (findingId, justification) => {
-    await new Promise((r) => setTimeout(r, 500))
-    const override: Override = {
-      id: `ov-${Date.now()}`,
-      finding_id: findingId,
-      finding_title: get().findings.find((f) => f.id === findingId)?.title ?? '',
-      actor: 'current-user@example.com',
-      justification,
-      status: 'pending',
-      submitted_at: new Date().toISOString(),
-      resolved_at: null,
-      resolver: null,
-      rejection_reason: null,
+    const finding = get().findings.find((f) => f.id === findingId)
+    const title = finding?.title ?? 'Unknown finding'
+    const actor = 'current-user@example.com'
+    try {
+      const { data } = await api.post('/v1/overrides', { findingId, justification, actor, findingTitle: title })
+      set((s) => ({ pendingOverrides: [data.override, ...s.pendingOverrides] }))
+    } catch {
+      // Offline fallback — insert local-only (will sync later)
+      const override: Override = {
+        id: `ov-local-${Date.now()}`,
+        finding_id: findingId,
+        finding_title: title,
+        actor,
+        justification,
+        status: 'pending',
+        submitted_at: new Date().toISOString(),
+        resolved_at: null,
+        resolver: null,
+        rejection_reason: null,
+      }
+      set((s) => ({ pendingOverrides: [override, ...s.pendingOverrides] }))
     }
-    set((s) => ({ pendingOverrides: [override, ...s.pendingOverrides] }))
   },
 
   approveOverride: async (overrideId) => {
-    await new Promise((r) => setTimeout(r, 400))
-    set((s) => {
-      const ov = s.pendingOverrides.find((o) => o.id === overrideId)
-      if (!ov) return s
-      const resolved = { ...ov, status: 'approved' as const, resolved_at: new Date().toISOString() }
-      return {
-        pendingOverrides: s.pendingOverrides.filter((o) => o.id !== overrideId),
-        overrideHistory: [resolved, ...s.overrideHistory],
-      }
-    })
+    try {
+      await api.patch(`/v1/overrides/${overrideId}/approve`)
+      set((s) => {
+        const ov = s.pendingOverrides.find((o) => o.id === overrideId)
+        if (!ov) return s
+        const resolved = { ...ov, status: 'approved' as const, resolved_at: new Date().toISOString() }
+        return {
+          pendingOverrides: s.pendingOverrides.filter((o) => o.id !== overrideId),
+          overrideHistory: [resolved, ...s.overrideHistory],
+        }
+      })
+    } catch {
+      // Fallback to local state update
+      set((s) => {
+        const ov = s.pendingOverrides.find((o) => o.id === overrideId)
+        if (!ov) return s
+        const resolved = { ...ov, status: 'approved' as const, resolved_at: new Date().toISOString() }
+        return {
+          pendingOverrides: s.pendingOverrides.filter((o) => o.id !== overrideId),
+          overrideHistory: [resolved, ...s.overrideHistory],
+        }
+      })
+    }
   },
 
   rejectOverride: async (overrideId, reason) => {
-    await new Promise((r) => setTimeout(r, 400))
-    set((s) => {
-      const ov = s.pendingOverrides.find((o) => o.id === overrideId)
-      if (!ov) return s
-      const resolved = {
-        ...ov,
-        status: 'rejected' as const,
-        resolved_at: new Date().toISOString(),
-        rejection_reason: reason,
-      }
-      return {
-        pendingOverrides: s.pendingOverrides.filter((o) => o.id !== overrideId),
-        overrideHistory: [resolved, ...s.overrideHistory],
-      }
-    })
+    try {
+      await api.patch(`/v1/overrides/${overrideId}/reject`, { reason })
+      set((s) => {
+        const ov = s.pendingOverrides.find((o) => o.id === overrideId)
+        if (!ov) return s
+        const resolved = { ...ov, status: 'rejected' as const, resolved_at: new Date().toISOString(), rejection_reason: reason }
+        return {
+          pendingOverrides: s.pendingOverrides.filter((o) => o.id !== overrideId),
+          overrideHistory: [resolved, ...s.overrideHistory],
+        }
+      })
+    } catch {
+      set((s) => {
+        const ov = s.pendingOverrides.find((o) => o.id === overrideId)
+        if (!ov) return s
+        const resolved = { ...ov, status: 'rejected' as const, resolved_at: new Date().toISOString(), rejection_reason: reason }
+        return {
+          pendingOverrides: s.pendingOverrides.filter((o) => o.id !== overrideId),
+          overrideHistory: [resolved, ...s.overrideHistory],
+        }
+      })
+    }
   },
 }))

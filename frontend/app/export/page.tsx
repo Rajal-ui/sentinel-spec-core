@@ -364,7 +364,7 @@ export default function ExportPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           {isAuthenticated && user ? (
             <>
-              <Link href="/dashboard"
+              <Link href="/agent"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -381,7 +381,7 @@ export default function ExportPage() {
                   textDecoration: 'none',
                 }}
               >
-                Dashboard
+                Console
               </Link>
               <div style={{ position: 'relative' }}>
               <button

@@ -33,12 +33,13 @@ const BADGE_LABELS: Record<FindingTier, string> = {
   rejected: 'PASSED',
 }
 
-type StatusType = 'BLOCKING' | 'WARNING' | 'PASSED' | 'PENDING' | 'OVERRIDDEN' | 'NEEDS REVIEW'
+type StatusType = 'BLOCKING' | 'WARNING' | 'PASSED' | 'PENDING' | 'RESOLVED' | 'OVERRIDDEN' | 'NEEDS REVIEW'
 const STATUS_STYLES: Record<StatusType, React.CSSProperties> = {
   BLOCKING: { background: 'rgba(220,38,38,0.15)', color: '#E85D4A', borderColor: 'rgba(220,38,38,0.3)' },
   WARNING: { background: 'rgba(232,165,75,0.15)', color: 'var(--amber)', borderColor: 'rgba(232,165,75,0.3)' },
   PASSED: { background: 'rgba(46,204,113,0.15)', color: 'var(--success)', borderColor: 'rgba(46,204,113,0.3)' },
   PENDING: { background: 'rgba(255,0,122,0.15)', color: 'var(--primary)', borderColor: 'rgba(255,0,122,0.3)' },
+  RESOLVED: { background: 'rgba(0,188,212,0.15)', color: '#00BCD4', borderColor: 'rgba(0,188,212,0.3)' },
   OVERRIDDEN: { background: 'rgba(74,85,104,0.15)', color: 'var(--text-muted)', borderColor: 'rgba(74,85,104,0.3)' },
   'NEEDS REVIEW': { background: 'rgba(124,92,216,0.15)', color: '#9B7EDB', borderColor: 'rgba(124,92,216,0.3)' },
 }

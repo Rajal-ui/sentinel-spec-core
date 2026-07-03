@@ -33,6 +33,7 @@ export const useAuthStore = create<AuthStore>()(
 
       login: async (credentials) => {
         const { data } = await api.post('/auth/login', credentials)
+        const redirect = get().loginRedirect ?? '/agent'
         set({
           user: data.user,
           token: data.token,
@@ -41,12 +42,12 @@ export const useAuthStore = create<AuthStore>()(
           loginRedirect: null,
         })
         document.cookie = `sentinel-auth=${data.token}; path=/; max-age=604800`
-        const redirect = get().loginRedirect ?? '/dashboard'
         window.location.href = redirect
       },
 
       register: async (credentials) => {
         const { data } = await api.post('/auth/register', credentials)
+        const redirect = get().loginRedirect ?? '/agent'
         set({
           user: data.user,
           token: data.token,
@@ -55,7 +56,7 @@ export const useAuthStore = create<AuthStore>()(
           loginRedirect: null,
         })
         document.cookie = `sentinel-auth=${data.token}; path=/; max-age=604800`
-        window.location.href = '/dashboard'
+        window.location.href = redirect
       },
 
       logout: async () => {

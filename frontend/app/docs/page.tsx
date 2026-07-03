@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react'
+import { Shield, ChevronDown, ChevronRight, ExternalLink, LogOut, User, Settings } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
@@ -550,25 +550,28 @@ export default function DocsPage() {
         {/* Right actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated ? (
-            <Link href="/dashboard"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: 'var(--primary)',
-                border: 'none',
-                borderRadius: 6,
-                padding: '6px 16px',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: 13,
-                fontFamily: 'Archivo, sans-serif',
-                fontWeight: 700,
-                textDecoration: 'none',
-              }}
-            >
-              Dashboard
-            </Link>
+            <>
+              <Link href="/agent"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontFamily: 'Archivo, sans-serif',
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                }}
+              >
+                Console
+              </Link>
+              <UserMenu />
+            </>
           ) : (
             <>
               <button
@@ -1547,6 +1550,157 @@ export default function DocsPage() {
         </div>
       </footer>
     </>
+  )
+}
+
+// ── UserMenu (avatar + dropdown) ──────────────────────────────────────────────
+
+function UserMenu() {
+  const { user, logout } = useAuthStore()
+  const [open, setOpen] = useState(false)
+
+  if (!user) return null
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          background: 'none',
+          border: '1px solid var(--border)',
+          borderRadius: 6,
+          padding: '4px 10px',
+          cursor: 'pointer',
+          color: 'var(--text)',
+        }}
+      >
+        <div
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            background: 'var(--primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 11,
+            fontWeight: 700,
+            color: '#fff',
+            fontFamily: 'Archivo, sans-serif',
+          }}
+        >
+          {user.name.charAt(0)}
+        </div>
+        <span style={{ fontSize: 13, fontFamily: 'Inter, sans-serif' }}>{user.name}</span>
+        <ChevronDown size={12} style={{ color: 'var(--text-muted)' }} />
+      </button>
+
+      {open && (
+        <div
+          className="glass-raised"
+          style={{
+            position: 'absolute',
+            top: '110%',
+            right: 0,
+            minWidth: 180,
+            borderRadius: 8,
+            padding: 6,
+            zIndex: 100,
+          }}
+        >
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+            <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
+            <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.email}</div>
+          </div>
+
+          <Link
+            href="/agent"
+            onClick={() => setOpen(false)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '7px 12px',
+              borderRadius: 4,
+              fontSize: 13,
+              fontFamily: 'Inter, sans-serif',
+              color: 'var(--text)',
+              textDecoration: 'none',
+            }}
+          >
+            Console
+          </Link>
+
+          <Link
+            href="/profile"
+            onClick={() => setOpen(false)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '7px 12px',
+              borderRadius: 4,
+              fontSize: 13,
+              fontFamily: 'Inter, sans-serif',
+              color: 'var(--text)',
+              textDecoration: 'none',
+            }}
+          >
+            <User size={13} />
+            Edit Profile
+          </Link>
+
+          <Link
+            href="/settings"
+            onClick={() => setOpen(false)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '7px 12px',
+              borderRadius: 4,
+              fontSize: 13,
+              fontFamily: 'Inter, sans-serif',
+              color: 'var(--text)',
+              textDecoration: 'none',
+            }}
+          >
+            <Settings size={13} />
+            Settings
+          </Link>
+
+          <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+
+          <button
+            onClick={() => { logout(); setOpen(false) }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--danger)',
+              padding: '7px 12px',
+              borderRadius: 4,
+              fontSize: 13,
+              fontFamily: 'Inter, sans-serif',
+              textAlign: 'left',
+            }}
+          >
+            <LogOut size={13} />
+            Sign Out
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
