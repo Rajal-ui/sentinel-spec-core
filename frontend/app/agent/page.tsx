@@ -26,9 +26,9 @@ interface StagedFile {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const EXAMPLE_PROMPTS = [
-  'Review this diff for ADR violations',
+  'Review this diff for credentials leaked in source files',
   'Check if this service respects the billing abstraction layer',
-  'Scan for PII handling issues in the auth module',
+  'Scan for PII handling issues in user logger output',
 ]
 
 const SECTION_LABEL_STYLE: React.CSSProperties = {
@@ -227,7 +227,7 @@ function LeftPanel() {
               className="font-mono-product"
               style={{ fontSize: 12, color: isDragOver ? 'var(--primary)' : 'var(--text-muted)', lineHeight: 1.5 }}
             >
-              Drop files or folders, or paste code
+              Click to upload a file
             </div>
           </motion.div>
           <input
@@ -306,9 +306,6 @@ function LeftPanel() {
                 >
                   Browse Files
                 </button>
-                <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                  or drag & drop files here
-                </div>
               </motion.div>
             )}
           </AnimatePresence>

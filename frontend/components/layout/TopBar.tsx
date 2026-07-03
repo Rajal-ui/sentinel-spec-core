@@ -4,44 +4,62 @@ import { Bell, Search, ChevronDown, LogOut, Shield, AlertTriangle, TrendingUp, C
 import { useState } from 'react'
 import { useAuthStore } from '@/lib/store/auth'
 import { useFindingsStore } from '@/lib/store/findings'
-import { MOCK_FINDINGS, MOCK_KPI } from '@/lib/mock-data'
+import { useSessionStore } from '@/lib/store/session'
 
 interface Props {
   title: string
   breadcrumb?: string
 }
 
-const STATS = [
-  {
-    label: 'Blocking',
-    value: MOCK_FINDINGS.filter(f => f.tier === 'blocking').length.toString(),
-    icon: Shield,
-    color: '#FF007A',
-  },
-  {
-    label: 'Capture Rate',
-    value: `${MOCK_KPI.violations_blocked_pct}%`,
-    icon: TrendingUp,
-    color: '#E5FF00',
-  },
-  {
-    label: 'Findings',
-    value: String(MOCK_KPI.total_analyses_month),
-    icon: AlertTriangle,
-    color: '#FF5C00',
-  },
-  {
-    label: 'Avg Resolution',
-    value: '47m',
-    icon: Clock,
-    color: '#2ECC71',
-  },
-]
-
 export default function TopBar({ title, breadcrumb }: Props) {
   const { user, logout } = useAuthStore()
   const { pendingOverrides } = useFindingsStore()
+  const { messages, activeSessionId, resolvedFindings } = useSessionStore()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+
+  // ── Live KPI metrics derived from session store ──
+
+  const allFindings = messages.flatMap((m) => m.findings ?? [])
+  const totalFindings = allFindings.length
+
+  const blockingCount = allFindings.filter(
+    (f) => f.tier === 'blocking'
+  ).length
+
+  const sessionResolutions = activeSessionId
+    ? resolvedFindings[activeSessionId] ?? {}
+    : {}
+
+  const unresolvedBlocking = allFindings.filter(
+    (f) => f.tier === 'blocking' && !sessionResolutions[f.id]
+  ).length
+
+  const STATS = [
+    {
+      label: 'Blocking',
+      value: unresolvedBlocking > 0 ? String(unresolvedBlocking) : blockingCount > 0 ? '0' : '0',
+      icon: Shield,
+      color: '#FF007A',
+    },
+    {
+      label: 'Capture Rate',
+      value: 'N/A',
+      icon: TrendingUp,
+      color: '#E5FF00',
+    },
+    {
+      label: 'Findings',
+      value: totalFindings > 0 ? String(totalFindings) : '0',
+      icon: AlertTriangle,
+      color: '#FF5C00',
+    },
+    {
+      label: 'Avg Resolution',
+      value: 'N/A',
+      icon: Clock,
+      color: '#2ECC71',
+    },
+  ]
 
   return (
     <header
@@ -140,7 +158,6 @@ export default function TopBar({ title, breadcrumb }: Props) {
                   width: 16,
                   height: 16,
                   borderRadius: '50%',
-                  // AMBER RULE: amber badge indicates pending findings
                   background: 'var(--amber)',
                   color: '#000',
                   fontSize: 9,
