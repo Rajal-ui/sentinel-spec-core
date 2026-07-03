@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import AuthSyncProvider from '@/components/AuthSyncProvider'
 
 export const metadata: Metadata = {
   title: 'Sentinel Spec — Autonomous Architecture Compliance',
@@ -9,7 +10,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <AuthSyncProvider>
+          {children}
+        </AuthSyncProvider>
+      </body>
     </html>
   )
 }

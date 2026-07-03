@@ -1,64 +1,92 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { User, LoginCredentials } from '@/lib/types'
+import type { User, LoginCredentials, RegisterCredentials } from '@/lib/types'
+import api from '@/lib/api'
 
 interface AuthStore {
   user: User | null
+  token: string | null
   isAuthenticated: boolean
   showLoginModal: boolean
   loginRedirect: string | null
+  initialized: boolean
   login: (credentials: LoginCredentials) => Promise<void>
-  loginOAuth: (provider: 'github' | 'google') => Promise<void>
-  logout: () => void
+  register: (credentials: RegisterCredentials) => Promise<void>
+  logout: () => Promise<void>
   openLoginModal: (redirect?: string) => void
   closeLoginModal: () => void
+  fetchProfile: () => Promise<void>
+  updateProfile: (data: Partial<Pick<User, 'name' | 'avatar_url'>> & { username?: string }) => Promise<User>
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
       showLoginModal: false,
       loginRedirect: null,
+      initialized: false,
 
       login: async (credentials) => {
-        // Stub: replace with real API call
-        await new Promise((r) => setTimeout(r, 800))
-        const mockUser: User = {
-          id: 'u-1',
-          name: 'Alex Chen',
-          email: credentials.email,
-          role: 'engineering_manager',
-          avatar_url: null,
-        }
+        const { data } = await api.post('/auth/login', credentials)
+        set({
+          user: data.user,
+          token: data.token,
+          isAuthenticated: true,
+          showLoginModal: false,
+          loginRedirect: null,
+        })
+        document.cookie = `sentinel-auth=${data.token}; path=/; max-age=604800`
         const redirect = get().loginRedirect ?? '/dashboard'
-        set({ user: mockUser, isAuthenticated: true, showLoginModal: false, loginRedirect: null })
-        // Set auth cookie for middleware
-        document.cookie = 'sentinel-auth=mock-jwt-token; path=/; max-age=86400'
         window.location.href = redirect
       },
 
-      loginOAuth: async (provider) => {
-        await new Promise((r) => setTimeout(r, 600))
-        const mockUser: User = {
-          id: 'u-oauth-1',
-          name: provider === 'github' ? 'GitHub User' : 'Google User',
-          email: `user@${provider}.com`,
-          role: 'developer',
-          avatar_url: null,
-        }
-        const redirect = get().loginRedirect ?? '/dashboard'
-        set({ user: mockUser, isAuthenticated: true, showLoginModal: false, loginRedirect: null })
-        document.cookie = 'sentinel-auth=mock-jwt-token; path=/; max-age=86400'
-        window.location.href = redirect
+      register: async (credentials) => {
+        const { data } = await api.post('/auth/register', credentials)
+        set({
+          user: data.user,
+          token: data.token,
+          isAuthenticated: true,
+          showLoginModal: false,
+          loginRedirect: null,
+        })
+        document.cookie = `sentinel-auth=${data.token}; path=/; max-age=604800`
+        window.location.href = '/dashboard'
       },
 
-      logout: () => {
-        set({ user: null, isAuthenticated: false })
+      logout: async () => {
+        try {
+          await api.post('/auth/logout')
+        } catch {
+          // proceed with client-side cleanup even if server call fails
+        }
+        set({ user: null, token: null, isAuthenticated: false })
         document.cookie = 'sentinel-auth=; path=/; max-age=0'
         window.location.href = '/'
+      },
+
+      fetchProfile: async () => {
+        try {
+          const { data } = await api.get('/user/me')
+          set({ user: data.user, isAuthenticated: true, initialized: true })
+        } catch {
+          set({ user: null, token: null, isAuthenticated: false, initialized: true })
+          document.cookie = 'sentinel-auth=; path=/; max-age=0'
+        }
+      },
+
+      updateProfile: async (profileData) => {
+        const { data } = await api.patch('/user/profile', profileData)
+        set({ user: data.user })
+        return data.user
+      },
+
+      updatePassword: async (currentPassword, newPassword) => {
+        await api.patch('/user/password', { currentPassword, newPassword })
       },
 
       openLoginModal: (redirect) =>
@@ -69,7 +97,11 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'sentinel-auth',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 )
