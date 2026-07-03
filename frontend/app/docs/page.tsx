@@ -3,10 +3,11 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, ChevronDown, ChevronRight, ExternalLink, LogOut, User, Settings } from 'lucide-react'
+import { Shield, ChevronDown, ChevronRight, ExternalLink, LogOut, User, Settings, Sun, Moon } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
+import { useThemeStore } from '@/lib/store/theme'
 
 // ── TOC section definitions ──────────────────────────────────────────────────
 const TOC_SECTIONS = [
@@ -458,6 +459,8 @@ function CapabilityCard({
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function DocsPage() {
   const pathname = usePathname()
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
   const { isAuthenticated, openLoginModal } = useAuthStore()
   const [openCapId, setOpenCapId] = useState<string | null>(null)
   const [tocOpen, setTocOpen] = useState(false)
@@ -552,6 +555,16 @@ export default function DocsPage() {
 
         {/* Right actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={toggleTheme}
+            style={{
+              background: 'none', border: '1px solid var(--border)', borderRadius: 6,
+              padding: '6px 8px', cursor: 'pointer', color: 'var(--text-muted)',
+              display: 'flex', alignItems: 'center', lineHeight: 0,
+            }}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           {isAuthenticated ? (
             <>
               <Link href="/agent"

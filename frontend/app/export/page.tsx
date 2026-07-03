@@ -3,11 +3,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Download, Eye, Copy, Check, ChevronLeft, ChevronRight, Key, RefreshCw, ChevronDown, LogOut } from 'lucide-react'
+import { Shield, Download, Eye, Copy, Check, ChevronLeft, ChevronRight, Key, RefreshCw, ChevronDown, LogOut, Sun, Moon } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
 import CodeBlock from '@/components/shared/CodeBlock'
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
+import { useThemeStore } from '@/lib/store/theme'
 
 // ── Data constants ───────────────────────────────────────────────────────────
 
@@ -230,6 +231,8 @@ function CopyButton({ text, label = 'Copy YAML' }: { text: string; label?: strin
 
 export default function ExportPage() {
   const pathname = usePathname()
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
   const { isAuthenticated, user, logout, openLoginModal } = useAuthStore()
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -364,6 +367,16 @@ export default function ExportPage() {
 
         {/* Auth buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <button onClick={toggleTheme}
+            style={{
+              background: 'none', border: '1px solid var(--border)', borderRadius: 6,
+              padding: '6px 8px', cursor: 'pointer', color: 'var(--text-muted)',
+              display: 'flex', alignItems: 'center', lineHeight: 0,
+            }}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           {isAuthenticated && user ? (
             <>
               <Link href="/agent"

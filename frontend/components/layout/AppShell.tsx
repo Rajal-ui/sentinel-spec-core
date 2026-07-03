@@ -1,9 +1,9 @@
 'use client'
-import { useState } from 'react'
 import Sidebar from './Sidebar'
 import TopBar from './TopBar'
 import LoginModal from './LoginModal'
 import ShaderBackground from '@/components/shared/ShaderBackground'
+import { useThemeStore } from '@/lib/store/theme'
 
 interface Props {
   children: React.ReactNode
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function AppShell({ children, title, breadcrumb }: Props) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+  const theme = useThemeStore((s) => s.theme)
 
   return (
     <div
@@ -20,7 +20,7 @@ export default function AppShell({ children, title, breadcrumb }: Props) {
       style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}
     >
       <ShaderBackground variant="app" />
-      <Sidebar theme={theme} onThemeToggle={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} />
+      <Sidebar />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         <TopBar title={title} breadcrumb={breadcrumb} />
         <main style={{ flex: 1, overflowY: 'auto', padding: 0 }}>

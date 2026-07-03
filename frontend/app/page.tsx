@@ -4,11 +4,12 @@ import { usePathname } from 'next/navigation'
 import { motion, useInView, useReducedMotion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Shield, ArrowRight, ChevronRight, ChevronDown, LogOut, User, Settings } from 'lucide-react'
+import { Shield, ArrowRight, ChevronRight, ChevronDown, LogOut, User, Settings, Sun, Moon } from 'lucide-react'
 import ShaderBackground from '@/components/shared/ShaderBackground'
 import FindingCard from '@/components/shared/FindingCard'
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
+import { useThemeStore } from '@/lib/store/theme'
 // No mock-data imports — all data sourced from live API
 
 // ── useCountUp ──
@@ -237,6 +238,8 @@ function RevealSection({ children, delay = 0 }: { children: React.ReactNode; del
 export default function LandingPage() {
   const pathname = usePathname()
   const router = useRouter()
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
   const { openLoginModal, isAuthenticated, user, logout } = useAuthStore()
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -306,6 +309,16 @@ export default function LandingPage() {
           })}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={toggleTheme}
+            style={{
+              background: 'none', border: '1px solid var(--border)', borderRadius: 6,
+              padding: '6px 8px', cursor: 'pointer', color: 'var(--text-muted)',
+              display: 'flex', alignItems: 'center', lineHeight: 0,
+            }}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           {isAuthenticated && user ? (
             <>
               <Link href="/agent"

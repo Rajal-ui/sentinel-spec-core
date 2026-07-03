@@ -7,6 +7,7 @@ import {
   MessageSquare, Shield, BookOpen, Package, FileText,
   ChevronLeft, ChevronRight, Sun, Moon,
 } from 'lucide-react'
+import { useThemeStore } from '@/lib/store/theme'
 
 const NAV_ITEMS = [
   { label: 'Agent Workspace', icon: MessageSquare, href: '/agent' },
@@ -16,12 +17,12 @@ const NAV_ITEMS = [
   { label: 'Documentation', icon: FileText, href: '/docs' },
 ]
 
-interface Props { theme: 'light' | 'dark'; onThemeToggle: () => void }
-
-export default function Sidebar({ theme, onThemeToggle }: Props) {
+export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
   const prefersReducedMotion = useReducedMotion()
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
 
   const container = {
     show: { transition: { staggerChildren: prefersReducedMotion ? 0 : 0.04 } },
@@ -158,7 +159,7 @@ export default function Sidebar({ theme, onThemeToggle }: Props) {
       <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
         {/* Theme toggle */}
         <button
-          onClick={onThemeToggle}
+          onClick={toggleTheme}
           style={{
             display: 'flex',
             alignItems: 'center',

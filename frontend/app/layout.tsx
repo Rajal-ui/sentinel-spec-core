@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import AuthSyncProvider from '@/components/AuthSyncProvider'
+import ThemeInit from '@/components/ThemeInit'
 
 export const metadata: Metadata = {
   title: 'Sentinel Spec — Autonomous Architecture Compliance',
@@ -9,8 +10,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('sentinel-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
+        }} />
+      </head>
       <body>
+        <ThemeInit />
         <AuthSyncProvider>
           {children}
         </AuthSyncProvider>
