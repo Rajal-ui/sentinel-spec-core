@@ -9,6 +9,8 @@ import { corsOptions } from './config/cors.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import authRoutes from './routes/auth.routes.js'
 import userRoutes from './routes/user.routes.js'
+import findingsRoutes from './routes/findings.routes.js'
+import analyticsRoutes from './routes/analytics.routes.js'
 
 import './config/passport.js'
 
@@ -34,6 +36,8 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/user', userRoutes)
+app.use('/api/v1/findings', findingsRoutes)
+app.use('/api/v1/analytics', analyticsRoutes)
 
 // ── Error handler (must be last) ──────────────────────────────────────
 app.use(errorHandler)

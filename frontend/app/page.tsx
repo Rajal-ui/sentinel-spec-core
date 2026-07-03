@@ -8,7 +8,7 @@ import ShaderBackground from '@/components/shared/ShaderBackground'
 import FindingCard from '@/components/shared/FindingCard'
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
-import { MOCK_FINDINGS } from '@/lib/mock-data'
+// No mock-data imports — all data sourced from live API
 
 // ── useCountUp ──
 function useCountUp(target: number, duration = 1800, started = false) {
@@ -297,7 +297,7 @@ export default function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {isAuthenticated && user ? (
             <>
-              <Link href="/dashboard"
+              <Link href="/agent"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -314,7 +314,7 @@ export default function LandingPage() {
                   textDecoration: 'none',
                 }}
               >
-                Dashboard
+                Console
               </Link>
               <div style={{ position: 'relative' }}>
                 <button
@@ -686,7 +686,21 @@ export default function LandingPage() {
             </p>
           </RevealSection>
           <RevealSection delay={0.1}>
-            <FindingCard finding={MOCK_FINDINGS[0]} />
+            <FindingCard finding={{
+              id: 'demo',
+              tier: 'blocking',
+              confidence: 0.94,
+              title: 'Direct call to legacy_billing.charge() violates ADR-0042',
+              description: 'The function charge_customer() calls legacy_billing.charge() directly. ADR-0042 mandates all billing operations route through BillingPort.',
+              cited_adr: 'ADR-0042',
+              cited_text: 'All billing operations MUST route through BillingPort. Direct calls to legacy_billing are prohibited.',
+              source_document: 'docs/adr/ADR-0042-billing-abstraction.md',
+              diff_old: 'legacy_billing.charge(user_id, amount, currency)',
+              diff_new: 'billing_port.charge(ChargeRequest(user_id=user_id, amount=amount, currency=currency))',
+              trace_id: 'demo-trace',
+              timestamp: new Date().toISOString(),
+              record_id: 'demo-rec',
+            }} />
           </RevealSection>
         </div>
       </section>

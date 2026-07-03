@@ -1,24 +1,43 @@
 'use client'
 import Link from 'next/link'
 import { ChevronDown, LogOut, Shield, AlertTriangle, TrendingUp, Clock, Home, User, Settings } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/lib/store/auth'
 import { useSessionStore } from '@/lib/store/session'
+import api from '@/lib/api'
 
 interface Props {
   title: string
   breadcrumb?: string
 }
 
+interface DbSummary {
+  total_analyses: number
+  violations_blocked_pct: number
+  resolution_rate_pct: number
+  override_rate_pct: number
+}
+
 export default function TopBar({ title, breadcrumb }: Props) {
   const { user, logout } = useAuthStore()
   const { messages, activeSessionId, resolvedFindings } = useSessionStore()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [dbSummary, setDbSummary] = useState<DbSummary | null>(null)
 
-  // ── Live KPI metrics derived from session store ──
+  // ── Fetch aggregate DB metrics for fallback display ──
+  useEffect(() => {
+    let cancelled = false
+    api.get('/v1/analytics/summary').then((res) => {
+      if (!cancelled) setDbSummary(res.data)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  // ── KPI metrics: session-local when active, DB aggregate fallback ──
 
   const allFindings = messages.flatMap((m) => m.findings ?? [])
   const totalFindings = allFindings.length
+  const hasActiveSession = totalFindings > 0 && !!activeSessionId
 
   const blockingCount = allFindings.filter(
     (f) => f.tier === 'blocking'
@@ -32,32 +51,59 @@ export default function TopBar({ title, breadcrumb }: Props) {
     (f) => f.tier === 'blocking' && !sessionResolutions[f.id]
   ).length
 
-  const STATS = [
-    {
-      label: 'Blocking',
-      value: unresolvedBlocking > 0 ? String(unresolvedBlocking) : blockingCount > 0 ? '0' : '0',
-      icon: Shield,
-      color: '#FF007A',
-    },
-    {
-      label: 'Capture Rate',
-      value: 'N/A',
-      icon: TrendingUp,
-      color: '#E5FF00',
-    },
-    {
-      label: 'Findings',
-      value: totalFindings > 0 ? String(totalFindings) : '0',
-      icon: AlertTriangle,
-      color: '#FF5C00',
-    },
-    {
-      label: 'Avg Resolution',
-      value: 'N/A',
-      icon: Clock,
-      color: '#2ECC71',
-    },
-  ]
+  const STATS = hasActiveSession
+    ? [
+        {
+          label: 'Blocking',
+          value: unresolvedBlocking > 0 ? String(unresolvedBlocking) : blockingCount > 0 ? '0' : '0',
+          icon: Shield,
+          color: '#FF007A',
+        },
+        {
+          label: 'Findings',
+          value: totalFindings > 0 ? String(totalFindings) : '0',
+          icon: AlertTriangle,
+          color: '#FF5C00',
+        },
+        {
+          label: 'Capture Rate',
+          value: 'N/A',
+          icon: TrendingUp,
+          color: '#E5FF00',
+        },
+        {
+          label: 'Avg Resolution',
+          value: 'N/A',
+          icon: Clock,
+          color: '#2ECC71',
+        },
+      ]
+    : [
+        {
+          label: 'Total',
+          value: dbSummary ? String(dbSummary.total_analyses) : '—',
+          icon: Shield,
+          color: '#FF007A',
+        },
+        {
+          label: 'Blocked',
+          value: dbSummary ? `${dbSummary.violations_blocked_pct}%` : '—',
+          icon: AlertTriangle,
+          color: '#FF5C00',
+        },
+        {
+          label: 'Resolved',
+          value: dbSummary ? `${dbSummary.resolution_rate_pct}%` : '—',
+          icon: TrendingUp,
+          color: '#E5FF00',
+        },
+        {
+          label: 'Override',
+          value: dbSummary ? `${dbSummary.override_rate_pct}%` : '—',
+          icon: Clock,
+          color: '#2ECC71',
+        },
+      ]
 
   return (
     <header

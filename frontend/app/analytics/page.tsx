@@ -1,14 +1,40 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
 import { useAuthStore } from '@/lib/store/auth'
-import { MOCK_TREND_DATA, MOCK_DOMAIN_DATA, MOCK_CAPTURE_DATA, MOCK_OVERRIDE_TREND, MOCK_LEADERBOARD } from '@/lib/mock-data'
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Cell
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Cell,
 } from 'recharts'
+import api from '@/lib/api'
+
+// ── API response types ────────────────────────────────────────────────────────
+
+interface TrendPoint { date: string; blocking: number; warning: number }
+interface DomainPoint { domain: string; count: number }
+interface OverrideTrendPoint { week: string; rate: number }
+interface LeaderboardRow {
+  repo: string
+  team: string
+  violations: number
+  override_rate: number
+  capture_rate: number
+  top_domain: string
+}
+
+interface AnalyticsSummary {
+  total_analyses: number
+  violations_blocked_pct: number
+  override_rate_pct: number
+  resolution_rate_pct: number
+  avg_confidence: number
+  trend_data: TrendPoint[]
+  domain_data: DomainPoint[]
+  override_trend: OverrideTrendPoint[]
+  leaderboard: LeaderboardRow[]
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -95,24 +121,24 @@ function ChartPanel({ title, subtitle, children, delay = 0 }: PanelProps) {
 
 // ── KPI strip ─────────────────────────────────────────────────────────────────
 
-const KPI_ITEMS = [
-  { label: 'Total Analyses', value: '1,247', sub: 'this month' },
-  { label: 'Violations Blocked', value: '63.4%', sub: 'of total findings' },
-  { label: 'Override Rate', value: '4.2%', sub: 'below 5% goal' },
-  { label: 'Avg Confidence', value: '81%', sub: 'classifier score' },
-]
-
-function KpiStrip() {
+function KpiStrip({ data }: { data: AnalyticsSummary }) {
+  const items = [
+    { label: 'Total Analyses', value: data.total_analyses.toLocaleString(), sub: 'this month' },
+    { label: 'Violations Blocked', value: `${data.violations_blocked_pct}%`, sub: 'of total findings' },
+    { label: 'Override Rate', value: `${data.override_rate_pct}%`, sub: 'below 5% goal' },
+    { label: 'Resolution Rate', value: `${data.resolution_rate_pct}%`, sub: 'of findings resolved' },
+    { label: 'Avg Confidence', value: `${Math.round(data.avg_confidence * 100)}%`, sub: 'classifier score' },
+  ]
   return (
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(5, 1fr)',
         gap: 12,
         marginBottom: 20,
       }}
     >
-      {KPI_ITEMS.map((k, i) => (
+      {items.map((k, i) => (
         <motion.div
           key={k.label}
           className="glass"
@@ -268,7 +294,7 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy }: TopControls
 
 // ── Chart Panel 1: Violation Trend Over Time ───────────────────────────────────
 
-function ViolationTrendPanel({ data }: { data: typeof MOCK_TREND_DATA }) {
+function ViolationTrendPanel({ data }: { data: TrendPoint[] }) {
   return (
     <ChartPanel
       title="Violation Trend Over Time"
@@ -320,7 +346,7 @@ function ViolationTrendPanel({ data }: { data: typeof MOCK_TREND_DATA }) {
 
 // ── Chart Panel 3: Pre-PR Capture Rate ────────────────────────────────────────
 
-function CaptureRatePanel({ data }: { data: typeof MOCK_CAPTURE_DATA }) {
+function CaptureRatePanel({ data }: { data: Array<{ week: string; ide_time: number; ci_time: number; missed: number }> }) {
   return (
     <ChartPanel
       title="Pre-PR Capture Rate"
@@ -404,7 +430,7 @@ function CaptureRatePanel({ data }: { data: typeof MOCK_CAPTURE_DATA }) {
 
 // ── Chart Panel 4: Override Rate Trend ────────────────────────────────────────
 
-function OverrideRatePanel({ data }: { data: typeof MOCK_OVERRIDE_TREND }) {
+function OverrideRatePanel({ data }: { data: OverrideTrendPoint[] }) {
   const hasHighRate = data.some((d) => d.rate > 5)
 
   return (
@@ -486,7 +512,7 @@ function OverrideRatePanel({ data }: { data: typeof MOCK_OVERRIDE_TREND }) {
 
 // ── Domain bar custom cell renderer (fills each bar with its domain colour) ───
 
-function DomainBarPanelFilled({ data }: { data: typeof MOCK_DOMAIN_DATA }) {
+function DomainBarPanelFilled({ data }: { data: DomainPoint[] }) {
   return (
     <ChartPanel
       title="Violations by Policy Domain"
@@ -531,13 +557,7 @@ function DomainBarPanelFilled({ data }: { data: typeof MOCK_DOMAIN_DATA }) {
 
 // ── Leaderboard table ──────────────────────────────────────────────────────────
 
-type LeaderboardRow = (typeof MOCK_LEADERBOARD)[number]
-
-interface LeaderboardProps {
-  rows: LeaderboardRow[]
-}
-
-function Leaderboard({ rows }: LeaderboardProps) {
+function Leaderboard({ rows }: { rows: LeaderboardRow[] }) {
   const router = useRouter()
   const [sortKey, setSortKey] = useState<SortKey>('violations')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -700,22 +720,25 @@ function Leaderboard({ rows }: LeaderboardProps) {
 
 // ── Insight cards ─────────────────────────────────────────────────────────────
 
-const INSIGHTS = [
-  {
-    id: 'i-1',
-    text: 'Team Backend triggered ADR-0042 × 14 this month',
-  },
-  {
-    id: 'i-2',
-    text: 'Override rate up 2.1% — review confidence thresholds',
-  },
-  {
-    id: 'i-3',
-    text: 'Pre-PR capture improved 8% vs last month',
-  },
-]
+function InsightCards({ data }: { data: AnalyticsSummary }) {
+  const insights: { id: string; text: string }[] = [
+    {
+      id: 'i-1',
+      text: `${data.leaderboard.length} tracked repos · ${data.total_analyses} total analyses this period`,
+    },
+    {
+      id: 'i-2',
+      text: `Override rate at ${data.override_rate_pct}%${data.override_rate_pct > 5 ? ' — exceeds 5% goal' : ' — within 5% goal'}`,
+    },
+    {
+      id: 'i-3',
+      text:
+        data.domain_data.length > 0
+          ? `Top violation domain: ${data.domain_data[0].domain} (${data.domain_data[0].count} violations)`
+          : 'No domain data available yet',
+    },
+  ]
 
-function InsightCards() {
   return (
     <motion.div
       initial={{ opacity: 0, x: 12 }}
@@ -726,7 +749,7 @@ function InsightCards() {
       <h3 className="font-display" style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
         Automated Insights
       </h3>
-      {INSIGHTS.map((ins, i) => (
+      {insights.map((ins, i) => (
         <motion.div
           key={ins.id}
           initial={{ opacity: 0, x: 8 }}
@@ -790,13 +813,44 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState<DateRange>('30d')
   const [groupBy, setGroupBy] = useState<GroupBy>('repo')
+  const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchSummary = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await api.get('/v1/analytics/summary')
+      setSummary(res.data)
+    } catch {
+      setSummary(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchSummary()
+  }, [fetchSummary])
 
   // Slice trend data based on selected date range
-  const trendData = dateRange === '7d'
-    ? MOCK_TREND_DATA.slice(-7)
+  const trendData = summary?.trend_data ?? []
+  const slicedTrend = dateRange === '7d'
+    ? trendData.slice(-7)
     : dateRange === '90d'
-      ? MOCK_TREND_DATA        // mock only has 30 days; use all
-      : MOCK_TREND_DATA
+      ? trendData
+      : trendData
+
+  if (loading) {
+    return (
+      <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
+        <AuthGate>
+          <div style={{ padding: '24px 28px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+            <div className="font-mono-product" style={{ fontSize: 14, color: 'var(--text-muted)' }}>Loading analytics…</div>
+          </div>
+        </AuthGate>
+      </AppShell>
+    )
+  }
 
   return (
     <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
@@ -804,7 +858,7 @@ export default function AnalyticsPage() {
         <div style={{ padding: '24px 28px', maxWidth: 1600, margin: '0 auto' }}>
 
           {/* KPI strip */}
-          <KpiStrip />
+          {summary && <KpiStrip data={summary} />}
 
           {/* Top controls */}
           <TopControls
@@ -833,19 +887,20 @@ export default function AnalyticsPage() {
                   gap: 16,
                 }}
               >
-                <ViolationTrendPanel data={trendData} />
-                <DomainBarPanelFilled data={MOCK_DOMAIN_DATA} />
-                <CaptureRatePanel data={MOCK_CAPTURE_DATA} />
-                <OverrideRatePanel data={MOCK_OVERRIDE_TREND} />
+                <ViolationTrendPanel data={slicedTrend} />
+                <DomainBarPanelFilled data={summary?.domain_data ?? []} />
+                <OverrideRatePanel data={summary?.override_trend ?? []} />
               </div>
 
               {/* Leaderboard */}
-              <Leaderboard rows={MOCK_LEADERBOARD} />
+              {summary && summary.leaderboard.length > 0 && (
+                <Leaderboard rows={summary.leaderboard} />
+              )}
             </div>
 
             {/* Right rail: insight cards */}
             <div style={{ position: 'sticky', top: 20 }}>
-              <InsightCards />
+              {summary && <InsightCards data={summary} />}
             </div>
           </div>
 

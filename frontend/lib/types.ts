@@ -22,6 +22,8 @@ export interface GovernanceRecord {
     reasoning: string
   }
   finding_tier: FindingTier
+  status: 'OPEN' | 'RESOLVED'
+  resolved_at: string | null
   override: {
     occurred: boolean
     actor: string | null

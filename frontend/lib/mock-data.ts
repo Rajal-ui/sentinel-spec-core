@@ -94,6 +94,8 @@ export const MOCK_GOVERNANCE_RECORDS: GovernanceRecord[] = [
     classification: { violates_policy: true, confidence: 0.94, cited_chunk_ids: ['chunk-042-1'] },
     critic_verdict: { entailed: true, reasoning: 'Direct legacy call confirmed by ADR text.' },
     finding_tier: 'blocking',
+    status: 'OPEN',
+    resolved_at: null,
     override: { occurred: false, actor: null, justification: null },
   },
   {
@@ -106,6 +108,8 @@ export const MOCK_GOVERNANCE_RECORDS: GovernanceRecord[] = [
     classification: { violates_policy: true, confidence: 0.72, cited_chunk_ids: ['chunk-019-3'] },
     critic_verdict: { entailed: true, reasoning: 'PII field in log confirmed.' },
     finding_tier: 'warning',
+    status: 'OPEN',
+    resolved_at: null,
     override: { occurred: true, actor: 'compliance@company.com', justification: 'Approved for debug window.' },
   },
   {
@@ -118,6 +122,8 @@ export const MOCK_GOVERNANCE_RECORDS: GovernanceRecord[] = [
     classification: { violates_policy: false, confidence: 0.22, cited_chunk_ids: [] },
     critic_verdict: { entailed: false, reasoning: 'Policy text does not prohibit this pattern.' },
     finding_tier: 'rejected',
+    status: 'OPEN',
+    resolved_at: null,
     override: { occurred: false, actor: null, justification: null },
   },
 ]

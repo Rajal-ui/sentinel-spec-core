@@ -3,10 +3,10 @@ import AppShell from '@/components/layout/AppShell'
 import { StatusLabel } from '@/components/shared/StatusBadge'
 import { useAuthStore } from '@/lib/store/auth'
 import { useFindingsStore } from '@/lib/store/findings'
-import { MOCK_GOVERNANCE_RECORDS, MOCK_KPI, MOCK_OVERRIDES } from '@/lib/mock-data'
-import type { GovernanceRecord } from '@/lib/types'
-import { useState, useEffect } from 'react'
+import type { GovernanceRecord, Override } from '@/lib/types'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import api from '@/lib/api'
 import { Shield, Filter, Download, ChevronDown, ChevronRight, Check, X } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -436,13 +436,12 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
     rejected: { background: 'rgba(46,204,113,0.12)', color: 'var(--success)', borderColor: 'rgba(46,204,113,0.28)' },
   }
 
-  const statusMap: Record<string, 'BLOCKING' | 'WARNING' | 'PASSED' | 'OVERRIDDEN'> = {
-    blocking: 'BLOCKING',
-    warning: 'WARNING',
-    logged_only: 'PASSED',
-    rejected: 'PASSED',
-  }
-  const displayStatus = isOverride ? 'OVERRIDDEN' : statusMap[record.finding_tier]
+  const displayStatus: 'BLOCKING' | 'WARNING' | 'PASSED' | 'OVERRIDDEN' | 'RESOLVED' =
+    record.status === 'RESOLVED'
+      ? 'RESOLVED'
+      : isOverride
+        ? 'OVERRIDDEN'
+        : ({ blocking: 'BLOCKING', warning: 'WARNING', logged_only: 'PASSED', rejected: 'PASSED' } as Record<string, 'BLOCKING' | 'WARNING' | 'PASSED'>)[record.finding_tier]
 
   return (
     <motion.div
@@ -707,7 +706,7 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
 
 // ─── Pending Override Card ─────────────────────────────────────────────────────
 
-function PendingOverrideCard({ override: ov }: { override: (typeof MOCK_OVERRIDES)[0] }) {
+function PendingOverrideCard({ override: ov }: { override: Override }) {
   const { approveOverride, rejectOverride } = useFindingsStore()
   const [confirmText, setConfirmText] = useState('')
   const [showApproveConfirm, setShowApproveConfirm] = useState(false)
@@ -1002,7 +1001,7 @@ function PendingOverrideCard({ override: ov }: { override: (typeof MOCK_OVERRIDE
 
 // ─── Override History Card ─────────────────────────────────────────────────────
 
-function HistoryCard({ override: ov }: { override: (typeof MOCK_OVERRIDES)[0] }) {
+function HistoryCard({ override: ov }: { override: Override }) {
   const approved = ov.status === 'approved'
   return (
     // AMBER RULE: amber border only for override history (violation signal)
@@ -1246,6 +1245,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+interface KpiData {
+  total_analyses: number
+  violations_blocked_pct: number
+  override_rate_pct: number
+  resolution_rate_pct: number
+  avg_confidence: number
+}
+
 export default function AuditPage() {
   const [filters, setFilters] = useState<FilterState>({
     dateFrom: '',
@@ -1257,52 +1264,49 @@ export default function AuditPage() {
     confidenceMax: 100,
   })
   const [activeTab, setActiveTab] = useState<ActiveTab>('all')
-  const [filteredRecords, setFilteredRecords] = useState<GovernanceRecord[]>(MOCK_GOVERNANCE_RECORDS)
+  const [records, setRecords] = useState<GovernanceRecord[]>([])
+  const [kpi, setKpi] = useState<KpiData>({ total_analyses: 0, violations_blocked_pct: 0, override_rate_pct: 0, resolution_rate_pct: 0, avg_confidence: 0 })
+  const [loading, setLoading] = useState(false)
 
-  function applyFilters(f: FilterState) {
-    let result = [...MOCK_GOVERNANCE_RECORDS]
-
-    if (f.dateFrom) {
-      const from = new Date(f.dateFrom).getTime()
-      result = result.filter((r) => new Date(r.timestamp).getTime() >= from)
+  const fetchKpi = useCallback(async () => {
+    try {
+      const res = await api.get('/v1/analytics/summary')
+      setKpi(res.data)
+    } catch {
+      // KPIs default to 0 if unavailable
     }
-    if (f.dateTo) {
-      const to = new Date(f.dateTo).getTime() + 86399999
-      result = result.filter((r) => new Date(r.timestamp).getTime() <= to)
+  }, [])
+
+  const fetchFindings = useCallback(async (f: FilterState) => {
+    setLoading(true)
+    try {
+      const params: Record<string, string> = {}
+      if (f.dateFrom) params.dateFrom = f.dateFrom
+      if (f.dateTo) params.dateTo = f.dateTo
+      if (f.tiers.length > 0) params.tier = f.tiers.map((t) => t.toLowerCase()).join(',')
+      if (f.overrideStatus !== 'all') params.override = f.overrideStatus
+      if (f.confidenceMin > 0) params.confidenceMin = String(f.confidenceMin)
+      if (f.confidenceMax < 100) params.confidenceMax = String(f.confidenceMax)
+      const res = await api.get('/v1/findings', { params })
+      setRecords(res.data.findings ?? [])
+    } catch {
+      setRecords([])
+    } finally {
+      setLoading(false)
     }
+  }, [])
 
-    if (f.tiers.length > 0) {
-      const tierMap: Record<TierFilter, string> = {
-        BLOCKING: 'blocking',
-        WARNING: 'warning',
-        LOGGED_ONLY: 'logged_only',
-        REJECTED: 'rejected',
-      }
-      result = result.filter((r) => f.tiers.map((t) => tierMap[t]).includes(r.finding_tier))
-    }
-
-    if (f.overrideStatus === 'overridden') {
-      result = result.filter((r) => r.override.occurred)
-    } else if (f.overrideStatus === 'not_overridden') {
-      result = result.filter((r) => !r.override.occurred)
-    }
-
-    const cMin = f.confidenceMin / 100
-    const cMax = f.confidenceMax / 100
-    result = result.filter(
-      (r) => r.classification.confidence >= cMin && r.classification.confidence <= cMax
-    )
-
-    setFilteredRecords(result)
-  }
+  useEffect(() => {
+    fetchKpi()
+    fetchFindings(filters)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleRunQuery() {
-    applyFilters(filters)
+    fetchFindings(filters)
   }
 
   function handleExport() {
-    // PDF export stub — wire to real implementation when available
-    console.info('Export to PDF requested', { filters, count: filteredRecords.length })
+    console.info('Export to PDF requested', { filters, count: records.length })
   }
 
   return (
@@ -1314,12 +1318,13 @@ export default function AuditPage() {
             style={{ display: 'flex', gap: 12 }}
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, staggerChildren: 0.06 }}
+            transition={{ duration: 0.3 }}
           >
-            <KpiCard label="Total analyses this month" value={MOCK_KPI.total_analyses_month.toLocaleString()} />
-            <KpiCard label="Violations blocked pre-PR" value={`${MOCK_KPI.violations_blocked_pct}%`} />
-            <KpiCard label="Override rate" value={`${MOCK_KPI.override_rate_pct}%`} />
-            <KpiCard label="Avg confidence" value={`${Math.round(MOCK_KPI.avg_confidence * 100)}%`} />
+            <KpiCard label="Total analyses this month" value={kpi.total_analyses.toLocaleString()} />
+            <KpiCard label="Violations blocked pre-PR" value={`${kpi.violations_blocked_pct}%`} />
+            <KpiCard label="Override rate" value={`${kpi.override_rate_pct}%`} />
+            <KpiCard label="Resolution rate" value={`${kpi.resolution_rate_pct}%`} />
+            <KpiCard label="Avg confidence" value={`${Math.round(kpi.avg_confidence * 100)}%`} />
           </motion.div>
 
           {/* Main panel: filter + results */}
@@ -1331,12 +1336,24 @@ export default function AuditPage() {
               onExport={handleExport}
             />
             <ResultsFeed
-              records={filteredRecords}
+              records={records}
               activeTab={activeTab}
               onTabChange={setActiveTab}
             />
           </div>
         </div>
+        {loading && (
+          <div
+            style={{
+              position: 'fixed', inset: 0, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', background: 'rgba(0,0,0,0.3)', zIndex: 999,
+            }}
+          >
+            <div className="font-mono-product" style={{ fontSize: 14, color: 'var(--text)' }}>
+              Loading…
+            </div>
+          </div>
+        )}
       </AuthGate>
     </AppShell>
   )
