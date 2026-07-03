@@ -1,16 +1,46 @@
 import type { Response, NextFunction } from 'express'
+import { z } from 'zod'
 import { prisma } from '../config/database.js'
 import type { AuthenticatedRequest } from '../types/index.js'
+
+// ── Validation schema ────────────────────────────────────────────────
+
+export const summaryQuerySchema = z.object({
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+})
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function toLocalDate(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function toLocalMonth(d: Date): string {
+  return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+}
 
 // ── GET /api/v1/analytics/summary ─────────────────────────────────────
 
 export async function getSummary(
-  _req: AuthenticatedRequest,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ) {
   try {
+    const parsed = summaryQuerySchema.safeParse(req.query)
+    const query = parsed.success ? parsed.data : {}
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const where: any = {}
+    if (query.dateFrom || query.dateTo) {
+      where.timestamp = {}
+      if (query.dateFrom) where.timestamp.gte = new Date(query.dateFrom)
+      if (query.dateTo) where.timestamp.lte = new Date(query.dateTo + 'T23:59:59.999Z')
+    }
+
     const allFindings = await prisma.finding.findMany({
+      where,
       include: { overrides: true },
     })
 
@@ -47,8 +77,7 @@ export async function getSummary(
     // ── Trend: violations over time (grouped by date) ──────────────
     const trendMap = new Map<string, { blocking: number; warning: number }>()
     for (const f of allFindings) {
-      const date = f.timestamp
-        .toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      const date = toLocalDate(f.timestamp)
       if (!trendMap.has(date)) {
         trendMap.set(date, { blocking: 0, warning: 0 })
       }
@@ -72,10 +101,7 @@ export async function getSummary(
     // ── Override rate trend (by month) ────────────────────────────
     const monthOverrideMap = new Map<string, { total: number; overridden: number }>()
     for (const f of allFindings) {
-      const month = f.timestamp.toLocaleDateString('en-US', {
-        month: 'short',
-        year: '2-digit',
-      })
+      const month = toLocalMonth(f.timestamp)
       if (!monthOverrideMap.has(month)) {
         monthOverrideMap.set(month, { total: 0, overridden: 0 })
       }
