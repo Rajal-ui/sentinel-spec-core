@@ -3,14 +3,13 @@
 import { useEffect, useRef, useState, useCallback, type DragEvent, type KeyboardEvent } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import ThinkingDrawer from '@/components/layout/ThinkingDrawer'
-import FindingCard from '@/components/shared/FindingCard'
-import { StatusLabel } from '@/components/shared/StatusBadge'
+import HistoryPanel from '@/components/HistoryPanel'
+import AnalysisFeed from '@/components/AnalysisFeed'
 import { useAuthStore } from '@/lib/store/auth'
 import { useSessionStore } from '@/lib/store/session'
-import type { Finding } from '@/lib/types'
 import {
   Shield, Plus, Upload, Code, ArrowRight,
-  BrainCircuit, Trash2, FileText, X,
+  BrainCircuit, FileText, X,
 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
@@ -51,34 +50,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
-
 // ── Sub-components ─────────────────────────────────────────────────────────────
-
-/** Blinking streaming cursor */
-function StreamingCursor() {
-  return (
-    <motion.span
-      animate={{ opacity: [1, 0, 1] }}
-      transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut' }}
-      style={{
-        display: 'inline-block',
-        width: 2,
-        height: 14,
-        background: 'var(--primary)',
-        borderRadius: 1,
-        verticalAlign: 'middle',
-        marginLeft: 4,
-      }}
-    />
-  )
-}
 
 /** Tab bar used in multiple places */
 function TabBar({
@@ -132,7 +104,7 @@ function TabBar({
 // ── Left Panel ─────────────────────────────────────────────────────────────────
 
 function LeftPanel() {
-  const { createSession, deleteSession, setActiveSession, sessions, activeSessionId, sendMessage } = useSessionStore()
+  const { createSession, activeSessionId, sendMessage } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
 
   // Ingestion state
@@ -440,97 +412,7 @@ function LeftPanel() {
         {/* ── AUDIT HISTORY ── */}
         <div style={{ marginBottom: 16 }}>
           <div style={SECTION_LABEL_STYLE}>History</div>
-
-          {sessions.length === 0 ? (
-            <div
-              className="font-mono-product"
-              style={{
-                fontSize: 12,
-                color: 'var(--text-muted)',
-                textAlign: 'center',
-                padding: '20px 12px',
-                border: '1px dashed var(--border)',
-                borderRadius: 8,
-                lineHeight: 1.6,
-              }}
-            >
-              No analyses yet.{'\n'}Drop some code.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <AnimatePresence initial={false}>
-                {sessions.map((session) => (
-                  <motion.div
-                    key={session.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -8 }}
-                    transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
-                  >
-                    <div
-                      onClick={() => setActiveSession(session.id)}
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 4,
-                        padding: '8px 10px',
-                        borderRadius: 6,
-                        cursor: 'pointer',
-                        border: `1px solid ${activeSessionId === session.id ? 'rgba(27,108,168,0.4)' : 'var(--border)'}`,
-                        background: activeSessionId === session.id ? 'rgba(27,108,168,0.08)' : 'var(--surface)',
-                        transition: 'background 0.15s, border-color 0.15s',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (activeSessionId !== session.id)
-                          (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-raised)'
-                      }}
-                      onMouseLeave={(e) => {
-                        if (activeSessionId !== session.id)
-                          (e.currentTarget as HTMLDivElement).style.background = 'var(--surface)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                        <span
-                          style={{
-                            fontSize: 13,
-                            fontFamily: 'Inter, sans-serif',
-                            fontWeight: 500,
-                            color: 'var(--text)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            flex: 1,
-                          }}
-                        >
-                          {session.name}
-                        </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, flexShrink: 0 }}
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                          {formatDate(session.created_at)}
-                        </span>
-                        <StatusLabel
-                          status={
-                            session.status === 'PASSED'
-                              ? 'PASSED'
-                              : session.status === 'VIOLATIONS'
-                              ? 'BLOCKING'
-                              : 'PENDING'
-                          }
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          )}
+          <HistoryPanel />
         </div>
       </div>
     </div>
@@ -540,7 +422,7 @@ function LeftPanel() {
 // ── Chat Canvas ────────────────────────────────────────────────────────────────
 
 function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
-  const { messages, isStreaming, activeSessionId, sendMessage, createSession } = useSessionStore()
+  const { messages, isStreaming, activeSessionId, sendMessage, createSession, resolveFinding } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -585,12 +467,8 @@ function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
   }
 
   const handleApplyFix = useCallback((findingId: string) => {
-    alert(`Fix applied to finding ${findingId}. Review the changes in your IDE.`)
-  }, [])
-
-  const handleOverride = useCallback((findingId: string) => {
-    alert(`Override submitted for finding ${findingId}. Awaiting compliance officer review.`)
-  }, [])
+    resolveFinding(findingId)
+  }, [resolveFinding])
 
   const isEmpty = messages.length === 0 && !isStreaming
 
@@ -608,7 +486,6 @@ function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
       {/* Message area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
         {isEmpty ? (
-          /* Empty state */
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -651,7 +528,6 @@ function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
                 Drop code, paste a diff, or type a question.
               </p>
             </div>
-            {/* Example prompt chips */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 540 }}>
               {EXAMPLE_PROMPTS.map((prompt) => (
                 <button
@@ -687,132 +563,8 @@ function ChatCanvas({ onOpenThinking }: { onOpenThinking: () => void }) {
             </div>
           </motion.div>
         ) : (
-          /* Conversation */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 820, margin: '0 auto', width: '100%' }}>
-            <AnimatePresence initial={false}>
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: prefersReducedMotion ? 0 : 0.25 }}
-                  style={{
-                    display: 'flex',
-                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  }}
-                >
-                  {msg.role === 'user' ? (
-                    /* User bubble */
-                    <div
-                      className="glass"
-                      style={{
-                        maxWidth: '68%',
-                        padding: '11px 15px',
-                        borderRadius: 12,
-                        borderBottomRightRadius: 3,
-                        fontSize: 15,
-                        fontFamily: 'Inter, sans-serif',
-                        color: 'var(--text)',
-                        lineHeight: 1.6,
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      {msg.content}
-                    </div>
-                  ) : (
-                    /* Agent response */
-                    <div style={{ flex: 1, maxWidth: '92%', minWidth: 0 }}>
-                      {/* Meta line */}
-                      <div
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}
-                      >
-                        <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                          {formatTime(msg.timestamp)}
-                        </span>
-                        {msg.model_badge && (
-                          <span
-                            className="font-mono-product badge"
-                            style={{
-                              fontSize: 10,
-                              background: 'rgba(27,108,168,0.12)',
-                              color: 'var(--primary)',
-                              borderColor: 'rgba(27,108,168,0.3)',
-                              padding: '1px 7px',
-                            }}
-                          >
-                            {msg.model_badge}
-                          </span>
-                        )}
-                        {msg.tokens && (
-                          <span className="font-mono-product" style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                            {msg.tokens} tokens · {msg.duration_ms}ms
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Message text */}
-                      <div
-                        style={{
-                          fontSize: 15,
-                          fontFamily: 'Inter, sans-serif',
-                          color: 'var(--text)',
-                          lineHeight: 1.65,
-                          marginBottom: msg.findings && msg.findings.length > 0 ? 14 : 0,
-                        }}
-                      >
-                        {msg.content}
-                        {msg.is_streaming && <StreamingCursor />}
-                      </div>
-
-                      {/* Finding cards */}
-                      {msg.findings && msg.findings.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4 }}>
-                          {msg.findings.map((finding: Finding) => (
-                            <FindingCard
-                              key={finding.id}
-                              finding={finding}
-                              onApplyFix={handleApplyFix}
-                              onOverride={handleOverride}
-                              onViewReasoning={() => onOpenThinking()}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-
-            {/* Streaming indicator */}
-            <AnimatePresence>
-              {isStreaming && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10 }}
-                >
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    {[0, 0.15, 0.3].map((delay) => (
-                      <motion.span
-                        key={delay}
-                        animate={prefersReducedMotion ? {} : { opacity: [0.3, 1, 0.3] }}
-                        transition={{ duration: 1, repeat: Infinity, delay, ease: 'easeInOut' }}
-                        style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary)', display: 'inline-block' }}
-                      />
-                    ))}
-                  </div>
-                  <span className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Analyzing...
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+          <AnalysisFeed onOpenThinking={onOpenThinking} onApplyFix={handleApplyFix} />
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* ── Input area ── */}

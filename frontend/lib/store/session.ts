@@ -2,7 +2,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AuditSession, Finding, Message, InputMode } from '@/lib/types'
-import { MOCK_FINDINGS } from '@/lib/mock-data'
 
 // ── Mock analysis engine helpers ──────────────────────────────────────────────
 
@@ -56,6 +55,42 @@ const MISLEADING_NAME_TEMPLATE = {
   diff_new: 'aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")',
 }
 
+const BILLING_TEMPLATE = {
+  tier: 'blocking' as const,
+  confidence: 0.94,
+  title: 'Direct call to legacy_billing.charge() violates ADR-0042',
+  description: 'The function calls legacy_billing.charge() directly. ADR-0042 mandates all billing operations route through the BillingPort abstraction layer.',
+  cited_adr: 'ADR-0042',
+  cited_text: 'All billing operations MUST route through BillingPort. Direct calls to legacy_billing are prohibited.',
+  source_document: 'docs/adr/ADR-0042-billing-abstraction.md',
+  diff_old: 'legacy_billing.charge(user_id, amount, currency)',
+  diff_new: 'billing_port.charge(ChargeRequest(user_id=user_id, amount=amount, currency=currency))',
+}
+
+const PII_TEMPLATE = {
+  tier: 'warning' as const,
+  confidence: 0.72,
+  title: 'PII field "email" written to unencrypted log stream',
+  description: 'A user email field is passed to logger.info() without masking. ADR-0019 requires all PII fields to be masked before logging.',
+  cited_adr: 'ADR-0019',
+  cited_text: 'PII fields (email, phone, ssn, dob) MUST be masked before writing to any log stream. Use pii_mask() from the security utilities module.',
+  source_document: 'docs/adr/ADR-0019-pii-handling.md',
+  diff_old: 'logger.info(f"Processing user {user.email}")',
+  diff_new: 'logger.info(f"Processing user {pii_mask(user.email)}")',
+}
+
+const DEPRECATED_SDK_TEMPLATE = {
+  tier: 'logged_only' as const,
+  confidence: 0.41,
+  title: 'Import of deprecated internal SDK module',
+  description: 'The module internal.legacy_sdk is imported. This module is flagged as deprecated in the architecture registry.',
+  cited_adr: 'ADR-0031',
+  cited_text: 'internal.legacy_sdk is deprecated as of Q3 2023. Prefer internal.sdk_v2.',
+  source_document: 'docs/adr/ADR-0031-sdk-migration.md',
+  diff_old: 'from internal.legacy_sdk import DataClient',
+  diff_new: 'from internal.sdk_v2 import DataClient',
+}
+
 const LINE_PATTERNS: { pattern: RegExp; finding: AnalysisMatch; lineKey: string }[] = [
   {
     pattern: /(?:ibm_secret_access_key|aws_secret_access_key|secret_access_key)\s*=\s*['"]/i,
@@ -94,11 +129,13 @@ interface SessionStore {
   messagesBySessionId: Record<string, Message[]>
   isStreaming: boolean
   thinkingStepsVisible: boolean
+  resolvedFindings: Record<string, Record<string, { resolved_at: string }>>
   createSession: () => void
   deleteSession: (id: string) => void
   renameSession: (id: string, name: string) => void
   setActiveSession: (id: string) => void
   sendMessage: (content: string, mode: InputMode) => Promise<void>
+  resolveFinding: (findingId: string) => void
   setThinkingVisible: (v: boolean) => void
 }
 
@@ -113,6 +150,7 @@ export const useSessionStore = create<SessionStore>()(
       messagesBySessionId: {},
       isStreaming: false,
       thinkingStepsVisible: false,
+      resolvedFindings: {},
 
       createSession: () => {
         const { activeSessionId, messages } = get()
@@ -200,15 +238,15 @@ export const useSessionStore = create<SessionStore>()(
 
         // 2. Architecture / code pattern heuristics (MOCK_FINDINGS)
         if (/billing|charge|payment|invoice/.test(contentLower)) {
-          matchedFindings.push(MOCK_FINDINGS[0])
+          matchedFindings.push(makeFinding(BILLING_TEMPLATE))
           matchedDomains.push('billing abstraction (ADR-0042)')
         }
         if (/pii|email|log.*mask|logger\.(info|warn|error)/.test(contentLower)) {
-          matchedFindings.push(MOCK_FINDINGS[1])
+          matchedFindings.push(makeFinding(PII_TEMPLATE))
           matchedDomains.push('PII handling (ADR-0019)')
         }
         if (/deprecated|legacy_sdk|internal\.(legacy|old)/.test(contentLower)) {
-          matchedFindings.push(MOCK_FINDINGS[2])
+          matchedFindings.push(makeFinding(DEPRECATED_SDK_TEMPLATE))
           matchedDomains.push('SDK migration (ADR-0031)')
         }
 
@@ -224,15 +262,15 @@ export const useSessionStore = create<SessionStore>()(
               }
             }
             if (/billing|charge|payment/.test(name.toLowerCase())) {
-              matchedFindings.push(MOCK_FINDINGS[0])
+              matchedFindings.push(makeFinding(BILLING_TEMPLATE))
               matchedDomains.push('billing abstraction (ADR-0042)')
             }
             if (/user|auth|pii|log/.test(name.toLowerCase())) {
-              matchedFindings.push(MOCK_FINDINGS[1])
+              matchedFindings.push(makeFinding(PII_TEMPLATE))
               matchedDomains.push('PII handling (ADR-0019)')
             }
             if (/sdk|internal|deprecated/.test(name.toLowerCase())) {
-              matchedFindings.push(MOCK_FINDINGS[2])
+              matchedFindings.push(makeFinding(DEPRECATED_SDK_TEMPLATE))
               matchedDomains.push('SDK migration (ADR-0031)')
             }
           }
@@ -256,9 +294,6 @@ export const useSessionStore = create<SessionStore>()(
           content: summary,
           timestamp: new Date().toISOString(),
           findings: matchedFindings,
-          model_badge: 'granite-3-8b',
-          tokens: 847,
-          duration_ms: 2300,
         }
         set((s) => {
           const updatedMessages = [...s.messages, agentMsg]
@@ -278,11 +313,26 @@ export const useSessionStore = create<SessionStore>()(
         })
       },
 
+      resolveFinding: (findingId) =>
+        set((s) => {
+          const sessionId = s.activeSessionId
+          if (!sessionId) return s
+          return {
+            resolvedFindings: {
+              ...s.resolvedFindings,
+              [sessionId]: {
+                ...(s.resolvedFindings[sessionId] || {}),
+                [findingId]: { resolved_at: new Date().toISOString() },
+              },
+            },
+          }
+        }),
+
       setThinkingVisible: (v) => set({ thinkingStepsVisible: v }),
     }),
     {
       name: 'sentinel-sessions',
-      partialize: (state) => ({ sessions: state.sessions, messagesBySessionId: state.messagesBySessionId }),
+      partialize: (state) => ({ sessions: state.sessions, messagesBySessionId: state.messagesBySessionId, resolvedFindings: state.resolvedFindings }),
     }
   )
 )
