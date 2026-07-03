@@ -9,3 +9,8 @@ node_modules/
 venv/
 
 .bob
+
+# Backend auth
+backend/node_modules/
+backend/dist/
+backend/.env

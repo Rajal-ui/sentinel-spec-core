@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { ChevronDown, LogOut, Shield, AlertTriangle, TrendingUp, Clock, Home } from 'lucide-react'
+import { ChevronDown, LogOut, Shield, AlertTriangle, TrendingUp, Clock, Home, User, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '@/lib/store/auth'
 import { useSessionStore } from '@/lib/store/session'
@@ -172,6 +172,49 @@ export default function TopBar({ title, breadcrumb }: Props) {
                     <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
                     <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>{user.email}</div>
                   </div>
+
+                  <Link
+                    href="/profile"
+                    onClick={() => setDropdownOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '7px 12px',
+                      borderRadius: 4,
+                      fontSize: 13,
+                      fontFamily: 'Inter, sans-serif',
+                      color: 'var(--text)',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <User size={13} />
+                    Edit Profile
+                  </Link>
+
+                  <Link
+                    href="/settings"
+                    onClick={() => setDropdownOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '7px 12px',
+                      borderRadius: 4,
+                      fontSize: 13,
+                      fontFamily: 'Inter, sans-serif',
+                      color: 'var(--text)',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <Settings size={13} />
+                    Settings
+                  </Link>
+
+                  <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+
                   <button
                     onClick={() => { logout(); setDropdownOpen(false) }}
                     style={{

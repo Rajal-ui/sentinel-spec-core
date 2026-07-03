@@ -80,6 +80,17 @@ export interface LoginCredentials {
   password: string
 }
 
+export interface RegisterCredentials extends LoginCredentials {
+  name: string
+  username: string
+}
+
+export interface ProfileUpdate {
+  name?: string
+  username?: string
+  avatar_url?: string | null
+}
+
 export interface AuditSession {
   id: string
   name: string

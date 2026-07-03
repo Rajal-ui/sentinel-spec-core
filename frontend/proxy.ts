@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PROTECTED_ROUTES = ['/agent', '/audit', '/analytics', '/settings']
+const PROTECTED_ROUTES = ['/agent', '/audit', '/analytics', '/settings', '/profile']
 
 export default function middleware(request: NextRequest) {
   const isProtected = PROTECTED_ROUTES.some((r) =>
@@ -20,5 +20,5 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/agent/:path*', '/audit/:path*', '/analytics/:path*', '/settings/:path*'],
+  matcher: ['/agent/:path*', '/audit/:path*', '/analytics/:path*', '/settings/:path*', '/profile/:path*'],
 }
