@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Download, Eye, Copy, Check, ChevronLeft, ChevronRight, Key, RefreshCw, ChevronDown, LogOut, Sun, Moon } from 'lucide-react'
-import ShaderBackground from '@/components/shared/ShaderBackground'
+
 import CodeBlock from '@/components/shared/CodeBlock'
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
@@ -290,7 +290,7 @@ export default function ExportPage() {
 
   return (
     <>
-      <ShaderBackground variant="landing" />
+
       <LoginModal />
 
       {/* ── TOP NAV ── */}
@@ -621,9 +621,8 @@ export default function ExportPage() {
               <div style={{ padding: '0 32px 56px', maxWidth: 900, margin: '0 auto' }}>
                 {/* Always-dark panel */}
                 <div
+                  className="code-block"
                   style={{
-                    background: '#0A0C0F',
-                    border: '1px solid var(--border)',
                     borderRadius: 10,
                     overflow: 'hidden',
                   }}
@@ -633,7 +632,7 @@ export default function ExportPage() {
                     style={{
                       display: 'flex',
                       borderBottom: '1px solid var(--border)',
-                      background: '#0D0F12',
+                      background: 'var(--surface)',
                     }}
                   >
                     {(
@@ -693,7 +692,7 @@ export default function ExportPage() {
         <section
           style={{
             padding: '80px 32px',
-            background: 'rgba(17,17,22,0.45)',
+            background: 'var(--surface-muted)',
           }}
         >
           <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -913,9 +912,8 @@ export default function ExportPage() {
               {/* Left — YAML with copy button */}
               <div>
                 <div
+                  className="code-block"
                   style={{
-                    background: '#0A0C0F',
-                    border: '1px solid var(--border)',
                     borderRadius: 10,
                     overflow: 'hidden',
                   }}
@@ -928,7 +926,7 @@ export default function ExportPage() {
                       justifyContent: 'space-between',
                       padding: '10px 16px',
                       borderBottom: '1px solid var(--border)',
-                      background: '#0D0F12',
+                      background: 'var(--surface)',
                     }}
                   >
                     <span
@@ -1048,7 +1046,7 @@ export default function ExportPage() {
         <section
           style={{
             padding: '80px 32px',
-            background: 'rgba(17,17,22,0.45)',
+            background: 'var(--surface-muted)',
           }}
         >
           <div style={{ maxWidth: 700, margin: '0 auto' }}>
@@ -1068,7 +1066,7 @@ export default function ExportPage() {
                   marginBottom: 10,
                 }}
               >
-                API Access
+                API Key
               </div>
               <h2
                 className="font-display"
@@ -1077,10 +1075,11 @@ export default function ExportPage() {
                   fontWeight: 700,
                   color: 'var(--text)',
                   letterSpacing: '-0.01em',
-                  marginBottom: 32,
+                  textAlign: 'center',
+                  marginBottom: 8,
                 }}
               >
-                {isAuthenticated ? 'Your API Key' : 'API Key'}
+                Want to export programmatically?
               </h2>
             </motion.div>
 
@@ -1155,7 +1154,7 @@ export default function ExportPage() {
                     gap: 10,
                     marginBottom: 20,
                     padding: '12px 14px',
-                    background: '#0A0C0F',
+                    background: 'var(--surface)',
                     border: '1px solid var(--border)',
                     borderRadius: 7,
                   }}

@@ -117,7 +117,7 @@ export default function Sidebar() {
                   padding: collapsed ? '10px 0' : '10px 16px',
                   justifyContent: collapsed ? 'center' : 'flex-start',
                   borderLeft: active ? '3px solid var(--primary)' : '3px solid transparent',
-                  background: active ? 'rgba(255,0,122,0.10)' : 'transparent',
+                  background: active ? 'rgba(255,92,0,0.10)' : 'transparent',
                   textDecoration: 'none',
                   transition: 'background 0.15s ease, border-color 0.15s ease',
                   color: active ? 'var(--primary)' : 'var(--text-secondary)',

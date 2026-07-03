@@ -23,16 +23,16 @@ export default function AnalysisResults({
   if (findings.length === 0) {
     return (
       <div
+        className="prism-glass-card"
         style={{
           padding: '12px 16px',
           borderRadius: 8,
-          background: 'rgba(34,197,94,0.06)',
-          border: '1px solid rgba(34,197,94,0.2)',
+          border: '1px solid rgba(46,204,113,0.3)',
         }}
       >
         <p
           className="font-mono-product"
-          style={{ fontSize: 13, color: '#22c55e', margin: 0, lineHeight: 1.5 }}
+          style={{ fontSize: 13, color: 'var(--success)', margin: 0, lineHeight: 1.5 }}
         >
           {'\u2713'} {summary}
         </p>
@@ -42,11 +42,12 @@ export default function AnalysisResults({
 
   return (
     <div
+      className="prism-glass-card"
       style={{
-        border: '1px solid var(--border)',
+        border: '1px solid var(--glass-border)',
         borderRadius: 8,
         overflow: 'hidden',
-        background: 'var(--surface)',
+        background: 'var(--glass-bg)',
       }}
     >
       {/* ── Accordion header ── */}
@@ -59,7 +60,7 @@ export default function AnalysisResults({
           padding: '10px 14px',
           cursor: 'pointer',
           userSelect: 'none',
-          borderBottom: expanded ? '1px solid var(--border)' : 'none',
+          borderBottom: expanded ? '1px solid var(--glass-border)' : 'none',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>

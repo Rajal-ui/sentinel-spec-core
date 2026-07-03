@@ -40,7 +40,7 @@ type GroupBy = 'repo' | 'team' | 'policy_domain' | 'week'
 
 const DOMAIN_COLORS: Record<string, string> = {
   security: '#E85D4A',
-  data_residency: '#FF007A',
+  data_residency: '#FF5C00',
   api_contract: '#2ECC71',
   architecture: '#8B95A8',
 }
@@ -114,36 +114,26 @@ function exportCSV(summary: AnalyticsSummary) {
   URL.revokeObjectURL(url)
 }
 
-// ── Custom dark tooltip ────────────────────────────────────────────────────────
+// ── Chart tooltip ─────────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const CustomTooltip = ({ active, payload, label }: any) => {
+const ChartTooltip = ({ active, payload, label, override }: any) => {
   if (!active || !payload) return null
+  const rate: number | undefined = payload[0]?.value
+  const isHigh = override && rate !== undefined && rate > 5
   return (
-    <div style={{ background: '#111116', border: '1px solid #1F2029', borderRadius: 6, padding: '8px 12px' }}>
-      <div className="font-mono-product" style={{ fontSize: 11, color: '#8B95A8', marginBottom: 4 }}>{label}</div>
+    <div className="prism-glass-card" style={{ borderRadius: 6, padding: '8px 12px' }}>
+      <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((p: any) => (
         <div key={p.name} className="font-mono-product" style={{ fontSize: 12, color: p.color }}>{p.name}: {p.value}</div>
       ))}
-    </div>
-  )
-}
-
-// ── Override tooltip ───────────────────────────────────────────────────────────
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const OverrideTooltip = ({ active, payload, label }: any) => {
-  if (!active || !payload || !payload[0]) return null
-  const rate: number = payload[0].value
-  const isHigh = rate > 5
-  return (
-    <div style={{ background: '#111116', border: '1px solid #1F2029', borderRadius: 6, padding: '8px 12px' }}>
-      <div className="font-mono-product" style={{ fontSize: 11, color: '#8B95A8', marginBottom: 4 }}>{label}</div>
-      <div className="font-mono-product" style={{ fontSize: 12, color: '#E85D4A' }}>rate: {rate}%</div>
+      {override && !isHigh && (
+        <div className="font-mono-product" style={{ fontSize: 11, color: '#E85D4A', marginTop: 4 }}>rate: {rate}%</div>
+      )}
       {isHigh && (
         <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--amber)', marginTop: 4 }}>
-          High override rate — review confidence thresholds
+          ▲ High override rate — review confidence thresholds
         </div>
       )}
     </div>
@@ -337,7 +327,7 @@ function ViolationTrendPanel({ data }: { data: TrendPoint[] }) {
             tickLine={false}
             axisLine={false}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<ChartTooltip />} />
           <Legend
             wrapperStyle={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, paddingTop: 8 }}
           />
@@ -412,7 +402,7 @@ function OverrideRatePanel({ data }: { data: OverrideTrendPoint[] }) {
             axisLine={false}
             domain={[0, 10]}
           />
-          <Tooltip content={<OverrideTooltip />} />
+          <Tooltip content={<ChartTooltip override />} />
           <ReferenceLine
             y={5}
             stroke="rgba(139,149,168,0.5)"
@@ -477,7 +467,7 @@ function DomainBarPanelFilled({ data }: { data: DomainPoint[] }) {
             axisLine={false}
             width={90}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<ChartTooltip />} />
           <Bar dataKey="count" name="count" radius={[0, 4, 4, 0]}>
             {data.map((entry) => (
               <Cell

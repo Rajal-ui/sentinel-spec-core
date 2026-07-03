@@ -578,10 +578,8 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
                   Cited Chunks
                 </div>
                 <div
+                  className="code-block"
                   style={{
-                    background: '#0A0C0F',
-                    border: '1px solid var(--border)',
-                    borderRadius: 4,
                     padding: '8px 12px',
                   }}
                 >
@@ -612,10 +610,8 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
                   Critic Verdict
                 </div>
                 <div
+                  className="code-block"
                   style={{
-                    background: '#0A0C0F',
-                    border: '1px solid var(--border)',
-                    borderRadius: 4,
                     padding: '8px 12px',
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -778,10 +774,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
 
         {/* Justification */}
         <div
+          className="code-block"
           style={{
-            background: '#0A0C0F',
-            border: '1px solid var(--border)',
-            borderRadius: 4,
             padding: '8px 12px',
             marginBottom: 14,
           }}

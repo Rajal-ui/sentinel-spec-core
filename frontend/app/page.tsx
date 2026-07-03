@@ -5,7 +5,7 @@ import { motion, useInView, useReducedMotion, AnimatePresence } from 'framer-mot
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Shield, ArrowRight, ChevronRight, ChevronDown, LogOut, User, Settings, Sun, Moon } from 'lucide-react'
-import ShaderBackground from '@/components/shared/ShaderBackground'
+
 import FindingCard from '@/components/shared/FindingCard'
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
@@ -90,14 +90,14 @@ function HeroDemoPanel() {
 
   return (
     <div
+      className="code-block"
       style={{
-        background: '#0A0C0F',
         borderRadius: 10,
-        border: `1px solid ${isViolation ? 'rgba(232,165,75,0.35)' : 'rgba(255,0,122,0.25)'}`,
+        border: `1px solid ${isViolation ? 'rgba(232,165,75,0.35)' : 'rgba(255,92,0,0.25)'}`,
         // AMBER RULE: amber glow here exclusively for violation demo panel
         boxShadow: isViolation
           ? '0 0 40px rgba(232,165,75,0.18), 0 0 80px rgba(232,165,75,0.06)'
-          : '0 0 40px rgba(255,0,122,0.12)',
+          : '0 0 40px rgba(255,92,0,0.12)',
         overflow: 'hidden',
         transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
         maxWidth: 520,
@@ -260,12 +260,12 @@ export default function LandingPage() {
 
   return (
     <>
-      <ShaderBackground variant="landing" />
+
       <LoginModal />
 
       {/* ── NAV ── */}
       <nav
-        className="glass"
+        className="prism-glass-card"
         style={{
           position: 'fixed',
           top: 16,
@@ -296,10 +296,10 @@ export default function LandingPage() {
             return (
               <Link key={label} href={href}
                 style={{
-                  fontSize: 13, color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontSize: 13, color: isActive ? '#FF5C00' : '#475569',
                   textDecoration: 'none', fontFamily: 'Inter, sans-serif',
                   fontWeight: isActive ? 500 : 400,
-                  borderBottom: isActive ? '1px solid var(--primary)' : 'none',
+                  borderBottom: isActive ? '1px solid #FF5C00' : 'none',
                   paddingBottom: isActive ? 1 : 0, transition: 'color 0.15s ease',
                 } as React.CSSProperties}
               >
@@ -326,7 +326,7 @@ export default function LandingPage() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: 'var(--cyber-pink, #FF007A)',
+                  background: '#FF5C00',
                   border: 'none',
                   borderRadius: 6,
                   padding: '6px 16px',
@@ -463,7 +463,7 @@ export default function LandingPage() {
                 Sign In
               </button>
               <button onClick={() => openLoginModal('/')}
-                style={{ background: 'var(--cyber-pink, #FF007A)', border: 'none', borderRadius: 6, padding: '6px 16px', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'Archivo, sans-serif', fontWeight: 700 }}>
+                style={{ background: '#FF5C00', border: 'none', borderRadius: 6, padding: '6px 16px', color: '#fff', cursor: 'pointer', fontSize: 13, fontFamily: 'Archivo, sans-serif', fontWeight: 700 }}>
                 Get Access
               </button>
             </>
@@ -477,7 +477,7 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
             {/* Accent pill row */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-              <span className="font-mono-product" style={{ fontSize: 11, color: '#FF007A', background: 'rgba(255,0,122,0.10)', border: '1px solid rgba(255,0,122,0.25)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span className="font-mono-product" style={{ fontSize: 11, color: '#FF5C00', background: 'rgba(255,92,0,0.10)', border: '1px solid rgba(255,92,0,0.25)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Shift-Left Compliance
               </span>
               <span className="font-mono-product" style={{ fontSize: 11, color: '#FF5C00', background: 'rgba(255,92,0,0.10)', border: '1px solid rgba(255,92,0,0.25)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
@@ -495,7 +495,7 @@ export default function LandingPage() {
             </p>
             <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
               <button onClick={() => openLoginModal('/')}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FF007A', color: '#fff', border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 15, fontFamily: 'Archivo, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FF5C00', color: '#fff', border: 'none', borderRadius: 6, padding: '12px 24px', fontSize: 15, fontFamily: 'Archivo, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
                 Get Early Access <ArrowRight size={15} />
               </button>
               <Link href="/docs"
@@ -517,7 +517,7 @@ export default function LandingPage() {
 
       {/* ── TRUST BAR ── */}
       <RevealSection>
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '18px 32px', textAlign: 'center' }}>
+        <div style={{ borderTop: '1px solid rgba(255,92,0,0.12)', borderBottom: '1px solid rgba(255,92,0,0.12)', padding: '18px 32px', textAlign: 'center' }}>
           <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             Trusted by engineering teams on IBM Cloud
           </span>
@@ -547,8 +547,8 @@ export default function LandingPage() {
           ].map((card, i) => (
             <RevealSection key={card.title} delay={i * 0.07}>
               <motion.div
-                className="glass"
-                whileHover={{ scale: 1.012 }}
+                className="prism-glass-card"
+                whileHover={{ y: -3, boxShadow: '0 8px 28px rgba(255,92,0,0.10)' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 style={{ borderRadius: 10, padding: '28px 24px', height: '100%' }}
               >
@@ -562,7 +562,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section style={{ padding: '96px 32px', background: 'rgba(17,17,22,0.4)' }}>
+      <section style={{ padding: '96px 32px', background: 'rgba(255,237,213,0.18)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <RevealSection>
             <h2 className="font-display" style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', textAlign: 'center', marginBottom: 8 }}>
@@ -601,7 +601,7 @@ export default function LandingPage() {
           </div>
           {/* CI callout */}
           <RevealSection delay={0.2}>
-            <div style={{ marginTop: 40, padding: '16px 20px', borderLeft: '3px solid var(--primary)', background: 'rgba(255,0,122,0.08)', borderRadius: '0 6px 6px 0' }}>
+            <div style={{ marginTop: 40, padding: '16px 20px', borderLeft: '3px solid #FF5C00', background: 'rgba(255,92,0,0.07)', borderRadius: '0 6px 6px 0' }}>
               <span className="font-display" style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginRight: 8 }}>CI Gate Enforcement</span>
               <span style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>
                 BLOCKING findings fail the pipeline. WARNINGS log to governance. Every decision is immutable, timestamped, and approver-attributed.
@@ -626,10 +626,10 @@ export default function LandingPage() {
           ].map((card, i) => (
             <RevealSection key={card.title} delay={i * 0.07}>
               <motion.div
-                className="glass"
-                whileHover={{ scale: 1.012 }}
+                className="prism-glass-card"
+                whileHover={{ y: -3, boxShadow: '0 8px 28px rgba(255,92,0,0.10)' }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                style={{ borderRadius: 10, padding: '28px 24px', borderLeft: '3px solid var(--primary)', height: '100%' }}
+                style={{ borderRadius: 10, padding: '28px 24px', borderLeft: '3px solid #FF5C00', height: '100%' }}
               >
                 <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--primary)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>{card.cat}</div>
                 <h3 className="font-display" style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>{card.title}</h3>
@@ -641,7 +641,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── DUAL-STACK TABLE ── */}
-      <section style={{ padding: '80px 32px', background: 'rgba(17,17,22,0.4)' }}>
+      <section style={{ padding: '80px 32px', background: 'rgba(204,251,241,0.18)' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <RevealSection>
             <h2 className="font-display" style={{ fontSize: 32, fontWeight: 700, color: 'var(--text)', textAlign: 'center', marginBottom: 32 }}>
@@ -699,7 +699,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── FINDING CARD SPOTLIGHT ── */}
-      <section style={{ padding: '80px 32px', background: 'rgba(17,17,22,0.5)' }}>
+      <section style={{ padding: '80px 32px', background: 'rgba(255,237,213,0.18)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
           <RevealSection>
             <h2 className="font-display" style={{ fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 700, color: 'var(--text)', textAlign: 'center', marginBottom: 8 }}>
@@ -733,7 +733,7 @@ export default function LandingPage() {
       <section style={{ padding: '96px 32px' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
           <RevealSection>
-            <div className="glass" style={{ borderRadius: 16, padding: '56px 48px' }}>
+            <div className="prism-glass-card" style={{ borderRadius: 16, padding: '56px 48px' }}>
               <h2 className="font-display" style={{ fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em', marginBottom: 16 }}>
                 Your ADRs deserve to be enforced.
               </h2>
@@ -742,7 +742,7 @@ export default function LandingPage() {
               </p>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
                 <button onClick={() => openLoginModal('/')}
-                  style={{ background: '#FF007A', color: '#fff', border: 'none', borderRadius: 6, padding: '14px 28px', fontSize: 16, fontFamily: 'Archivo, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
+                  style={{ background: '#FF5C00', color: '#fff', border: 'none', borderRadius: 6, padding: '14px 28px', fontSize: 16, fontFamily: 'Archivo, sans-serif', fontWeight: 700, cursor: 'pointer' }}>
                   Get Early Access
                 </button>
                 <Link href="/docs"

@@ -59,8 +59,9 @@ export default function FindingCard({ finding, onOverride, onApplyFix, onViewRea
     <motion.div
       className="rounded-lg overflow-hidden"
       style={{
-        background: 'rgba(26,26,35,0.88)',
+        background: 'var(--glass-bg)',
         backdropFilter: 'blur(12px) saturate(1.4)',
+        WebkitBackdropFilter: 'blur(12px) saturate(1.4)',
         border: `1px solid ${borderColor}`,
         boxShadow: glowStyle,
       }}
@@ -124,10 +125,8 @@ export default function FindingCard({ finding, onOverride, onApplyFix, onViewRea
           <>
             {/* Citation block */}
             <div
+              className="code-block"
               style={{
-                background: '#0A0C0F',
-                border: '1px solid var(--border)',
-                borderRadius: 4,
                 padding: '10px 12px',
                 marginBottom: 10,
               }}
@@ -148,10 +147,8 @@ export default function FindingCard({ finding, onOverride, onApplyFix, onViewRea
 
             {/* Diff block */}
             <div
+              className="code-block"
               style={{
-                background: '#0A0C0F',
-                border: '1px solid var(--border)',
-                borderRadius: 4,
                 padding: '8px 12px',
                 marginBottom: 12,
               }}
@@ -177,7 +174,7 @@ export default function FindingCard({ finding, onOverride, onApplyFix, onViewRea
                   className="font-mono-product"
                   style={{
                     width: '100%',
-                    background: '#0A0C0F',
+                    background: 'var(--surface-muted)',
                     border: '1px solid var(--border)',
                     borderRadius: 4,
                     color: 'var(--text)',

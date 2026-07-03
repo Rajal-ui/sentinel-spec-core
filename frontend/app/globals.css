@@ -2,6 +2,9 @@
 
 @import "tailwindcss";
 
+/* ── Dark variant: maps to data-theme="dark" on any ancestor ── */
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
+
 /* ── Design Tokens ── */
 :root {
   /* Dark mode (default for app) */
@@ -14,20 +17,27 @@
   --text-secondary: #8B95A8;
   --text-muted: #4A5568;
   --text-code: #A8C4E8;
-  --primary: #FF007A;
-  --primary-hover: #FF1A8C;
+  --primary: #FF5C00;
+  --primary-hover: #FF7A2E;
   /* AMBER RULE: var(--amber) ONLY for findings/violations/warnings — lint: no-amber-outside-findings */
   --amber: #E8A54B;
   --success: #2ECC71;
   --danger: #E85D4A;
-  /* Multi-color theme */
-  --cyber-pink: #FF007A;
+  /* Coral Prism theme */
+  --primary-coral: #FF5C00;
   --primary-lime: #CCFF00;
-  --primary-coral: #FF7F50;
+  /* Prism Glass tokens — dark mode uses translucent dark glass */
+  --glass-bg: rgba(17, 17, 22, 0.78);
+  --glass-border: rgba(31, 32, 41, 0.9);
+}
+
+[data-theme="dark"] {
+  --glass-bg: rgba(17, 17, 22, 0.78);
+  --glass-border: rgba(31, 32, 41, 0.9);
 }
 
 [data-theme="light"] {
-  --bg: #F9FAFB;
+  --bg: #F8FAFC;
   --surface: #FFFFFF;
   --surface-raised: #FFFFFF;
   --surface-muted: #F1F5F9;
@@ -35,7 +45,9 @@
   --text: #0F172A;
   --text-secondary: #475569;
   --text-muted: #64748B;
-  --text-code: #FF007A;
+  --text-code: #FF5C00;
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.7);
 }
 
 /* ── Base ── */
@@ -56,7 +68,43 @@ html, body {
 .font-display { font-family: 'Archivo', sans-serif; }
 .font-mono-product { font-family: 'IBM Plex Mono', monospace; }
 
-/* ── Glassmorphism ── */
+/* ── Prism Glass Card — static, GPU-accelerated ── */
+.prism-glass-card {
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 4px 24px rgba(255, 92, 0, 0.06),
+    0 1px 4px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* ── Prism Glass Interactive — with hover lift ── */
+.prism-glass-interactive {
+  backdrop-filter: blur(12px) saturate(1.5);
+  -webkit-backdrop-filter: blur(12px) saturate(1.5);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 2px 12px rgba(255, 92, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.03);
+  transform: translateZ(0);
+  will-change: transform, box-shadow;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.prism-glass-interactive:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow:
+    0 8px 28px rgba(255, 92, 0, 0.10),
+    0 2px 6px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* ── Legacy glass (dark surfaces — preserved for dark-mode app shell) ── */
 .glass {
   backdrop-filter: blur(12px) saturate(1.4);
   background: rgba(17, 17, 22, 0.78);
@@ -64,8 +112,8 @@ html, body {
 }
 
 [data-theme="light"] .glass {
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
@@ -76,19 +124,9 @@ html, body {
 }
 
 [data-theme="light"] .glass-raised {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--glass-border);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
-}
-
-/* ── Shader canvas (shared) ── */
-#shader-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  width: 100%;
-  height: 100%;
 }
 
 /* ── Finding amber glow ── */
@@ -118,11 +156,24 @@ html, body {
   color: #2ECC71;
 }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--surface-muted); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.1);
+    border-radius: 10px;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb,
+  [data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
 
 /* ── Status badge base ── */
 .badge {
@@ -138,6 +189,8 @@ html, body {
   border: 1px solid;
 }
 
+/* ── Status fills — migrated to Tailwind classes in StatusBadge.tsx ── */
+
 /* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -152,21 +205,20 @@ html, body {
   --font-mono: 'IBM Plex Mono', monospace;
   --font-sans: 'Inter', sans-serif;
 
-  --color-bg: #08080A;
-  --color-surface: #111116;
-  --color-surface-raised: #1A1A23;
-  --color-surface-muted: #0F0F14;
-  --color-border: #1F2029;
-  --color-text: #E8EAED;
-  --color-text-secondary: #8B95A8;
-  --color-text-muted: #4A5568;
-  --color-text-code: #A8C4E8;
-  --color-primary: #FF007A;
-  --color-primary-hover: #FF1A8C;
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-raised: #FFFFFF;
+  --color-surface-muted: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-text: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748B;
+  --color-text-code: #FF5C00;
+  --color-primary: #FF5C00;
+  --color-primary-hover: #FF7A2E;
   --color-amber: #E8A54B;
   --color-success: #2ECC71;
   --color-danger: #E85D4A;
-  --color-cyber-pink: #FF007A;
   --color-primary-lime: #CCFF00;
-  --color-primary-coral: #FF7F50;
+  --color-primary-coral: #FF5C00;
 }

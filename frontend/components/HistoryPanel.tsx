@@ -20,15 +20,14 @@ export default function HistoryPanel() {
   if (sessions.length === 0) {
     return (
       <div
-        className="font-mono-product"
+        className="font-mono-product bg-white/20 dark:bg-zinc-900/10 border border-dashed border-slate-200/40 dark:border-zinc-800/40 backdrop-blur-[8px] rounded-lg"
         style={{
           fontSize: 12,
           color: 'var(--text-muted)',
           textAlign: 'center',
           padding: '20px 12px',
-          border: '1px dashed var(--border)',
-          borderRadius: 8,
           lineHeight: 1.6,
+          WebkitBackdropFilter: 'blur(8px)',
         }}
       >
         No analyses yet.{'\n'}Drop some code.
@@ -49,28 +48,24 @@ export default function HistoryPanel() {
           >
             <div
               onClick={() => setActiveSession(session.id)}
+              className={[
+                'group',
+                'border-t border-b border-r transition-all duration-200 ease-out',
+                activeSessionId === session.id
+                  ? 'border-l-2 border-l-[#FF5C00] bg-white/50 dark:bg-zinc-900/50 border-t-slate-200/40 border-b-slate-200/40 border-r-slate-200/40 dark:border-t-zinc-800/40 dark:border-b-zinc-800/40 dark:border-r-zinc-800/40'
+                  : 'bg-white/20 border border-slate-200/40 dark:bg-zinc-900/10 dark:border-zinc-800/40',
+                'hover:bg-white/60 dark:hover:bg-zinc-900/40',
+                'hover:border-slate-300/80 dark:hover:border-zinc-700/60',
+                'hover:-translate-y-[1px] hover:shadow-sm dark:hover:shadow-none',
+                'backdrop-blur-[8px]',
+                'rounded-md cursor-pointer',
+              ].join(' ')}
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
                 padding: '8px 10px',
-                borderRadius: 6,
-                cursor: 'pointer',
-                border: `1px solid ${activeSessionId === session.id ? 'rgba(255,0,122,0.4)' : 'var(--border)'}`,
-                background: activeSessionId === session.id
-                  ? 'rgba(255,0,122,0.08)'
-                  : 'var(--surface)',
-                transition: 'background 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={(e) => {
-                if (activeSessionId !== session.id) {
-                  (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-raised)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (activeSessionId !== session.id) {
-                  (e.currentTarget as HTMLDivElement).style.background = 'var(--surface)'
-                }
+                WebkitBackdropFilter: 'blur(8px)',
+                boxShadow: activeSessionId === session.id
+                  ? '0 0 12px rgba(255,92,0,0.10)'
+                  : undefined,
               }}
             >
               <div
@@ -100,11 +95,12 @@ export default function HistoryPanel() {
                     e.stopPropagation()
                     deleteSession(session.id)
                   }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                   style={{
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    color: 'var(--text-muted)',
+                    color: '#64748B',
                     padding: 2,
                     flexShrink: 0,
                   }}
@@ -117,11 +113,12 @@ export default function HistoryPanel() {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  marginTop: 3,
                 }}
               >
                 <span
-                  className="font-mono-product"
-                  style={{ fontSize: 11, color: 'var(--text-muted)' }}
+                  className="font-mono-product text-slate-500 dark:text-zinc-400"
+                  style={{ fontSize: 11 }}
                 >
                   {formatDate(session.created_at)}
                 </span>
