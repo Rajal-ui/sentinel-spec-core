@@ -95,8 +95,14 @@ export function googleCallback(req: Request, res: Response) {
   tokenService
     .issueTokenPair(req.user.id, req.user.email, req.user.role)
     .then((tokens) => {
+      // this is for local dev/same-domain fallback
       setAuthCookies(res, tokens.accessToken, tokens.refreshToken)
-      res.redirect(process.env.CLIENT_URL ?? 'http://localhost:3000')
+
+      // Append tokens to the URL so Vercel can read them instantly
+      const baseUrl = process.env.CLIENT_URL ?? 'http://localhost:3000'
+      res.redirect(
+        `${baseUrl}/?token=${tokens.accessToken}&refresh_token=${tokens.refreshToken}`,
+      )
     })
     .catch(() => {
       res.redirect(`${process.env.CLIENT_URL ?? 'http://localhost:3000'}/?login=failed`)
