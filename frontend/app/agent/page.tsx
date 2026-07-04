@@ -644,14 +644,36 @@ function ChatCanvas() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AgentWorkspacePage() {
-  const { isAuthenticated, openLoginModal } = useAuthStore()
+  const { isAuthenticated, initialized, openLoginModal } = useAuthStore()
 
-  // Auth gate — open login modal if not authenticated
+  // Auth gate — open login modal only after initialization completes
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (initialized && !isAuthenticated) {
       openLoginModal('/agent')
     }
-  }, [isAuthenticated, openLoginModal])
+  }, [initialized, isAuthenticated, openLoginModal])
+
+  if (!initialized) {
+    return (
+      <AppShell title="Agent Workspace" breadcrumb="sentinel-spec / agent">
+        <div
+          style={{
+            display: 'flex',
+            height: '100%',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 12,
+          }}
+        >
+          <Shield size={36} style={{ color: 'var(--text-muted)' }} />
+          <p className="font-mono-product" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Verifying session…
+          </p>
+        </div>
+      </AppShell>
+    )
+  }
 
   if (!isAuthenticated) {
     return (

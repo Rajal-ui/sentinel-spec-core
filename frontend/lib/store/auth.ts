@@ -4,6 +4,16 @@ import { persist } from 'zustand/middleware'
 import type { User, LoginCredentials, RegisterCredentials } from '@/lib/types'
 import api from '@/lib/api'
 
+const COOKIE_NAME = 'sentinel-token'
+
+function getTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
+const initialToken = getTokenFromCookie()
+
 interface AuthStore {
   user: User | null
   token: string | null
@@ -25,8 +35,8 @@ export const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
-      token: null,
-      isAuthenticated: false,
+      token: initialToken,
+      isAuthenticated: !!initialToken,
       showLoginModal: false,
       loginRedirect: null,
       initialized: false,
@@ -41,7 +51,7 @@ export const useAuthStore = create<AuthStore>()(
           showLoginModal: false,
           loginRedirect: null,
         })
-        document.cookie = `sentinel-auth=${data.token}; path=/; max-age=604800`
+        document.cookie = `${COOKIE_NAME}=${data.token}; path=/; max-age=604800; Secure; SameSite=Lax`
         window.location.href = redirect
       },
 
@@ -55,7 +65,7 @@ export const useAuthStore = create<AuthStore>()(
           showLoginModal: false,
           loginRedirect: null,
         })
-        document.cookie = `sentinel-auth=${data.token}; path=/; max-age=604800`
+        document.cookie = `${COOKIE_NAME}=${data.token}; path=/; max-age=604800; Secure; SameSite=Lax`
         window.location.href = redirect
       },
 
@@ -66,7 +76,7 @@ export const useAuthStore = create<AuthStore>()(
           // proceed with client-side cleanup even if server call fails
         }
         set({ user: null, token: null, isAuthenticated: false })
-        document.cookie = 'sentinel-auth=; path=/; max-age=0'
+        document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`
         window.location.href = '/'
       },
 
@@ -74,9 +84,13 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const { data } = await api.get('/user/me')
           set({ user: data.user, isAuthenticated: true, initialized: true })
+          const token = get().token
+          if (token) {
+            document.cookie = `${COOKIE_NAME}=${token}; path=/; max-age=900; Secure; SameSite=Lax`
+          }
         } catch {
           set({ user: null, token: null, isAuthenticated: false, initialized: true })
-          document.cookie = 'sentinel-auth=; path=/; max-age=0'
+          document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`
         }
       },
 

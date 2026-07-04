@@ -246,13 +246,24 @@ function TokenHandler() {
       localStorage.setItem('token', token)
       localStorage.setItem('refresh_token', refreshToken)
 
-      // 2. Save as first-party cookies so Next.js Server Middleware has instant access
-      // (Setting both 'token' and 'access_token' to safely match whatever your middleware looks for)
-      document.cookie = `token=${token}; path=/; max-age=900; Secure; SameSite=Lax`
-      document.cookie = `access_token=${token}; path=/; max-age=900; Secure; SameSite=Lax`
+      // 2. Seed the Zustand persist store so the next page load picks up auth immediately
+      try {
+        const existing = localStorage.getItem('sentinel-auth')
+        const parsed = existing ? JSON.parse(existing) : { state: {}, version: 0 }
+        parsed.state = { ...parsed.state, token, isAuthenticated: true }
+        localStorage.setItem('sentinel-auth', JSON.stringify(parsed))
+      } catch {
+        localStorage.setItem(
+          'sentinel-auth',
+          JSON.stringify({ state: { token, isAuthenticated: true }, version: 0 })
+        )
+      }
+
+      // 3. Set first-party cookie so proxy.ts can verify on protected routes
+      document.cookie = `sentinel-token=${token}; path=/; max-age=900; Secure; SameSite=Lax`
       document.cookie = `refresh_token=${refreshToken}; path=/; max-age=604800; Secure; SameSite=Lax`
 
-      // 3. Smart Redirect: Send them to their intended destination or fallback to /agent
+      // 4. Redirect to intended destination or /agent
       const nextRoute = searchParams.get('next') || '/agent'
       window.location.href = nextRoute
     }
