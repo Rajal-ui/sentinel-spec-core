@@ -424,6 +424,4 @@ The full OpenAPI 3.1.0 specification is available at `sentinel_spec_openapi.json
 
 This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for the full text.
 
----
 
-<p align="center"><sub>Sentinel Spec &mdash; Built for IBM Bob IDE</sub></p>
