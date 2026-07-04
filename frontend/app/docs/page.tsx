@@ -11,12 +11,12 @@ import { useThemeStore } from '@/lib/store/theme'
 
 // ── TOC section definitions ──────────────────────────────────────────────────
 const TOC_SECTIONS = [
-  { id: 'overview',      label: 'Overview' },
+  { id: 'overview', label: 'Overview' },
   { id: 'capabilities', label: 'Capabilities' },
   { id: 'architecture', label: 'Architecture' },
   { id: 'ibm-services', label: 'IBM Services' },
-  { id: 'tech-stack',   label: 'Tech Stack' },
-  { id: 'pipeline',     label: 'Pipeline' },
+  { id: 'tech-stack', label: 'Tech Stack' },
+  { id: 'pipeline', label: 'Pipeline' },
 ]
 
 // ── Capability data ───────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ const CAPABILITIES: Capability[] = [
     prose:
       'At analysis time the policy retriever embeds the incoming code diff using the same encoder used at ingestion time. A cosine-similarity ANN query runs against the Milvus-lite collection scoped to the requesting tenant. The top-k=6 chunks are returned with their source ADR identifiers and scores. These chunks form the grounding context injected into every downstream Granite prompt, ensuring classifications always cite specific policy text rather than hallucinating rules.',
     schema:
-`// PolicyChunk schema
+      `// PolicyChunk schema
 {
   "chunk_id": "adr-42-para-3",
   "team_scope": "payments",
@@ -56,7 +56,7 @@ const CAPABILITIES: Capability[] = [
     prose:
       'The classification agent sends the retrieved policy chunks plus the diff to Granite-3-8b running inside the caller\'s IBM Cloud tenancy via the watsonx.ai inference endpoint. The prompt template enforces structured JSON output using a response_format schema. Each finding carries a rule_id (mapped to the source ADR), a severity (blocking / warning / logged_only), a confidence float in [0.0, 1.0], a plain-language rationale, and a remediation suggestion. Temperature is set to 0 for deterministic output.',
     schema:
-`// Classification response (Granite structured output)
+      `// Classification response (Granite structured output)
 {
   "findings": [
     {
@@ -79,7 +79,7 @@ const CAPABILITIES: Capability[] = [
     prose:
       'After the primary classification the critic agent runs a second Granite inference with an adversarial prompt: it is explicitly instructed to find reasons the primary classification might be wrong. If the critic disagrees with a finding\'s severity the confidence is down-weighted and the discrepancy is logged. Empirically this two-pass pattern reduces false positives by ~60% compared to single-pass classification. The critic output is merged into the final finding list before routing.',
     schema:
-`// Critic prompt pattern (IBM Plex Mono)
+      `// Critic prompt pattern (IBM Plex Mono)
 SYSTEM: You are an adversarial compliance critic.
         Find reasons the following findings are WRONG.
 
@@ -98,7 +98,7 @@ OUTPUT FORMAT: { "overrides": [...], "rationale": "..." }`,
     prose:
       'Post-critique confidence scores drive the routing decision that determines pipeline behaviour. A finding with confidence ≥ 0.85 is promoted to BLOCKING, which causes the CI gate to fail and returns exit code 1 to the pipeline runner. Scores in [0.50, 0.85) become WARNINGS: they appear in the IBM Bob inline panel and are written to the governance lineage store but do not block the build. Scores below 0.50 are downgraded to LOGGED_ONLY — silently recorded for trend analysis without surfacing noise to the developer.',
     schema:
-`// Routing table
+      `// Routing table
 confidence >= 0.85  → severity: "blocking"  → CI exit 1
 confidence 0.50-0.84 → severity: "warning"  → logged, no block
 confidence < 0.50   → severity: "logged_only" → silent record
@@ -115,7 +115,7 @@ confidence < 0.50   → severity: "logged_only" → silent record
     prose:
       'Every finding, suppression, and human override is written as an append-only record to watsonx.governance. Records include the finding content, the Granite model version, the policy chunk IDs used, a timestamp, and the identity of any human who approved an exception. Records are cryptographically signed and cannot be edited — only new records can supersede previous ones. This produces an auditor-ready decision trail that satisfies SOC 2, ISO 27001, and financial-services regulatory requirements without any additional tooling.',
     schema:
-`// LineageRecord (watsonx.governance schema)
+      `// LineageRecord (watsonx.governance schema)
 {
   "record_id": "lr-uuid-v4",
   "type": "finding" | "override" | "suppression",
@@ -135,7 +135,7 @@ confidence < 0.50   → severity: "logged_only" → silent record
     prose:
       'Every PolicyChunk carries a team_scope string that is enforced at both ingestion and query time. Vector partitioning in Milvus ensures a query from the payments team never reaches the data-platform team\'s policy corpus. Tenants ingest their own ADRs through the policy management API; the ingestion pipeline validates the calling identity against IBM Cloud IAM before writing. Platform-wide rules (e.g. global security baseline) are written into a shared partition that is always merged into every tenant\'s retrieval context.',
     schema:
-`// Ingestion call (policy management API)
+      `// Ingestion call (policy management API)
 POST /api/policies/ingest
 Authorization: Bearer <IAM token>
 
@@ -152,14 +152,14 @@ Authorization: Bearer <IAM token>
 
 // ── IBM Services table data ───────────────────────────────────────────────────
 const IBM_SERVICES = [
-  { component: 'LLM',          service: 'IBM Granite-3-8b via watsonx.ai',  purpose: 'Violation classification and adversarial critique',     href: 'https://docs.ibm.com/watsonx' },
-  { component: 'Vector Store', service: 'Milvus via watsonx.data',           purpose: 'Policy chunk storage and retrieval',                   href: 'https://docs.ibm.com/milvus' },
-  { component: 'Governance',   service: 'watsonx.governance',                purpose: 'Immutable lineage records for all decisions',          href: 'https://docs.ibm.com/governance' },
-  { component: 'Orchestration',service: 'watsonx Orchestrate',               purpose: 'Agent pipeline coordination',                         href: 'https://docs.ibm.com/orchestrate' },
-  { component: 'IDE',          service: 'IBM Bob',                           purpose: 'Native MCP tool registration and finding display',     href: 'https://ibm.com/bob' },
-  { component: 'Auth',         service: 'IBM Cloud IAM',                     purpose: 'Service-to-service authentication',                   href: 'https://cloud.ibm.com/iam' },
-  { component: 'Monitoring',   service: 'IBM Cloud Monitor',                 purpose: 'Agent performance and SLA tracking',                  href: 'https://cloud.ibm.com/monitor' },
-  { component: 'Secrets',      service: 'IBM Secrets Manager',               purpose: 'API key and credential management',                   href: 'https://cloud.ibm.com/secrets' },
+  { component: 'LLM', service: 'IBM Granite-3-8b via watsonx.ai', purpose: 'Violation classification and adversarial critique', href: 'https://docs.ibm.com/watsonx' },
+  { component: 'Vector Store', service: 'Milvus via watsonx.data', purpose: 'Policy chunk storage and retrieval', href: 'https://docs.ibm.com/milvus' },
+  { component: 'Governance', service: 'watsonx.governance', purpose: 'Immutable lineage records for all decisions', href: 'https://docs.ibm.com/governance' },
+  { component: 'Orchestration', service: 'watsonx Orchestrate', purpose: 'Agent pipeline coordination', href: 'https://docs.ibm.com/orchestrate' },
+  { component: 'IDE', service: 'IBM Bob', purpose: 'Native MCP tool registration and finding display', href: 'https://ibm.com/bob' },
+  { component: 'Auth', service: 'IBM Cloud IAM', purpose: 'Service-to-service authentication', href: 'https://cloud.ibm.com/iam' },
+  { component: 'Monitoring', service: 'IBM Cloud Monitor', purpose: 'Agent performance and SLA tracking', href: 'https://cloud.ibm.com/monitor' },
+  { component: 'Secrets', service: 'IBM Secrets Manager', purpose: 'API key and credential management', href: 'https://cloud.ibm.com/secrets' },
 ]
 
 // ── Tech stack badges ─────────────────────────────────────────────────────────
@@ -201,10 +201,10 @@ const PIPELINE_STEPS = [
 function ArchitectureDiagram() {
   return (
     <svg
-      viewBox="0 0 600 400"
+      viewBox="-8 0 616 400"
       width="100%"
       height="auto"
-      style={{ maxWidth: 600, display: 'block', margin: '0 auto' }}
+      style={{ maxWidth: 616, display: 'block', margin: '0 auto' }}
       aria-label="Hexagonal architecture diagram showing Domain Core surrounded by ports and IBM services"
     >
       {/* ── background ── */}
@@ -221,14 +221,14 @@ function ArchitectureDiagram() {
       <line x1="300" y1="225" x2="400" y2="300" stroke="#FF5C00" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.6" />
 
       {/* IBM side connector lines (port → service) */}
-      <line x1="155" y1="88"  x2="68"  y2="88"  stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
-      <line x1="155" y1="88"  x2="68"  y2="136" stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
-      <line x1="155" y1="288" x2="68"  y2="248" stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
-      <line x1="155" y1="288" x2="68"  y2="296" stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="88" x2="68" y2="88" stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="88" x2="68" y2="136" stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="288" x2="68" y2="248" stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
+      <line x1="155" y1="288" x2="68" y2="296" stroke="#FF5C00" strokeWidth="1" opacity="0.4" />
 
       {/* Fallback side connector lines (port → fallback) */}
-      <line x1="445" y1="88"  x2="532" y2="88"  stroke="#4A5568" strokeWidth="1" opacity="0.4" />
-      <line x1="445" y1="88"  x2="532" y2="136" stroke="#4A5568" strokeWidth="1" opacity="0.4" />
+      <line x1="445" y1="88" x2="532" y2="88" stroke="#4A5568" strokeWidth="1" opacity="0.4" />
+      <line x1="445" y1="88" x2="532" y2="136" stroke="#4A5568" strokeWidth="1" opacity="0.4" />
       <line x1="445" y1="288" x2="532" y2="248" stroke="#4A5568" strokeWidth="1" opacity="0.4" />
       <line x1="445" y1="288" x2="532" y2="296" stroke="#4A5568" strokeWidth="1" opacity="0.4" />
 
@@ -266,14 +266,14 @@ function ArchitectureDiagram() {
       <rect x="4" y="72" width="56" height="22" rx="3" fill="rgba(255,92,0,0.15)" stroke="#FF5C00" strokeWidth="1" />
       <text x="32" y="87" textAnchor="middle" fill="#FF5C00" fontFamily="IBM Plex Mono, monospace" fontSize="8">watsonx.ai</text>
 
-      <rect x="4" y="120" width="60" height="22" rx="3" fill="rgba(255,92,0,0.15)" stroke="#FF5C00" strokeWidth="1" />
-      <text x="34" y="135" textAnchor="middle" fill="#FF5C00" fontFamily="IBM Plex Mono, monospace" fontSize="8">Milvus / wx.data</text>
+      <rect x="4" y="120" width="83" height="22" rx="3" fill="rgba(255,92,0,0.15)" stroke="#FF5C00" strokeWidth="1" />
+      <text x="45" y="135" textAnchor="middle" fill="#FF5C00" fontFamily="IBM Plex Mono, monospace" fontSize="8">Milvus / wx.data</text>
 
-      <rect x="4" y="232" width="60" height="22" rx="3" fill="rgba(255,92,0,0.15)" stroke="#FF5C00" strokeWidth="1" />
-      <text x="34" y="247" textAnchor="middle" fill="#FF5C00" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx.governance</text>
+      <rect x="3" y="232" width="70" height="22" rx="3" fill="rgba(255,92,0,0.15)" stroke="#FF5C00" strokeWidth="1" />
+      <text x="37" y="247" textAnchor="middle" fill="#FF5C00" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx.governance</text>
 
-      <rect x="4" y="280" width="60" height="22" rx="3" fill="rgba(255,92,0,0.15)" stroke="#FF5C00" strokeWidth="1" />
-      <text x="34" y="295" textAnchor="middle" fill="#FF5C00" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx Orchestrate</text>
+      <rect x="3" y="280" width="74" height="22" rx="3" fill="rgba(255,92,0,0.15)" stroke="#FF5C00" strokeWidth="1"></rect>
+      <text x="40" y="295" textAnchor="middle" fill="#FF5C00" fontFamily="IBM Plex Mono, monospace" fontSize="8">wx Orchestrate</text>
 
       {/* ── Right column header: Local Fallbacks ── */}
       <text x="540" y="40" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="9" fontWeight="600" letterSpacing="0.06em" textAnchor="end">LOCAL FALLBACKS</text>
@@ -286,10 +286,10 @@ function ArchitectureDiagram() {
       <text x="568" y="135" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">Milvus-lite</text>
 
       <rect x="538" y="232" width="60" height="22" rx="3" fill="rgba(74,85,104,0.12)" stroke="#4A5568" strokeWidth="1" />
-      <text x="568" y="247" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">JSON store</text>
+      <text x="570" y="247" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">JSON store</text>
 
-      <rect x="538" y="280" width="60" height="22" rx="3" fill="rgba(74,85,104,0.12)" stroke="#4A5568" strokeWidth="1" />
-      <text x="568" y="295" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">Direct agents</text>
+      <rect x="530" y="280" width="65" height="22" rx="3" fill="rgba(74,85,104,0.12)" stroke="#4A5568" strokeWidth="1" />
+      <text x="563" y="295" textAnchor="middle" fill="#4A5568" fontFamily="IBM Plex Mono, monospace" fontSize="8">Direct agents</text>
 
       {/* ── MOCK_MODE pill ── */}
       <rect x="234" y="355" width="132" height="24" rx="12" fill="rgba(74,85,104,0.2)" stroke="#4A5568" strokeWidth="1" />
@@ -715,7 +715,7 @@ export default function DocsPage() {
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: '100px 32px 0',
+          padding: '96px 32px 48px',
         }}
       >
         {/* ── HEADER SECTION ── */}
@@ -981,6 +981,7 @@ export default function DocsPage() {
                   borderRadius: 10,
                   padding: '24px 20px',
                   marginBottom: 24,
+                  overflowX: 'auto',
                 }}
               >
                 <ArchitectureDiagram />

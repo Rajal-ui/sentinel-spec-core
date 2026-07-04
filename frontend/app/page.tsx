@@ -480,10 +480,22 @@ export default function LandingPage() {
               <span className="font-mono-product" style={{ fontSize: 11, color: '#FF5C00', background: 'rgba(255,92,0,0.10)', border: '1px solid rgba(255,92,0,0.25)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Shift-Left Compliance
               </span>
-              <span className="font-mono-product" style={{ fontSize: 11, color: '#FF5C00', background: 'rgba(255,92,0,0.10)', border: '1px solid rgba(255,92,0,0.25)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span className="font-mono-product" style={{ fontSize: 11,color:'#f1a10d',background:'#f1a10d36',border: '1px solid rgba(241, 161, 13, 0.65)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 IBM Granite
               </span>
-              <span className="font-mono-product" style={{ fontSize: 11, color: '#E5FF00', background: 'rgba(229,255,0,0.10)', border: '1px solid rgba(229,255,0,0.25)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span
+                className="font-mono-product"
+                style={{
+                  fontSize: 11,
+                  color: theme === 'dark' ? '#4ade80' : '#00bb7f',
+                  background: theme === 'dark' ? 'rgba(74,222,128,0.12)' : '#c6efe2',
+                  border: `1px solid ${theme === 'dark' ? 'rgba(74,222,128,0.28)' : '#8cb5a7'}`,
+                  borderRadius: 100,
+                  padding: '3px 10px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
                 watsonx.governance
               </span>
             </div>
