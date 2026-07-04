@@ -1,10 +1,9 @@
-import type { Response, NextFunction } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database.js'
 import { NotFoundError, ConflictError, UnauthorizedError, ValidationError } from '../utils/errors.js'
 import { toSnakeCase } from '../utils/snakecase.js'
-import type { AuthenticatedRequest } from '../types/index.js'
 
 // ── Validation ────────────────────────────────────────────────────────
 export const updateProfileSchema = z.object({
@@ -24,7 +23,7 @@ export const updatePasswordSchema = z.object({
 })
 
 // ── GET /api/user/me ──────────────────────────────────────────────────
-export async function getMe(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function getMe(req: Request, res: Response, next: NextFunction) {
   try {
     const user = req.user!
     res.json({ user: toSnakeCase(sanitize(user)) })
@@ -34,7 +33,7 @@ export async function getMe(req: AuthenticatedRequest, res: Response, next: Next
 }
 
 // ── PATCH /api/user/profile ───────────────────────────────────────────
-export async function updateProfile(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function updateProfile(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = req.user!.id
     const { name, username, avatar_url } = req.body
@@ -65,7 +64,7 @@ export async function updateProfile(req: AuthenticatedRequest, res: Response, ne
 }
 
 // ── PATCH /api/user/password ──────────────────────────────────────────
-export async function updatePassword(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function updatePassword(req: Request, res: Response, next: NextFunction) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },

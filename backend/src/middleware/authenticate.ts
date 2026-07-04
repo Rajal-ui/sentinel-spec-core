@@ -1,9 +1,8 @@
-import type { Response, NextFunction } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import { verifyAccessToken, verifyRefreshToken, rotateRefreshToken } from '../services/token.service.js'
 import { prisma } from '../config/database.js'
 import { UnauthorizedError } from '../utils/errors.js'
 import { setAuthCookies } from '../utils/cookies.js'
-import type { AuthenticatedRequest } from '../types/index.js'
 
 /**
  * Primary authentication middleware.
@@ -14,7 +13,7 @@ import type { AuthenticatedRequest } from '../types/index.js'
  * 3. Attaches `req.user` (full User record) on success.
  */
 export async function authenticate(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
@@ -68,7 +67,7 @@ export async function authenticate(
  * does NOT reject the request when no token is present.
  */
 export async function optionalAuth(
-  req: AuthenticatedRequest,
+  req: Request,
   _res: Response,
   next: NextFunction,
 ): Promise<void> {

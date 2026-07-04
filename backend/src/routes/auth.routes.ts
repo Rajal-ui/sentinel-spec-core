@@ -31,7 +31,7 @@ router.get(
   '/google/callback',
   passport.authenticate('google', { session: false, failWithError: true }),
   authController.googleCallback,
-  (err: Error, _req: any, res: any, _next: any) => {
+  (_err: Error, _req: any, res: any, _next: any) => {
     res.redirect(`${process.env.CLIENT_URL ?? 'http://localhost:3000'}/?login=failed`)
   },
 )

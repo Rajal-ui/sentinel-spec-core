@@ -1,10 +1,9 @@
-import type { Response, NextFunction } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import * as authService from '../services/auth.service.js'
 import * as tokenService from '../services/token.service.js'
 import { setAuthCookies, clearAuthCookies } from '../utils/cookies.js'
 import { toSnakeCase } from '../utils/snakecase.js'
-import type { AuthenticatedRequest } from '../types/index.js'
 
 // ── Validation schemas ────────────────────────────────────────────────
 export const registerSchema = z.object({
@@ -24,7 +23,7 @@ export const loginSchema = z.object({
 })
 
 // ── POST /api/auth/register ───────────────────────────────────────────
-export async function register(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function register(req: Request, res: Response, next: NextFunction) {
   try {
     const { user, tokens } = await authService.registerUser(req.body)
     setAuthCookies(res, tokens.accessToken, tokens.refreshToken)
@@ -35,7 +34,7 @@ export async function register(req: AuthenticatedRequest, res: Response, next: N
 }
 
 // ── POST /api/auth/login ──────────────────────────────────────────────
-export async function login(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { user, tokens } = await authService.loginUser(req.body)
     setAuthCookies(res, tokens.accessToken, tokens.refreshToken)
@@ -46,7 +45,7 @@ export async function login(req: AuthenticatedRequest, res: Response, next: Next
 }
 
 // ── POST /api/auth/logout ─────────────────────────────────────────────
-export async function logout(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function logout(req: Request, res: Response, next: NextFunction) {
   try {
     if (req.user) {
       await tokenService.revokeAllUserTokens(req.user.id)
@@ -59,7 +58,7 @@ export async function logout(req: AuthenticatedRequest, res: Response, next: Nex
 }
 
 // ── POST /api/auth/refresh ────────────────────────────────────────────
-export async function refresh(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+export async function refresh(req: Request, res: Response, next: NextFunction) {
   try {
     const oldRefresh = req.cookies?.refresh_token
     if (!oldRefresh) {
@@ -86,7 +85,7 @@ export async function refresh(req: AuthenticatedRequest, res: Response, next: Ne
 // This route is handled entirely by passport — see auth.routes.ts.
 // The controller below is used as the callback handler.
 
-export function googleCallback(req: AuthenticatedRequest, res: Response) {
+export function googleCallback(req: Request, res: Response) {
   if (!req.user) {
     res.redirect(`${process.env.CLIENT_URL}/?login=failed`)
     return

@@ -1,7 +1,6 @@
-import type { Response, NextFunction } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { prisma } from '../config/database.js'
-import type { AuthenticatedRequest } from '../types/index.js'
 import { NotFoundError, ValidationError } from '../utils/errors.js'
 
 // ── Validation schemas ────────────────────────────────────────────────
@@ -80,7 +79,7 @@ function toGovernanceRecord(finding: {
 // ── GET /api/v1/findings ──────────────────────────────────────────────
 
 export async function listFindings(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) {
@@ -180,7 +179,7 @@ function derivePolicyDomain(citedAdr: string): string {
 }
 
 export async function bulkCreate(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) {
@@ -232,7 +231,7 @@ export async function bulkCreate(
 // ── PATCH /api/v1/findings/:id/resolve ────────────────────────────────
 
 export async function resolveFinding(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) {

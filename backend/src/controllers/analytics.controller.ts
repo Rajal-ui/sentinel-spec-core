@@ -1,7 +1,6 @@
-import type { Response, NextFunction } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { prisma } from '../config/database.js'
-import type { AuthenticatedRequest } from '../types/index.js'
 
 // ── Validation schema ────────────────────────────────────────────────
 
@@ -23,7 +22,7 @@ function toLocalMonth(d: Date): string {
 // ── GET /api/v1/analytics/summary ─────────────────────────────────────
 
 export async function getSummary(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction,
 ) {
