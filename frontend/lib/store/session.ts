@@ -135,7 +135,7 @@ interface SessionStore {
   deleteSession: (id: string) => void
   renameSession: (id: string, name: string) => void
   setActiveSession: (id: string) => void
-  sendMessage: (content: string, mode: InputMode) => Promise<void>
+  sendMessage: (content: string, mode: InputMode, meta?: { originalCode?: string; fileName?: string }) => Promise<void>
   resolveFinding: (findingId: string) => Promise<void>
   setThinkingVisible: (v: boolean) => void
 }
@@ -208,7 +208,7 @@ export const useSessionStore = create<SessionStore>()(
         })
       },
 
-      sendMessage: async (content, mode) => {
+      sendMessage: async (content, mode, meta) => {
         if (!content.trim()) return
         messageCounter++
         const userMsg: Message = {
@@ -216,6 +216,8 @@ export const useSessionStore = create<SessionStore>()(
           role: 'user',
           content,
           timestamp: new Date().toISOString(),
+          originalCode: meta?.originalCode,
+          fileName: meta?.fileName,
         }
         set((s) => ({ messages: [...s.messages, userMsg], isStreaming: true }))
 

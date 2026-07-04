@@ -111,6 +111,10 @@ export interface Message {
   tokens?: number
   duration_ms?: number
   is_streaming?: boolean
+  /** Original source code submitted with this message (for full-file patch download) */
+  originalCode?: string
+  /** File name of the submitted source (e.g. "billing.py") */
+  fileName?: string
 }
 
 export interface ThinkingStep {

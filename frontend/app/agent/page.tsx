@@ -350,6 +350,8 @@ function LeftPanel() {
                 onClick={async () => {
                   if (!activeSessionId) createSession()
                   let content = ''
+                  let originalCode: string | undefined
+                  let fileName: string | undefined
                   if (stagedFiles.length > 0) {
                     const fileParts = stagedFiles.map(f => {
                       const header = `# File: ${f.name} (${formatBytes(f.size)})`
@@ -357,11 +359,16 @@ function LeftPanel() {
                       return `${header}${body}`
                     })
                     content = fileParts.join('\n\n')
+                    // Use the first file's raw content as the reconstruction source
+                    originalCode = stagedFiles[0].content ?? content
+                    fileName = stagedFiles[0].name
                   } else if (pasteCode.trim()) {
                     content = pasteCode
+                    originalCode = pasteCode
+                    fileName = 'pasted_code.py'
                   }
                   if (content) {
-                    await sendMessage(content, 'text')
+                    await sendMessage(content, 'text', { originalCode, fileName })
                     setStagedFiles([])
                     setPasteCode('')
                   }

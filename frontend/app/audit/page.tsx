@@ -360,6 +360,7 @@ function FilterPanel({ filters, onChange, onRun, onExport }: FilterPanelProps) {
         </button>
         <button
           onClick={onExport}
+          className="relative z-20 pointer-events-auto"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1262,7 +1263,11 @@ export default function AuditPage() {
   }
 
   function handleExport() {
-    console.info('Export to PDF requested', { filters, count: records.length })
+    try {
+      window.print()
+    } catch (error) {
+      console.error('PDF generation failure:', error)
+    }
   }
 
   return (

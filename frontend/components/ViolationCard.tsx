@@ -11,6 +11,8 @@ interface ViolationCardProps {
   isResolved: boolean
   resolvedAt: string | null
   onApplyFix: (id: string) => void
+  originalCode?: string
+  fileName?: string
 }
 
 export default function ViolationCard({
@@ -18,6 +20,8 @@ export default function ViolationCard({
   isResolved,
   resolvedAt,
   onApplyFix,
+  originalCode,
+  fileName,
 }: ViolationCardProps) {
   const prefersReducedMotion = useReducedMotion()
   const [expanded, setExpanded] = useState(false)
@@ -58,14 +62,34 @@ export default function ViolationCard({
 
   const handleDownload = useCallback(() => {
     if (!finding.diff_new) return
-    const blob = new Blob([finding.diff_new], { type: 'text/plain' })
+
+    // Build the corrected file body: replace the violating line inside the
+    // original source when available, otherwise fall back to the bare fix line.
+    let fileBody: string
+    let downloadName: string
+
+    if (originalCode && finding.diff_old) {
+      fileBody = originalCode.replace(finding.diff_old, finding.diff_new)
+      const baseName = fileName ?? `fix-${finding.id}.py`
+      downloadName = baseName.replace(/(\.[^.]+)$/, '_fixed$1')
+    } else {
+      // Fallback: single corrected line as a plain patch
+      fileBody = finding.diff_new
+      downloadName = fileName
+        ? fileName.replace(/(\.[^.]+)$/, '_fixed$1')
+        : `fix-${finding.id}.patch`
+    }
+
+    const blob = new Blob([fileBody], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `fix-${finding.id}.patch`
-    a.click()
+    const link = document.createElement('a')
+    link.href = url
+    link.download = downloadName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
     URL.revokeObjectURL(url)
-  }, [finding])
+  }, [finding, originalCode, fileName])
 
   return (
     <motion.div

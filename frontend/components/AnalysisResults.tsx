@@ -10,6 +10,8 @@ interface AnalysisResultsProps {
   summary: string
   resolvedFindings: Record<string, { resolved_at: string }>
   onApplyFix: (id: string) => void
+  originalCode?: string
+  fileName?: string
 }
 
 export default function AnalysisResults({
@@ -17,6 +19,8 @@ export default function AnalysisResults({
   summary,
   resolvedFindings,
   onApplyFix,
+  originalCode,
+  fileName,
 }: AnalysisResultsProps) {
   const [expanded, setExpanded] = useState(false)
 
@@ -125,6 +129,8 @@ export default function AnalysisResults({
                       isResolved={!!resolution}
                       resolvedAt={resolution?.resolved_at ?? null}
                       onApplyFix={onApplyFix}
+                      originalCode={originalCode}
+                      fileName={fileName}
                     />
                   )
                 })}

@@ -778,7 +778,7 @@ export default function DocsPage() {
               className="font-mono-product"
               style={{ fontSize: 12, color: 'var(--text-muted)' }}
             >
-              Updated 2026-01-15
+              Updated on 04-07-2026
             </span>
           </div>
         </motion.header>

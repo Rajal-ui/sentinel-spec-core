@@ -59,7 +59,12 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 820, margin: '0 auto', width: '100%' }}>
       <AnimatePresence initial={false}>
-        {messages.map((msg) => (
+        {messages.map((msg, idx) => {
+          // Retrieve the ingestion context from the preceding user message
+          const prevMsg = idx > 0 ? messages[idx - 1] : null
+          const originalCode = prevMsg?.originalCode
+          const fileName = prevMsg?.fileName
+          return (
           <motion.div
             key={msg.id}
             initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 10 }}
@@ -107,6 +112,8 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
                     summary={msg.content}
                     resolvedFindings={sessionResolvedMap}
                     onApplyFix={onApplyFix}
+                    originalCode={originalCode}
+                    fileName={fileName}
                   />
                 ) : (
                   <div
@@ -122,9 +129,10 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
                   </div>
                 )}
               </div>
-            )}
-          </motion.div>
-        ))}
+              )}
+            </motion.div>
+            )
+          })}
       </AnimatePresence>
 
       <AnimatePresence>
