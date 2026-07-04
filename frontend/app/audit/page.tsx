@@ -31,16 +31,9 @@ interface FilterState {
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
     <motion.div
-      className="glass"
-      style={{
-        borderRadius: 8,
-        padding: 20,
-        flex: 1,
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-      }}
+      className="flex-1 min-w-0 flex flex-col gap-1.5 rounded-xl p-5
+                 bg-white/55 border border-white/70 backdrop-blur-xl shadow-sm
+                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -125,284 +118,275 @@ function FilterPanel({ filters, onChange, onRun, onExport }: FilterPanelProps) {
   }
 
   return (
-    <div
-      style={{
-        width: '30%',
-        flexShrink: 0,
-        position: 'sticky',
-        top: 0,
-        height: 'fit-content',
-        maxHeight: 'calc(100vh - 80px)',
-        overflowY: 'auto',
-      }}
-    >
-      <div
-        className="glass"
-        style={{ borderRadius: 8, padding: 20, display: 'flex', flexDirection: 'column', gap: 0 }}
-      >
-        {/* Panel header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 20 }}>
-          <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-          <span
-            className="font-mono-product"
-            style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}
-          >
-            Filter Records
-          </span>
-        </div>
+    // Left column: isolated scroll track — no sticky, no fit-content
+    <div className="w-[30%] flex-shrink-0 h-full overflow-y-auto custom-scrollbar
+                    bg-white/40 border border-slate-200/60 backdrop-blur-xl rounded-xl p-4
+                    dark:bg-zinc-900/40 dark:border-zinc-800/60">
+      {/* Panel header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 20 }}>
+        <Filter size={13} style={{ color: 'var(--text-muted)' }} />
+        <span
+          className="font-mono-product"
+          style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}
+        >
+          Filter Records
+        </span>
+      </div>
 
-        {/* Date range */}
-        <div style={sectionStyle}>
-          <span style={labelStyle}>Date Range</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div>
-              <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>From</span>
-              <input
-                type="date"
-                value={filters.dateFrom}
-                onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>To</span>
-              <input
-                type="date"
-                value={filters.dateTo}
-                onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
-                style={inputStyle}
-              />
-            </div>
+      {/* Date range */}
+      <div style={sectionStyle}>
+        <span style={labelStyle}>Date Range</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div>
+            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>From</span>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>To</span>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
+              style={inputStyle}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Policy domain chips */}
-        <div style={sectionStyle}>
-          <span style={labelStyle}>Policy Domain</span>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {DOMAIN_OPTIONS.map((d) => {
-              const active = filters.domains.includes(d)
-              return (
-                <button
-                  key={d}
-                  onClick={() => toggleDomain(d)}
+      {/* Policy domain chips */}
+      <div style={sectionStyle}>
+        <span style={labelStyle}>Policy Domain</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {DOMAIN_OPTIONS.map((d) => {
+            const active = filters.domains.includes(d)
+            return (
+              <button
+                key={d}
+                onClick={() => toggleDomain(d)}
+                className={
+                  active
+                    ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
+                    : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
+                }
+                style={{
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontSize: 10,
+                  letterSpacing: '0.03em',
+                  padding: '4px 9px',
+                  borderRadius: 4,
+                  background: active ? undefined : 'var(--surface-muted)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {DOMAIN_LABELS[d]}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Finding tier checkboxes */}
+      <div style={sectionStyle}>
+        <span style={labelStyle}>Finding Tier</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {TIER_OPTIONS.map((t) => {
+            const checked = filters.tiers.includes(t)
+            return (
+              <label
+                key={t}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontSize: 11,
+                  color: 'var(--text-secondary)',
+                  userSelect: 'none',
+                }}
+              >
+                <div
+                  onClick={() => toggleTier(t)}
                   style={{
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    fontSize: 10,
-                    letterSpacing: '0.03em',
-                    padding: '4px 9px',
-                    borderRadius: 4,
-                    border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
-                    background: active ? 'rgba(255,0,122,0.18)' : 'var(--surface-muted)',
-                    color: active ? 'var(--primary)' : 'var(--text-muted)',
-                    cursor: 'pointer',
+                    width: 14,
+                    height: 14,
+                    borderRadius: 3,
+                    border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    background: checked ? 'var(--primary)' : 'var(--surface-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
                     transition: 'all 0.15s',
                   }}
                 >
-                  {DOMAIN_LABELS[d]}
-                </button>
-              )
-            })}
-          </div>
+                  {checked && <Check size={9} style={{ color: '#fff' }} />}
+                </div>
+                <span onClick={() => toggleTier(t)}>{t}</span>
+              </label>
+            )
+          })}
         </div>
+      </div>
 
-        {/* Finding tier checkboxes */}
-        <div style={sectionStyle}>
-          <span style={labelStyle}>Finding Tier</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {TIER_OPTIONS.map((t) => {
-              const checked = filters.tiers.includes(t)
-              return (
-                <label
-                  key={t}
+      {/* Override status radios */}
+      <div style={sectionStyle}>
+        <span style={labelStyle}>Override Status</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {(['all', 'overridden', 'not_overridden'] as OverrideFilter[]).map((v) => {
+            const labels: Record<OverrideFilter, string> = {
+              all: 'All',
+              overridden: 'Overridden',
+              not_overridden: 'Not overridden',
+            }
+            const checked = filters.overrideStatus === v
+            return (
+              <label
+                key={v}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  cursor: 'pointer',
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontSize: 11,
+                  color: 'var(--text-secondary)',
+                  userSelect: 'none',
+                }}
+                onClick={() => onChange({ ...filters, overrideStatus: v })}
+              >
+                <div
                   style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: '50%',
+                    border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    background: 'var(--surface-muted)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    fontSize: 11,
-                    color: 'var(--text-secondary)',
-                    userSelect: 'none',
+                    justifyContent: 'center',
+                    flexShrink: 0,
                   }}
                 >
-                  <div
-                    onClick={() => toggleTier(t)}
-                    style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: 3,
-                      border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
-                      background: checked ? 'var(--primary)' : 'var(--surface-muted)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    {checked && <Check size={9} style={{ color: '#fff' }} />}
-                  </div>
-                  <span onClick={() => toggleTier(t)}>{t}</span>
-                </label>
-              )
-            })}
+                  {checked && (
+                    <div
+                      style={{
+                        width: 7,
+                        height: 7,
+                        borderRadius: '50%',
+                        background: 'var(--primary)',
+                      }}
+                    />
+                  )}
+                </div>
+                {labels[v]}
+              </label>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Confidence range dual sliders */}
+      <div style={sectionStyle}>
+        <span style={labelStyle}>
+          Confidence Range — {filters.confidenceMin}%–{filters.confidenceMax}%
+        </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 24 }}>
+              Min
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={filters.confidenceMin}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                onChange({ ...filters, confidenceMin: Math.min(v, filters.confidenceMax) })
+              }}
+              style={{ flex: 1, accentColor: 'var(--primary)' }}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 24 }}>
+              Max
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={filters.confidenceMax}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                onChange({ ...filters, confidenceMax: Math.max(v, filters.confidenceMin) })
+              }}
+              style={{ flex: 1, accentColor: 'var(--primary)' }}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Override status radios */}
-        <div style={sectionStyle}>
-          <span style={labelStyle}>Override Status</span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            {(['all', 'overridden', 'not_overridden'] as OverrideFilter[]).map((v) => {
-              const labels: Record<OverrideFilter, string> = {
-                all: 'All',
-                overridden: 'Overridden',
-                not_overridden: 'Not overridden',
-              }
-              const checked = filters.overrideStatus === v
-              return (
-                <label
-                  key={v}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    fontSize: 11,
-                    color: 'var(--text-secondary)',
-                    userSelect: 'none',
-                  }}
-                  onClick={() => onChange({ ...filters, overrideStatus: v })}
-                >
-                  <div
-                    style={{
-                      width: 14,
-                      height: 14,
-                      borderRadius: '50%',
-                      border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
-                      background: 'var(--surface-muted)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {checked && (
-                      <div
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: '50%',
-                          background: 'var(--primary)',
-                        }}
-                      />
-                    )}
-                  </div>
-                  {labels[v]}
-                </label>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Confidence range dual sliders */}
-        <div style={sectionStyle}>
-          <span style={labelStyle}>
-            Confidence Range — {filters.confidenceMin}%–{filters.confidenceMax}%
-          </span>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 24 }}>
-                Min
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={filters.confidenceMin}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  onChange({ ...filters, confidenceMin: Math.min(v, filters.confidenceMax) })
-                }}
-                style={{ flex: 1, accentColor: 'var(--primary)' }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 24 }}>
-                Max
-              </span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={filters.confidenceMax}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  onChange({ ...filters, confidenceMax: Math.max(v, filters.confidenceMin) })
-                }}
-                style={{ flex: 1, accentColor: 'var(--primary)' }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button
-            onClick={onRun}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'var(--primary)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '9px 14px',
-              cursor: 'pointer',
-              fontFamily: 'IBM Plex Mono, monospace',
-              fontSize: 13,
-              fontWeight: 500,
-              transition: 'background 0.15s',
-            }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary-hover)')}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary)')}
-          >
-            <span>Run Query</span>
-            <span style={{ opacity: 0.7, fontSize: 11 }}>⌘↵</span>
-          </button>
-          <button
-            onClick={onExport}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              border: '1px solid var(--border)',
-              borderRadius: 6,
-              padding: '8px 14px',
-              cursor: 'pointer',
-              fontFamily: 'IBM Plex Mono, monospace',
-              fontSize: 12,
-              transition: 'border-color 0.15s, color 0.15s',
-            }}
-            onMouseEnter={(e) => {
-              ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--text-muted)'
-              ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
-            }}
-            onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
-              ;(e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'
-            }}
-          >
-            <Download size={12} />
-            Export to PDF
-          </button>
-        </div>
+      {/* Actions */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <button
+          onClick={onRun}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--primary)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '9px 14px',
+            cursor: 'pointer',
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 13,
+            fontWeight: 500,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary-hover)')}
+          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary)')}
+        >
+          <span>Run Query</span>
+          <span style={{ opacity: 0.7, fontSize: 11 }}>⌘↵</span>
+        </button>
+        <button
+          onClick={onExport}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '8px 14px',
+            cursor: 'pointer',
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 12,
+            transition: 'border-color 0.15s, color 0.15s',
+          }}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--text-muted)'
+            ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+            ;(e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'
+          }}
+        >
+          <Download size={12} />
+          Export to PDF
+        </button>
       </div>
     </div>
   )
@@ -429,11 +413,11 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
   }
 
   const tierColors: Record<string, React.CSSProperties> = {
-    blocking: { background: 'rgba(220,38,38,0.12)', color: '#E85D4A', borderColor: 'rgba(220,38,38,0.28)' },
+    blocking: { background: 'rgba(244,63,94,0.10)', color: '#e11d48', borderColor: 'rgba(244,63,94,0.20)' },
     // AMBER RULE: amber for warning tier badge only
     warning: { background: 'rgba(232,165,75,0.12)', color: 'var(--amber)', borderColor: 'rgba(232,165,75,0.28)' },
     logged_only: { background: 'rgba(74,85,104,0.12)', color: 'var(--text-muted)', borderColor: 'rgba(74,85,104,0.28)' },
-    rejected: { background: 'rgba(46,204,113,0.12)', color: 'var(--success)', borderColor: 'rgba(46,204,113,0.28)' },
+    rejected: { background: 'rgba(16,185,129,0.10)', color: '#059669', borderColor: 'rgba(16,185,129,0.20)' },
   }
 
   const displayStatus: 'BLOCKING' | 'WARNING' | 'PASSED' | 'OVERRIDDEN' | 'RESOLVED' =
@@ -446,16 +430,12 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
   return (
     <motion.div
       layout
+      className="bg-white/55 border backdrop-blur-xl rounded-lg overflow-hidden
+                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
       style={{
         // AMBER RULE: amber border only when override occurred (violation signal)
-        border: isOverride
-          ? '1px solid rgba(232,165,75,0.35)'
-          : '1px solid var(--border)',
-        borderRadius: 8,
-        overflow: 'hidden',
-        background: 'var(--surface)',
-        marginBottom: 8,
-        boxShadow: isOverride ? '0 0 12px rgba(232,165,75,0.06)' : 'none',
+        borderColor: isOverride ? 'rgba(232,165,75,0.35)' : undefined,
+        boxShadow: isOverride ? '0 0 12px rgba(232,165,75,0.06)' : undefined,
       }}
     >
       {/* Compact row */}
@@ -627,8 +607,8 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
                       border: '1px solid',
                       flexShrink: 0,
                       ...(record.critic_verdict.entailed
-                        ? { background: 'rgba(220,38,38,0.12)', color: '#E85D4A', borderColor: 'rgba(220,38,38,0.3)' }
-                        : { background: 'rgba(46,204,113,0.12)', color: 'var(--success)', borderColor: 'rgba(46,204,113,0.3)' }),
+                        ? { background: 'rgba(244,63,94,0.10)', color: '#e11d48', borderColor: 'rgba(244,63,94,0.20)' }
+                        : { background: 'rgba(16,185,129,0.10)', color: '#059669', borderColor: 'rgba(16,185,129,0.20)' }),
                     }}
                   >
                     {record.critic_verdict.entailed ? 'ENTAILED' : 'NOT ENTAILED'}
@@ -727,12 +707,10 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
   return (
     // AMBER RULE: amber border for override/violation pending card
     <div
+      className="bg-white/55 border backdrop-blur-xl rounded-lg overflow-hidden mb-2
+                 dark:bg-[#111116]/65"
       style={{
-        border: '1px solid rgba(232,165,75,0.32)',
-        borderRadius: 8,
-        background: 'var(--surface)',
-        overflow: 'hidden',
-        marginBottom: 8,
+        borderColor: 'rgba(232,165,75,0.32)',
         boxShadow: '0 0 10px rgba(232,165,75,0.05)',
       }}
     >
@@ -748,9 +726,9 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
               fontSize: 10,
               padding: '2px 7px',
               borderRadius: 4,
-              background: 'rgba(255,0,122,0.15)',
+              background: 'rgba(255,92,0,0.10)',
               color: 'var(--primary)',
-              border: '1px solid rgba(255,0,122,0.3)',
+              border: '1px solid rgba(255,92,0,0.30)',
               flexShrink: 0,
             }}
           >
@@ -799,13 +777,11 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => setShowApproveConfirm(true)}
+              className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 5,
-                background: 'rgba(46,204,113,0.15)',
-                color: 'var(--success)',
-                border: '1px solid rgba(46,204,113,0.3)',
                 borderRadius: 5,
                 padding: '6px 14px',
                 fontSize: 12,
@@ -813,21 +789,19 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 cursor: 'pointer',
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(46,204,113,0.22)')}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(46,204,113,0.15)')}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.18)')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '')}
             >
               <Check size={11} />
               Approve
             </button>
             <button
               onClick={() => setShowRejectForm(true)}
+              className="bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-400"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 5,
-                background: 'rgba(232,93,74,0.12)',
-                color: 'var(--danger)',
-                border: '1px solid rgba(232,93,74,0.28)',
                 borderRadius: 5,
                 padding: '6px 14px',
                 fontSize: 12,
@@ -835,8 +809,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 cursor: 'pointer',
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(232,93,74,0.20)')}
-              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(232,93,74,0.12)')}
+              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.18)')}
+              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '')}
             >
               <X size={11} />
               Reject
@@ -858,7 +832,7 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 className="font-mono-product"
                 style={{ fontSize: 11, color: 'var(--text-secondary)' }}
               >
-                Type <strong style={{ color: 'var(--success)' }}>APPROVE</strong> to confirm
+                Type <strong style={{ color: '#059669' }}>APPROVE</strong> to confirm
               </div>
               <input
                 type="text"
@@ -882,10 +856,11 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 <button
                   onClick={handleApprove}
                   disabled={confirmText !== 'APPROVE' || loading}
+                  className={confirmText === 'APPROVE' ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400' : ''}
                   style={{
-                    background: confirmText === 'APPROVE' ? 'rgba(46,204,113,0.18)' : 'rgba(74,85,104,0.15)',
-                    color: confirmText === 'APPROVE' ? 'var(--success)' : 'var(--text-muted)',
-                    border: `1px solid ${confirmText === 'APPROVE' ? 'rgba(46,204,113,0.3)' : 'var(--border)'}`,
+                    background: confirmText === 'APPROVE' ? undefined : 'rgba(74,85,104,0.15)',
+                    color: confirmText === 'APPROVE' ? undefined : 'var(--text-muted)',
+                    border: confirmText === 'APPROVE' ? undefined : '1px solid var(--border)',
                     borderRadius: 5,
                     padding: '6px 14px',
                     fontSize: 12,
@@ -955,10 +930,11 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 <button
                   onClick={handleReject}
                   disabled={!rejectReason.trim() || loading}
+                  className={rejectReason.trim() ? 'bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-400' : ''}
                   style={{
-                    background: rejectReason.trim() ? 'rgba(232,93,74,0.15)' : 'rgba(74,85,104,0.15)',
-                    color: rejectReason.trim() ? 'var(--danger)' : 'var(--text-muted)',
-                    border: `1px solid ${rejectReason.trim() ? 'rgba(232,93,74,0.3)' : 'var(--border)'}`,
+                    background: rejectReason.trim() ? undefined : 'rgba(74,85,104,0.15)',
+                    color: rejectReason.trim() ? undefined : 'var(--text-muted)',
+                    border: rejectReason.trim() ? undefined : '1px solid var(--border)',
                     borderRadius: 5,
                     padding: '6px 14px',
                     fontSize: 12,
@@ -1000,30 +976,15 @@ function HistoryCard({ override: ov }: { override: Override }) {
   return (
     // AMBER RULE: amber border only for override history (violation signal)
     <div
-      style={{
-        border: '1px solid rgba(232,165,75,0.22)',
-        borderRadius: 8,
-        background: 'var(--surface)',
-        padding: '12px 16px',
-        marginBottom: 8,
-      }}
+      className="bg-white/55 border backdrop-blur-xl rounded-lg p-3 mb-2 dark:bg-[#111116]/65"
+      style={{ borderColor: 'rgba(232,165,75,0.22)' }}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
         <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
           {ov.finding_title}
         </div>
         <span
-          className="font-mono-product"
-          style={{
-            fontSize: 10,
-            padding: '2px 7px',
-            borderRadius: 4,
-            border: '1px solid',
-            flexShrink: 0,
-            ...(approved
-              ? { background: 'rgba(46,204,113,0.12)', color: 'var(--success)', borderColor: 'rgba(46,204,113,0.3)' }
-              : { background: 'rgba(232,93,74,0.12)', color: 'var(--danger)', borderColor: 'rgba(232,93,74,0.28)' }),
-          }}
+          className={`font-mono-product badge ${approved ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 border-rose-500/20 dark:text-rose-400'}`}
         >
           {ov.status.toUpperCase()}
         </span>
@@ -1064,16 +1025,18 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
     fontFamily: 'IBM Plex Mono, monospace',
     fontSize: 12,
     padding: '6px 14px',
-    border: active ? '1px solid var(--primary)' : '1px solid transparent',
+    border: active ? '1px solid rgba(255,92,0,0.30)' : '1px solid transparent',
     borderRadius: 5,
-    background: active ? 'rgba(255,0,122,0.14)' : 'transparent',
-    color: active ? 'var(--primary)' : 'var(--text-muted)',
+    background: active ? 'rgba(255,92,0,0.10)' : 'transparent',
+    color: active ? '#FF5C00' : 'var(--text-muted)',
     cursor: 'pointer',
     transition: 'all 0.15s',
+    fontWeight: active ? 500 : 400,
   })
 
   return (
-    <div style={{ flex: 1, minWidth: 0 }}>
+    // Right column: independent scroll track
+    <div className="flex-1 min-w-0 h-full overflow-y-auto custom-scrollbar space-y-3">
       {/* Count line */}
       <div
         className="font-mono-product"
@@ -1093,10 +1056,9 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
           Pending Overrides
           {pendingOverrides.length > 0 && (
             <span
+              className="bg-[#FF5C00]/10 text-[#FF5C00]"
               style={{
                 marginLeft: 6,
-                background: 'rgba(255,0,122,0.25)',
-                color: 'var(--primary)',
                 borderRadius: 8,
                 padding: '1px 6px',
                 fontSize: 10,
@@ -1306,23 +1268,27 @@ export default function AuditPage() {
   return (
     <AppShell title="Audit Intelligence Console" breadcrumb="Audit">
       <AuthGate>
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {/* KPI Strip */}
-          <motion.div
-            style={{ display: 'flex', gap: 12 }}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <KpiCard label="Total analyses this month" value={kpi.total_analyses.toLocaleString()} />
-            <KpiCard label="Violations blocked pre-PR" value={`${kpi.violations_blocked_pct}%`} />
-            <KpiCard label="Override rate" value={`${kpi.override_rate_pct}%`} />
-            <KpiCard label="Resolution rate" value={`${kpi.resolution_rate_pct}%`} />
-            <KpiCard label="Avg confidence" value={`${Math.round(kpi.avg_confidence * 100)}%`} />
-          </motion.div>
+        {/* ── Root: fills the <main> flex-1 container exactly ── */}
+        <div className="h-full w-full overflow-hidden flex flex-col bg-[#F8FAFC] dark:bg-[#08080A]">
 
-          {/* Main panel: filter + results */}
-          <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+          {/* ── Static top header & KPI strip ── */}
+          <div className="flex-shrink-0 p-6 pb-2 space-y-4">
+            <motion.div
+              className="flex gap-3"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <KpiCard label="Total analyses this month" value={kpi.total_analyses.toLocaleString()} />
+              <KpiCard label="Violations blocked pre-PR" value={`${kpi.violations_blocked_pct}%`} />
+              <KpiCard label="Override rate" value={`${kpi.override_rate_pct}%`} />
+              <KpiCard label="Resolution rate" value={`${kpi.resolution_rate_pct}%`} />
+              <KpiCard label="Avg confidence" value={`${Math.round(kpi.avg_confidence * 100)}%`} />
+            </motion.div>
+          </div>
+
+          {/* ── Dual-column scrollable workspace ── */}
+          <div className="flex-1 min-h-0 flex flex-row px-6 pb-6 gap-6 w-full">
             <FilterPanel
               filters={filters}
               onChange={setFilters}
@@ -1335,7 +1301,10 @@ export default function AuditPage() {
               onTabChange={setActiveTab}
             />
           </div>
+
         </div>
+
+        {/* Loading overlay */}
         {loading && (
           <div
             style={{

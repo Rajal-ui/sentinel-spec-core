@@ -60,7 +60,6 @@ function dateRangeToParams(range: DateRange): { dateFrom?: string } {
 function exportCSV(summary: AnalyticsSummary) {
   const rows: string[][] = []
 
-  // KPI section
   rows.push(['Metric', 'Value'])
   rows.push(['Total Analyses', String(summary.total_analyses)])
   rows.push(['Violations Blocked %', String(summary.violations_blocked_pct)])
@@ -69,7 +68,6 @@ function exportCSV(summary: AnalyticsSummary) {
   rows.push(['Avg Confidence', String(summary.avg_confidence)])
   rows.push([])
 
-  // Trend section
   if (summary.trend_data.length > 0) {
     rows.push(['Trend Date', 'Blocking', 'Warning'])
     for (const pt of summary.trend_data) {
@@ -78,7 +76,6 @@ function exportCSV(summary: AnalyticsSummary) {
     rows.push([])
   }
 
-  // Domain section
   if (summary.domain_data.length > 0) {
     rows.push(['Domain', 'Count'])
     for (const d of summary.domain_data) {
@@ -87,7 +84,6 @@ function exportCSV(summary: AnalyticsSummary) {
     rows.push([])
   }
 
-  // Override trend
   if (summary.override_trend.length > 0) {
     rows.push(['Week', 'Override Rate %'])
     for (const o of summary.override_trend) {
@@ -96,7 +92,6 @@ function exportCSV(summary: AnalyticsSummary) {
     rows.push([])
   }
 
-  // Leaderboard
   if (summary.leaderboard.length > 0) {
     rows.push(['Repo', 'Team', 'Violations', 'Override Rate %', 'Capture Rate %', 'Top Domain'])
     for (const lb of summary.leaderboard) {
@@ -122,7 +117,11 @@ const ChartTooltip = ({ active, payload, label, override }: any) => {
   const rate: number | undefined = payload[0]?.value
   const isHigh = override && rate !== undefined && rate > 5
   return (
-    <div className="prism-glass-card" style={{ borderRadius: 6, padding: '8px 12px' }}>
+    <div
+      className="bg-white/55 border border-white/70 backdrop-blur-xl rounded-lg
+                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
+      style={{ borderRadius: 6, padding: '8px 12px' }}
+    >
       <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((p: any) => (
@@ -152,11 +151,11 @@ interface PanelProps {
 function ChartPanel({ title, subtitle, children, delay = 0 }: PanelProps) {
   return (
     <motion.div
-      className="glass"
+      className="bg-white/55 border border-white/70 backdrop-blur-xl shadow-sm rounded-xl p-5 flex flex-col gap-1.5
+                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, delay }}
-      style={{ borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 6 }}
     >
       <h2 className="font-display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
         {title}
@@ -205,7 +204,6 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: T
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        marginBottom: 20,
         flexWrap: 'wrap',
       }}
     >
@@ -217,17 +215,18 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: T
             <button
               key={opt.id}
               onClick={() => onDateRange(opt.id)}
-              className="font-mono-product"
+              className={`font-mono-product ${
+                active
+                  ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
+                  : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
+              }`}
               style={{
                 padding: '5px 12px',
                 borderRadius: 6,
                 fontSize: 12,
                 cursor: 'pointer',
-                border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
-                background: active ? 'rgba(255,0,122,0.18)' : 'transparent',
-                color: active ? 'var(--primary)' : 'var(--text-muted)',
+                background: active ? undefined : 'transparent',
                 transition: 'all 0.12s ease',
-                fontWeight: active ? 600 : 400,
               }}
             >
               [{opt.label}]
@@ -251,17 +250,18 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: T
               <button
                 key={opt.id}
                 onClick={() => onGroupBy(opt.id)}
-                className="font-mono-product"
+                className={`font-mono-product ${
+                  active
+                    ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
+                    : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
+                }`}
                 style={{
                   padding: '5px 10px',
                   borderRadius: 6,
                   fontSize: 12,
                   cursor: 'pointer',
-                  border: active ? '1px solid var(--primary)' : '1px solid var(--border)',
-                  background: active ? 'rgba(255,0,122,0.18)' : 'transparent',
-                  color: active ? 'var(--primary)' : 'var(--text-muted)',
+                  background: active ? undefined : 'transparent',
                   transition: 'all 0.12s ease',
-                  fontWeight: active ? 600 : 400,
                 }}
               >
                 {opt.label}
@@ -277,24 +277,22 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: T
       {/* Export button */}
       <button
         onClick={onExport}
-        className="font-mono-product"
+        className="font-mono-product text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60"
         style={{
           padding: '6px 16px',
           borderRadius: 6,
           fontSize: 12,
           cursor: 'pointer',
-          border: '1px solid var(--border)',
           background: 'transparent',
-          color: 'var(--text-secondary)',
           transition: 'border-color 0.12s ease, color 0.12s ease',
         }}
         onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--primary)'
+          ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#FF5C00'
+          ;(e.currentTarget as HTMLButtonElement).style.color = '#FF5C00'
         }}
         onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
+          ;(e.currentTarget as HTMLButtonElement).style.borderColor = ''
+          ;(e.currentTarget as HTMLButtonElement).style.color = ''
         }}
       >
         Export Report
@@ -437,7 +435,7 @@ function OverrideRatePanel({ data }: { data: OverrideTrendPoint[] }) {
   )
 }
 
-// ── Domain bar custom cell renderer (fills each bar with its domain colour) ───
+// ── Domain bar custom cell renderer ──────────────────────────────────────────
 
 function DomainBarPanelFilled({ data }: { data: DomainPoint[] }) {
   return (
@@ -482,8 +480,6 @@ function DomainBarPanelFilled({ data }: { data: DomainPoint[] }) {
   )
 }
 
-// ── (Leaderboard moved to components/shared/Leaderboard.tsx) ──────────────────
-
 // ── Insight cards ─────────────────────────────────────────────────────────────
 
 function InsightCards({ data }: { data: AnalyticsSummary }) {
@@ -521,7 +517,8 @@ function InsightCards({ data }: { data: AnalyticsSummary }) {
           initial={{ opacity: 0, x: 8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.18, delay: 0.34 + i * 0.06 }}
-          className="glass"
+          className="bg-white/55 border border-white/70 backdrop-blur-xl rounded-lg
+                     dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
           style={{
             borderRadius: 8,
             padding: '12px 14px',
@@ -603,7 +600,7 @@ export default function AnalyticsPage() {
     return (
       <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
         <AuthGate>
-          <div style={{ padding: '24px 28px', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+          <div className="h-full flex items-center justify-center">
             <div className="font-mono-product" style={{ fontSize: 14, color: 'var(--text-muted)' }}>Loading analytics…</div>
           </div>
         </AuthGate>
@@ -635,43 +632,32 @@ export default function AnalyticsPage() {
   return (
     <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
       <AuthGate>
-        <div style={{ padding: '24px 28px', maxWidth: 1600, margin: '0 auto' }}>
+        {/* ── Root: fills the <main> flex-1 container exactly ── */}
+        <div className="h-full w-full overflow-hidden flex flex-col bg-[#F8FAFC] dark:bg-[#08080A]">
 
-          {/* KPI strip */}
-          <StatsRow items={statsItems} />
+          {/* ── Top control strip (fixed / non-scrolling) ── */}
+          <div className="flex-shrink-0 p-6 space-y-4">
+            <StatsRow items={statsItems} />
+            <TopControls
+              dateRange={dateRange}
+              groupBy={groupBy}
+              onDateRange={setDateRange}
+              onGroupBy={setGroupBy}
+              onExport={handleExport}
+            />
+          </div>
 
-          {/* Top controls */}
-          <TopControls
-            dateRange={dateRange}
-            groupBy={groupBy}
-            onDateRange={setDateRange}
-            onGroupBy={setGroupBy}
-            onExport={handleExport}
-          />
+          {/* ── Bottom data canvas: independent scrolling grid ── */}
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 pt-0 grid grid-cols-1 xl:grid-cols-3 gap-6 content-start">
 
-          {/* Main content: charts (left/centre) + insights (right rail) */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1fr) 280px',
-              gap: 20,
-              alignItems: 'start',
-            }}
-          >
-            {/* Left column: 2×2 chart grid + leaderboard */}
-            <div>
-              {/* 2×2 chart grid */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: 16,
-                }}
-              >
+            {/* Charts: span 2 of 3 xl columns */}
+            <div className="xl:col-span-2 flex flex-col gap-6">
+              {/* 2-up chart row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ViolationTrendPanel data={summary?.trend_data ?? []} />
                 <DomainBarPanelFilled data={summary?.domain_data ?? []} />
-                <OverrideRatePanel data={summary?.override_trend ?? []} />
               </div>
+              <OverrideRatePanel data={summary?.override_trend ?? []} />
 
               {/* Leaderboard */}
               {summary && summary.leaderboard.length > 0 && (
@@ -680,24 +666,13 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Right rail: insight cards */}
-            <div style={{ position: 'sticky', top: 20 }}>
+            <div className="flex flex-col gap-6">
               {summary && <InsightCards data={summary} />}
             </div>
+
           </div>
 
         </div>
-
-        {/* ── Responsive: collapse to single column below 900px ── */}
-        <style>{`
-          @media (max-width: 900px) {
-            .analytics-outer-grid {
-              grid-template-columns: 1fr !important;
-            }
-            .analytics-chart-grid {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}</style>
       </AuthGate>
     </AppShell>
   )
