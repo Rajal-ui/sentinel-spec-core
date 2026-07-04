@@ -162,6 +162,9 @@ export const useSessionStore = create<SessionStore>()(
           created_at: new Date().toISOString(),
           status: 'PENDING',
           finding_count: 0,
+          blocking_count: 0,
+          warning_count: 0,
+          logged_only_count: 0,
         }
         // Save current messages before switching to new session
         const pendingMessages: Record<string, Message[]> = {}
@@ -307,11 +310,26 @@ export const useSessionStore = create<SessionStore>()(
             messages: updatedMessages,
             isStreaming: false,
             messagesBySessionId: updatedMessagesBySessionId,
-            sessions: s.sessions.map((x) =>
-              x.id === s.activeSessionId
-                ? { ...x, status: matchedFindings.some(f => f.tier === 'blocking' || f.tier === 'warning') ? 'VIOLATIONS' as const : 'PASSED' as const, finding_count: matchedFindings.length }
-                : x
-            ),
+            sessions: s.sessions.map((x) => {
+              if (x.id !== s.activeSessionId) return x
+              const hasViolations = matchedFindings.some(f => f.tier === 'blocking' || f.tier === 'warning')
+              const worstTier: AuditSession['worst_tier'] = matchedFindings.some(f => f.tier === 'blocking')
+                ? 'blocking'
+                : matchedFindings.some(f => f.tier === 'warning')
+                  ? 'warning'
+                  : matchedFindings.some(f => f.tier === 'logged_only')
+                    ? 'logged_only'
+                    : null
+              return {
+                ...x,
+                status: hasViolations ? 'VIOLATIONS' as const : 'PASSED' as const,
+                finding_count: matchedFindings.length,
+                worst_tier: worstTier,
+                blocking_count: matchedFindings.filter(f => f.tier === 'blocking').length,
+                warning_count: matchedFindings.filter(f => f.tier === 'warning').length,
+                logged_only_count: matchedFindings.filter(f => f.tier === 'logged_only').length,
+              }
+            }),
           }
         })
 
@@ -374,13 +392,44 @@ export const useSessionStore = create<SessionStore>()(
     }),
     {
       name: 'sentinel-sessions',
-      version: 2,
+      version: 5,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       migrate: (persisted: any, version) => {
         if (version < 2) {
           return {
             ...persisted,
             resolvedFindings: persisted?.resolvedFindings ?? {},
+          }
+        }
+        if (version < 3) {
+          // worst_tier added in v3
+          return {
+            ...persisted,
+            sessions: (persisted?.sessions ?? []).map((s: AuditSession) => ({
+              ...s,
+              worst_tier: s.worst_tier ?? null,
+            })),
+          }
+        }
+        if (version < 4) {
+          // blocking_count / warning_count added in v4
+          return {
+            ...persisted,
+            sessions: (persisted?.sessions ?? []).map((s: AuditSession) => ({
+              ...s,
+              blocking_count: s.blocking_count ?? null,
+              warning_count: s.warning_count ?? null,
+            })),
+          }
+        }
+        if (version < 5) {
+          // logged_only_count added in v5
+          return {
+            ...persisted,
+            sessions: (persisted?.sessions ?? []).map((s: AuditSession) => ({
+              ...s,
+              logged_only_count: s.logged_only_count ?? null,
+            })),
           }
         }
         return persisted

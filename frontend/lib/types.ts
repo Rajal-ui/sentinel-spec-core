@@ -98,7 +98,16 @@ export interface AuditSession {
   name: string
   created_at: string
   status: 'PASSED' | 'VIOLATIONS' | 'PENDING'
+  /** Total findings across all tiers */
   finding_count: number
+  /** Worst finding tier in this session — set after analysis completes */
+  worst_tier?: 'blocking' | 'warning' | 'logged_only' | null
+  /** blocking-tier count (hard policy failures) */
+  blocking_count?: number | null
+  /** warning-tier count (advisory violations) */
+  warning_count?: number | null
+  /** logged_only-tier count (informational notes) */
+  logged_only_count?: number | null
 }
 
 export interface Message {
