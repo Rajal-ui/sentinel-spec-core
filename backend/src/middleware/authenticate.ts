@@ -76,7 +76,7 @@ export async function optionalAuth(
     const accessToken = req.cookies?.access_token ?? req.headers.authorization?.replace(/^Bearer\s+/i, '')
     if (accessToken) {
       const payload = verifyAccessToken(accessToken)
-      req.user = await prisma.user.findUnique({ where: { id: payload.sub } })
+      req.user = await prisma.user.findUnique({ where: { id: payload.sub } }) ?? undefined
     }
   } catch { /* noop */ }
   next()
