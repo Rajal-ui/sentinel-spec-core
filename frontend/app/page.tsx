@@ -242,9 +242,19 @@ function TokenHandler() {
     const refreshToken = searchParams.get('refresh_token')
 
     if (token && refreshToken) {
+      // 1. Save to localStorage for client-side API states
       localStorage.setItem('token', token)
       localStorage.setItem('refresh_token', refreshToken)
-      window.location.href = '/agent'
+
+      // 2. Save as first-party cookies so Next.js Server Middleware has instant access
+      // (Setting both 'token' and 'access_token' to safely match whatever your middleware looks for)
+      document.cookie = `token=${token}; path=/; max-age=900; Secure; SameSite=Lax`
+      document.cookie = `access_token=${token}; path=/; max-age=900; Secure; SameSite=Lax`
+      document.cookie = `refresh_token=${refreshToken}; path=/; max-age=604800; Secure; SameSite=Lax`
+
+      // 3. Smart Redirect: Send them to their intended destination or fallback to /agent
+      const nextRoute = searchParams.get('next') || '/agent'
+      window.location.href = nextRoute
     }
   }, [searchParams])
 
