@@ -12,7 +12,30 @@ function getTokenFromCookie(): string | null {
   return match ? decodeURIComponent(match[1]) : null
 }
 
-const initialToken = getTokenFromCookie()
+function resolveInitialToken(): string | null {
+  // 1. Check the sentinel-token cookie first (set by TokenHandler after OAuth)
+  const fromCookie = getTokenFromCookie()
+  if (fromCookie) return fromCookie
+
+  // 2. Fall back to the raw localStorage token key (also written by TokenHandler)
+  try {
+    const raw = localStorage.getItem('token')
+    if (raw) return raw
+  } catch {}
+
+  // 3. Fall back to Zustand's persisted state (from a previous session)
+  try {
+    const stored = localStorage.getItem('sentinel-auth')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (parsed?.state?.token) return parsed.state.token
+    }
+  } catch {}
+
+  return null
+}
+
+const initialToken = resolveInitialToken()
 
 interface AuthStore {
   user: User | null
@@ -117,6 +140,25 @@ export const useAuthStore = create<AuthStore>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
       }),
+      merge: (persisted, current) => {
+        const merged = { ...current, ...(persisted ?? {}) }
+        // The sentinel-token cookie is the single source of truth on every pageload.
+        // If a valid cookie exists, it must override any stale persisted state
+        // (e.g. isAuthenticated: false from a prior logout or missing persist key).
+        const cookieToken = getTokenFromCookie()
+        if (cookieToken) {
+          merged.token = cookieToken
+          merged.isAuthenticated = true
+        }
+        return merged
+      },
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        const cookieToken = getTokenFromCookie()
+        if (cookieToken && !state.token) {
+          useAuthStore.setState({ token: cookieToken, isAuthenticated: true })
+        }
+      },
     }
   )
 )
