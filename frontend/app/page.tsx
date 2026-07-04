@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, Suspense } from 'react'
 import { motion, useInView, useReducedMotion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -233,15 +233,9 @@ function RevealSection({ children, delay = 0 }: { children: React.ReactNode; del
   )
 }
 
-// ── Main Landing Page ──
-export default function LandingPage() {
-  const pathname = usePathname()
-  const router = useRouter()
+// ── Safe Token Extraction Wrapper ──
+function TokenHandler() {
   const searchParams = useSearchParams()
-  const theme = useThemeStore((s) => s.theme)
-  const toggleTheme = useThemeStore((s) => s.toggleTheme)
-  const { openLoginModal, isAuthenticated, user, logout } = useAuthStore()
-  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     const token = searchParams.get('token')
@@ -253,6 +247,18 @@ export default function LandingPage() {
       window.location.href = '/agent'
     }
   }, [searchParams])
+
+  return null
+}
+
+// ── Main Landing Page ──
+export default function LandingPage() {
+  const pathname = usePathname()
+  const router = useRouter()
+  const theme = useThemeStore((s) => s.theme)
+  const toggleTheme = useThemeStore((s) => s.toggleTheme)
+  const { openLoginModal, isAuthenticated, user, logout } = useAuthStore()
+  const [profileOpen, setProfileOpen] = useState(false)
 
   useEffect(() => {
     const sectionId = pathname === '/how-it-works' ? 'how-it-works' : pathname === '/ibm-integration' ? 'ibm-integration' : null
@@ -273,7 +279,9 @@ export default function LandingPage() {
     <>
 
       <LoginModal />
-
+      <Suspense fallback={null}>
+        <TokenHandler />
+      </Suspense>
       {/* ── NAV ── */}
       <nav
         className="prism-glass-card"
