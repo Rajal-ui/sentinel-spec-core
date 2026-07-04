@@ -1,9 +1,8 @@
 'use client'
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { usePathname } from 'next/navigation'
 import { motion, useInView, useReducedMotion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Shield, ArrowRight, ChevronRight, ChevronDown, LogOut, User, Settings, Sun, Moon } from 'lucide-react'
 
 import FindingCard from '@/components/shared/FindingCard'
@@ -238,10 +237,22 @@ function RevealSection({ children, delay = 0 }: { children: React.ReactNode; del
 export default function LandingPage() {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const theme = useThemeStore((s) => s.theme)
   const toggleTheme = useThemeStore((s) => s.toggleTheme)
   const { openLoginModal, isAuthenticated, user, logout } = useAuthStore()
   const [profileOpen, setProfileOpen] = useState(false)
+
+  useEffect(() => {
+    const token = searchParams.get('token')
+    const refreshToken = searchParams.get('refresh_token')
+
+    if (token && refreshToken) {
+      localStorage.setItem('token', token)
+      localStorage.setItem('refresh_token', refreshToken)
+      window.location.href = '/agent'
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const sectionId = pathname === '/how-it-works' ? 'how-it-works' : pathname === '/ibm-integration' ? 'ibm-integration' : null
@@ -480,7 +491,7 @@ export default function LandingPage() {
               <span className="font-mono-product" style={{ fontSize: 11, color: '#FF5C00', background: 'rgba(255,92,0,0.10)', border: '1px solid rgba(255,92,0,0.25)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Shift-Left Compliance
               </span>
-              <span className="font-mono-product" style={{ fontSize: 11,color:'#f1a10d',background:'#f1a10d36',border: '1px solid rgba(241, 161, 13, 0.65)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span className="font-mono-product" style={{ fontSize: 11, color: '#f1a10d', background: '#f1a10d36', border: '1px solid rgba(241, 161, 13, 0.65)', borderRadius: 100, padding: '3px 10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 IBM Granite
               </span>
               <span
