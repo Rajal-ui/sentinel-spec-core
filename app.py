@@ -249,7 +249,7 @@ def health() -> HealthResponse:
     mock_mode_value = os.getenv("MOCK_MODE", "false").strip().lower()
     is_mock = mock_mode_value not in {"false", "0", "no", "off"}
     engine_type = type(_engine).__name__
-    model = os.getenv("WATSONX_MODEL_ID", "ibm/granite-20b-code-instruct") if not is_mock else "local"
+    model = os.getenv("WATSONX_MODEL_ID", "ibm/granite-4-h-small") if not is_mock else "local"
     return HealthResponse(
         status="ok",
         engine=engine_type,

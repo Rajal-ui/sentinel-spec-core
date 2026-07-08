@@ -46,7 +46,7 @@ from ports.ai_engine_port import AIEnginePort
 # ---------------------------------------------------------------------------
 
 GRANITE_MODEL_ID = os.getenv(
-    "WATSONX_MODEL_ID", "ibm/granite-20b-code-instruct"
+    "WATSONX_MODEL_ID", "ibm/granite-4-h-small"
 )
 
 # ---------------------------------------------------------------------------
