@@ -22,7 +22,7 @@ The system is a three-service monorepo. The **Python compliance engine** (`app.p
 
 ## Key Features
 
-- **Dual-Agent IBM Granite Pipeline:** Agent 1 (Sentinel Classifier) evaluates the submitted code against the 22-rule compliance matrix using `ibm/granite-20b-code-instruct` via the watsonx.ai SDK. Agent 2 (Adversarial Critic) independently verifies every classification through strict entailment checking to eliminate false positives before findings are emitted.
+- **Dual-Agent IBM Granite Pipeline:** Agent 1 (Sentinel Classifier) evaluates the submitted code against the 22-rule compliance matrix using `ibm/granite-4-h-small` via the watsonx.ai SDK. Agent 2 (Adversarial Critic) independently verifies every classification through strict entailment checking to eliminate false positives before findings are emitted.
 
 - **22-Rule Compliance Matrix:** Covers `SEC` (secrets, injection, transport), `ADR` (architecture decisions), `PII` (data residency, logging), and `API` (contract, versioning) domains. Each rule carries a `severity` (`CRITICAL` → `INFO`), a `FindingTier` routing decision (`blocking` → `logged_only`), and a human-readable remediation suggestion.
 
