@@ -282,16 +282,42 @@ export const useSessionStore = create<SessionStore>()(
           }
         }
 
-        const isQuestion = /^(what|how|why|can|could|would|should|is|are|do|does|describe|explain|check|review|scan)/i.test(content.trim())
+        // Find the active workspace context from the session messages
+        const currentMessages = get().messages
+        const codeMessage = [...currentMessages].reverse().find(m => m.originalCode)
+        const activeCode = codeMessage?.originalCode
+        const activeFileName = codeMessage?.fileName
+
+        // Find existing findings in this session
+        const activeFindings = currentMessages.flatMap(m => m.findings || [])
+
+        const isQuestion = /^(what|how|why|can|could|would|should|is|are|do|does|describe|explain|check|review|scan|give|show|list|summarize|tell)/i.test(content.trim())
         const hasCodeContent = matchedFindings.length > 0 || /import|function|const|let|class|def|export|interface|type|impl|fn /.test(contentLower)
 
-        const summary = matchedFindings.length > 0
-          ? (matchedFindings.length === 1
-              ? `Analysis complete. I found 1 policy violation in the submitted code related to ${matchedDomains[0]}.`
-              : `Analysis complete. I found ${matchedFindings.length} policy violations in the submitted code related to ${matchedDomains.join(', ')}.`)
-          : !hasCodeContent || isQuestion
-            ? `I understand your question. To perform a compliance analysis, please provide the actual code or files you'd like me to review. I can check for ADR violations, PII handling, deprecated API usage, and architectural compliance issues.`
-            : `Analysis complete. I did not find any policy violations in the submitted code. It appears to comply with all relevant ADRs.`
+        let summary = ''
+        if (matchedFindings.length > 0) {
+          summary = matchedFindings.length === 1
+            ? `Analysis complete. I found 1 policy violation in the submitted code related to ${matchedDomains[0]}.`
+            : `Analysis complete. I found ${matchedFindings.length} policy violations in the submitted code related to ${matchedDomains.join(', ')}.`
+        } else if (activeCode && isQuestion) {
+          // User asked a question and we have code/findings context!
+          if (contentLower.includes('violation') || contentLower.includes('finding') || contentLower.includes('summary') || contentLower.includes('report') || contentLower.includes('flag')) {
+            if (activeFindings.length > 0) {
+              summary = `Based on the active analysis of \`${activeFileName}\`, here is a summary of the compliance findings:\n\n` +
+                activeFindings.map((f, i) => `**Finding ${i + 1}: ${f.title} (${f.tier.toUpperCase()})**\n- **ADR Reference:** ${f.cited_adr}\n- **Description:** ${f.description}\n- **Suggested Fix:** \`${f.diff_new}\``).join('\n\n')
+            } else {
+              summary = `I checked the active file \`${activeFileName}\` and found no compliance violations. The code aligns with all active architecture decision records (ADRs).`
+            }
+          } else if (contentLower.includes('code') || contentLower.includes('file') || contentLower.includes('contents') || contentLower.includes('source')) {
+            summary = `The active code file is \`${activeFileName}\`. Here is the source code being analyzed:\n\n\`\`\`python\n${activeCode}\n\`\`\``
+          } else {
+            summary = `I understand your question about \`${activeFileName}\`. The active analysis has flagged ${activeFindings.length} finding(s). You can ask me for a "summary of violations" or to view the "code content" in detail.`
+          }
+        } else if (!hasCodeContent || isQuestion) {
+          summary = `I understand your question. To perform a compliance analysis, please provide the actual code or files you'd like me to review. I can check for ADR violations, PII handling, deprecated API usage, and architectural compliance issues.`
+        } else {
+          summary = `Analysis complete. I did not find any policy violations in the submitted code. It appears to comply with all relevant ADRs.`
+        }
 
         messageCounter++
         const agentMsg: Message = {
