@@ -1,0 +1,64 @@
+{
+  "name": "sentinel-spec",
+  "description": "Autonomous Architecture Compliance Reviewer for IBM Bob IDE. Captures policy violations at authorship time using IBM Granite.",
+  "repository": "https://github.com/your-username/sentinel-spec",
+  "keywords": [
+    "python",
+    "fastapi",
+    "nodejs",
+    "express",
+    "watsonx",
+    "compliance",
+    "governance",
+    "ibm-granite"
+  ],
+  "env": {
+    "MOCK_MODE": {
+      "description": "Set to true to bypass watsonx.ai and run evaluation using local mock regex engine.",
+      "value": "true"
+    },
+    "WATSONX_APIKEY": {
+      "description": "IBM Cloud IAM API Key for watsonx.ai services.",
+      "required": false
+    },
+    "WATSONX_URL": {
+      "description": "watsonx.ai service endpoint instance.",
+      "value": "https://eu-gb.ml.cloud.ibm.com"
+    },
+    "PROJECT_ID": {
+      "description": "watsonx.ai project workspace ID.",
+      "required": false
+    },
+    "WATSONX_MODEL_ID": {
+      "description": "Inference model ID to evaluate code violations.",
+      "value": "ibm/granite-20b-code-instruct"
+    },
+    "COS_API_KEY": {
+      "description": "IBM Cloud Object Storage API Key.",
+      "required": false
+    },
+    "COS_INSTANCE_ID": {
+      "description": "IBM Cloud Object Storage service instance GUID.",
+      "required": false
+    },
+    "COS_ENDPOINT": {
+      "description": "IBM Cloud Object Storage regional/public endpoint.",
+      "value": "https://s3.eu-gb.cloud-object-storage.appdomain.cloud"
+    },
+    "COS_BUCKET": {
+      "description": "COS bucket name to record governance logs.",
+      "value": "sentinel-spec-records"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "standard-1x"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
