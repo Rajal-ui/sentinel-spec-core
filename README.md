@@ -324,7 +324,7 @@ npm run dev
 | `WATSONX_API_KEY` | IBM Cloud API key for watsonx.ai inference | Only if `MOCK_MODE=false` | `abc123...` |
 | `WATSONX_URL` | watsonx.ai service URL | Only if `MOCK_MODE=false` | `https://us-south.ml.cloud.ibm.com` |
 | `WATSONX_PROJECT_ID` | watsonx.ai project GUID | Only if `MOCK_MODE=false` | `a1b2c3d4-...` |
-| `WATSONX_MODEL_ID` | Granite model ID | N | `ibm/granite-20b-code-instruct` |
+| `WATSONX_MODEL_ID` | Granite model ID | N | `ibm/granite-4-h-small` |
 | `COS_API_KEY` | IBM COS API key for execution record persistence | N | `abc123...` |
 | `COS_INSTANCE_CRN` | IBM COS service instance CRN | N | `crn:v1:bluemix:...` |
 | `COS_ENDPOINT` | IBM COS regional endpoint | N | `https://s3.us-south.cloud-object-storage.appdomain.cloud` |
