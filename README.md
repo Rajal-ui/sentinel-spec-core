@@ -7,7 +7,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16.2.10-black?style=flat-square&logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=flat-square&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)
-![IBM Granite](https://img.shields.io/badge/IBM%20Granite-20b--code-0F62FE?style=flat-square&logo=ibm)
+![IBM Granite](https://img.shields.io/badge/IBM%20Granite-4--h-small--0F62FE?style=flat-square&logo=ibm)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 ---
