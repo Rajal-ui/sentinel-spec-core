@@ -5,10 +5,26 @@ import type { FileQueueItem } from '@/lib/types'
 
 interface FileAnalysisQueueProps {
   files: FileQueueItem[]
+  selectedFile: string | null
+  onSelectFile: (filename: string | null) => void
 }
 
-function QueueRow({ item, index, reducedMotion }: { item: FileQueueItem; index: number; reducedMotion: boolean }) {
+function QueueRow({
+  item,
+  index,
+  reducedMotion,
+  isSelected,
+  onSelect,
+}: {
+  item: FileQueueItem
+  index: number
+  reducedMotion: boolean
+  isSelected: boolean
+  onSelect: () => void
+}) {
   const isAnalysing = item.status === 'analysing'
+  const isComplete = item.status === 'passed' || item.status === 'violations'
+  const clickable = isComplete
 
   return (
     <motion.div
@@ -20,17 +36,22 @@ function QueueRow({ item, index, reducedMotion }: { item: FileQueueItem; index: 
         ease: 'easeOut',
       }}
       className={isAnalysing ? 'queue-row-analysing' : ''}
+      onClick={clickable ? onSelect : undefined}
       style={{
         height: 44,
         display: 'flex',
         alignItems: 'center',
         gap: 10,
         padding: '0 12px',
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
+        background: isSelected
+          ? 'rgba(255, 92, 0, 0.08)'
+          : 'var(--surface)',
+        border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
         borderRadius: 8,
         position: 'relative',
         overflow: 'hidden',
+        cursor: clickable ? 'pointer' : 'default',
+        transition: 'background 0.15s, border-color 0.15s',
       }}
     >
       {isAnalysing && (
@@ -40,7 +61,7 @@ function QueueRow({ item, index, reducedMotion }: { item: FileQueueItem; index: 
       <FileCode2
         size={16}
         style={{
-          color: 'var(--text-muted)',
+          color: isSelected ? 'var(--primary)' : 'var(--text-muted)',
           flexShrink: 0,
           position: 'relative',
           zIndex: 1,
@@ -51,7 +72,7 @@ function QueueRow({ item, index, reducedMotion }: { item: FileQueueItem; index: 
         className="font-mono-product"
         style={{
           fontSize: 13,
-          color: 'var(--text)',
+          color: isSelected ? 'var(--primary)' : 'var(--text)',
           flex: 1,
           minWidth: 0,
           overflow: 'hidden',
@@ -59,6 +80,7 @@ function QueueRow({ item, index, reducedMotion }: { item: FileQueueItem; index: 
           whiteSpace: 'nowrap',
           position: 'relative',
           zIndex: 1,
+          fontWeight: isSelected ? 600 : 400,
         }}
       >
         {item.filename}
@@ -149,7 +171,7 @@ function QueueRow({ item, index, reducedMotion }: { item: FileQueueItem; index: 
   )
 }
 
-export default function FileAnalysisQueue({ files }: FileAnalysisQueueProps) {
+export default function FileAnalysisQueue({ files, selectedFile, onSelectFile }: FileAnalysisQueueProps) {
   const prefersReducedMotion = useReducedMotion() ?? false
 
   if (files.length === 0) return null
@@ -177,7 +199,23 @@ export default function FileAnalysisQueue({ files }: FileAnalysisQueueProps) {
           textTransform: 'uppercase',
         }}
       >
-        Analysing {files.length} file{files.length !== 1 ? 's' : ''}
+        {selectedFile
+          ? `Showing violations in ${selectedFile}`
+          : `Analysing ${files.length} file${files.length !== 1 ? 's' : ''}`}
+        {selectedFile && (
+          <span
+            onClick={() => onSelectFile(null)}
+            style={{
+              marginLeft: 8,
+              color: 'var(--primary)',
+              cursor: 'pointer',
+              textTransform: 'none',
+              letterSpacing: 'normal',
+            }}
+          >
+            Show all
+          </span>
+        )}
       </div>
 
       {files.map((item, idx) => (
@@ -186,6 +224,8 @@ export default function FileAnalysisQueue({ files }: FileAnalysisQueueProps) {
           item={item}
           index={idx}
           reducedMotion={prefersReducedMotion}
+          isSelected={selectedFile === item.filename}
+          onSelect={() => onSelectFile(selectedFile === item.filename ? null : item.filename)}
         />
       ))}
     </div>

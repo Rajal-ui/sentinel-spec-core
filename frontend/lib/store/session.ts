@@ -92,25 +92,41 @@ const DEPRECATED_SDK_TEMPLATE = {
   diff_new: 'from internal.sdk_v2 import DataClient',
 }
 
-const LINE_PATTERNS: { pattern: RegExp; finding: AnalysisMatch; lineKey: string }[] = [
+type FindingTemplate = {
+  tier: Finding['tier']
+  confidence: number
+  title: string
+  description: string
+  cited_adr?: string
+  cited_text?: string
+  source_document?: string
+  diff_old?: string
+  diff_new?: string
+}
+
+const LINE_PATTERNS: { pattern: RegExp; template: FindingTemplate; domain: string; lineKey: string }[] = [
   {
     pattern: /(?:ibm_secret_access_key|aws_secret_access_key|secret_access_key)\s*=\s*['"]/i,
-    finding: { finding: makeFinding(SECRET_FINDING_TEMPLATE), domain: 'secrets management (ADR-0017)' },
+    template: SECRET_FINDING_TEMPLATE,
+    domain: 'secrets management (ADR-0017)',
     lineKey: 'credential',
   },
   {
     pattern: /AKIA[0-9A-Z]{16}/,
-    finding: { finding: makeFinding(SECRET_FINDING_TEMPLATE), domain: 'secrets management (ADR-0017)' },
+    template: SECRET_FINDING_TEMPLATE,
+    domain: 'secrets management (ADR-0017)',
     lineKey: 'credential',
   },
   {
     pattern: /api[_\-]?key\s*=\s*['\"][A-Za-z0-9\-_]{20,}['\"]/i,
-    finding: { finding: makeFinding({ ...SECRET_FINDING_TEMPLATE, title: 'Hard-coded API key in source code (SEC-002)', confidence: 0.88, tier: 'blocking' }), domain: 'secrets management (ADR-0017)' },
+    template: { ...SECRET_FINDING_TEMPLATE, title: 'Hard-coded API key in source code (SEC-002)', confidence: 0.88, tier: 'blocking' as const },
+    domain: 'secrets management (ADR-0017)',
     lineKey: 'credential',
   },
   {
     pattern: /ibm_.*=\s*['\"]AKIA/,
-    finding: { finding: makeFinding(MISLEADING_NAME_TEMPLATE), domain: 'naming convention (SEC-013)' },
+    template: MISLEADING_NAME_TEMPLATE,
+    domain: 'naming convention (SEC-013)',
     lineKey: 'misleading-name',
   },
 ]
@@ -197,6 +213,7 @@ interface SessionStore {
   thinkingStepsVisible: boolean
   resolvedFindings: Record<string, Record<string, { resolved_at: string }>>
   fileQueue: FileQueueItem[]
+  selectedFileFilter: string | null
   createSession: () => void
   deleteSession: (id: string) => void
   renameSession: (id: string, name: string) => void
@@ -206,6 +223,7 @@ interface SessionStore {
   setFileQueue: (files: FileQueueItem[]) => void
   updateFileStatus: (filename: string, status: FileQueueItem['status'], violationCount?: number) => void
   clearFileQueue: () => void
+  setSelectedFileFilter: (filename: string | null) => void
   resolveFinding: (findingId: string) => Promise<void>
   setThinkingVisible: (v: boolean) => void
 }
@@ -223,6 +241,7 @@ export const useSessionStore = create<SessionStore>()(
       thinkingStepsVisible: false,
       resolvedFindings: {},
       fileQueue: [],
+      selectedFileFilter: null,
 
       createSession: () => {
         const { activeSessionId, messages } = get()
@@ -307,8 +326,8 @@ export const useSessionStore = create<SessionStore>()(
         for (const entry of LINE_PATTERNS) {
           if (matchedKeys.has(entry.lineKey)) continue
           if (entry.pattern.test(content)) {
-            matchedFindings.push(entry.finding.finding)
-            matchedDomains.push(entry.finding.domain)
+            matchedFindings.push(makeFinding(entry.template))
+            matchedDomains.push(entry.domain)
             matchedKeys.add(entry.lineKey)
           }
         }
@@ -507,7 +526,9 @@ export const useSessionStore = create<SessionStore>()(
           ),
         })),
 
-      clearFileQueue: () => set({ fileQueue: [] }),
+      clearFileQueue: () => set({ fileQueue: [], selectedFileFilter: null }),
+
+      setSelectedFileFilter: (filename) => set({ selectedFileFilter: filename }),
 
       analyzeFiles: async (files) => {
         if (!files.length) return
@@ -541,22 +562,22 @@ export const useSessionStore = create<SessionStore>()(
           for (const entry of LINE_PATTERNS) {
             if (matchedKeys.has(entry.lineKey)) continue
             if (entry.pattern.test(file.content)) {
-              fileFindings.push(entry.finding.finding)
-              fileDomains.push(entry.finding.domain)
+              fileFindings.push({ ...makeFinding(entry.template), filename: file.name })
+              fileDomains.push(entry.domain)
               matchedKeys.add(entry.lineKey)
             }
           }
 
           if (/billing|charge|payment|invoice/.test(contentLower)) {
-            fileFindings.push(makeFinding(BILLING_TEMPLATE))
+            fileFindings.push({ ...makeFinding(BILLING_TEMPLATE), filename: file.name })
             fileDomains.push('billing abstraction (ADR-0042)')
           }
           if (/pii|email|log.*mask|logger\.(info|warn|error)/.test(contentLower)) {
-            fileFindings.push(makeFinding(PII_TEMPLATE))
+            fileFindings.push({ ...makeFinding(PII_TEMPLATE), filename: file.name })
             fileDomains.push('PII handling (ADR-0019)')
           }
           if (/deprecated|legacy_sdk|internal\.(legacy|old)/.test(contentLower)) {
-            fileFindings.push(makeFinding(DEPRECATED_SDK_TEMPLATE))
+            fileFindings.push({ ...makeFinding(DEPRECATED_SDK_TEMPLATE), filename: file.name })
             fileDomains.push('SDK migration (ADR-0031)')
           }
 
@@ -642,7 +663,7 @@ export const useSessionStore = create<SessionStore>()(
     }),
     {
       name: 'sentinel-sessions',
-      version: 5,
+      version: 6,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       migrate: (persisted: any, version) => {
         if (version < 2) {
@@ -652,7 +673,6 @@ export const useSessionStore = create<SessionStore>()(
           }
         }
         if (version < 3) {
-          // worst_tier added in v3
           return {
             ...persisted,
             sessions: (persisted?.sessions ?? []).map((s: AuditSession) => ({
@@ -662,7 +682,6 @@ export const useSessionStore = create<SessionStore>()(
           }
         }
         if (version < 4) {
-          // blocking_count / warning_count added in v4
           return {
             ...persisted,
             sessions: (persisted?.sessions ?? []).map((s: AuditSession) => ({
@@ -673,7 +692,6 @@ export const useSessionStore = create<SessionStore>()(
           }
         }
         if (version < 5) {
-          // logged_only_count added in v5
           return {
             ...persisted,
             sessions: (persisted?.sessions ?? []).map((s: AuditSession) => ({
@@ -682,9 +700,16 @@ export const useSessionStore = create<SessionStore>()(
             })),
           }
         }
+        if (version < 6) {
+          return {
+            ...persisted,
+            fileQueue: persisted?.fileQueue ?? [],
+            selectedFileFilter: null,
+          }
+        }
         return persisted
       },
-      partialize: (state) => ({ sessions: state.sessions, messagesBySessionId: state.messagesBySessionId, resolvedFindings: state.resolvedFindings }),
+      partialize: (state) => ({ sessions: state.sessions, messagesBySessionId: state.messagesBySessionId, resolvedFindings: state.resolvedFindings, fileQueue: state.fileQueue, selectedFileFilter: state.selectedFileFilter }),
     }
   )
 )

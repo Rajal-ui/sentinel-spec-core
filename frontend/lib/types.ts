@@ -54,6 +54,7 @@ export interface Finding {
   trace_id: string
   timestamp: string
   record_id: string
+  filename?: string
 }
 
 export interface Override {

@@ -422,7 +422,7 @@ function LeftPanel() {
 // ── Chat Canvas ────────────────────────────────────────────────────────────────
 
 function ChatCanvas() {
-  const { messages, isStreaming, activeSessionId, sendMessage, createSession, resolveFinding, fileQueue } = useSessionStore()
+  const { messages, isStreaming, activeSessionId, sendMessage, createSession, resolveFinding, fileQueue, selectedFileFilter, setSelectedFileFilter } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -561,7 +561,13 @@ function ChatCanvas() {
           </motion.div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 820, margin: '0 auto', width: '100%' }}>
-            {fileQueue.length > 0 && <FileAnalysisQueue files={fileQueue} />}
+            {fileQueue.length > 0 && (
+              <FileAnalysisQueue
+                files={fileQueue}
+                selectedFile={selectedFileFilter}
+                onSelectFile={setSelectedFileFilter}
+              />
+            )}
             <AnalysisFeed onApplyFix={handleApplyFix} />
           </div>
         )}

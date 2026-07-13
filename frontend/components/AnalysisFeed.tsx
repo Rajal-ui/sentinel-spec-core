@@ -35,7 +35,7 @@ interface AnalysisFeedProps {
 }
 
 export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
-  const { messages, isStreaming, resolvedFindings, activeSessionId } = useSessionStore()
+  const { messages, isStreaming, resolvedFindings, activeSessionId, selectedFileFilter } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -109,7 +109,7 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
 
                 {msg.findings && msg.findings.length > 0 ? (
                   <AnalysisResults
-                    findings={msg.findings}
+                    findings={selectedFileFilter ? msg.findings.filter((f) => f.filename === selectedFileFilter) : msg.findings}
                     summary={msg.content}
                     resolvedFindings={sessionResolvedMap}
                     onApplyFix={onApplyFix}
