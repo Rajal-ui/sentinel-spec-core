@@ -583,7 +583,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
           Analytics requires sign-in
         </div>
         <p className="font-mono-product" style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 340 }}>
-          Access governance metrics, violation trends, and team leaderboards after authenticating.
+          Access governance metrics, violation trends, and service compliance metrics after authenticating.
         </p>
         <button
           onClick={() => openLoginModal('/analytics')}

@@ -4,6 +4,7 @@ import { motion, useInView, useReducedMotion, AnimatePresence } from 'framer-mot
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Shield, ArrowRight, ChevronRight, ChevronDown, LogOut, User, Settings, Sun, Moon } from 'lucide-react'
+import { SentinelLogoMark } from '@/components/brand/SentinelLogoMark'
 
 import FindingCard from '@/components/shared/FindingCard'
 import LoginModal from '@/components/layout/LoginModal'
@@ -322,7 +323,7 @@ export default function LandingPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Shield size={18} style={{ color: 'var(--primary)' }} />
+          <SentinelLogoMark size={18} style={{ flexShrink: 0 }} />
           <span className="font-display" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Sentinel Spec</span>
         </div>
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 32 }}>
@@ -636,7 +637,7 @@ export default function LandingPage() {
             </div>
             {[
               { n: '01', title: 'Retrieve', desc: 'RAG lookup against policy corpus — ADRs, architecture decisions, compliance rules.' },
-              { n: '02', title: 'Classify', desc: 'Granite-3 classifies the diff against retrieved policy chunks with confidence scoring.' },
+              { n: '02', title: 'Classify', desc: 'Granite 4 Haiku Small classifies the diff against retrieved policy chunks with confidence scoring.' },
               { n: '03', title: 'Critique', desc: 'Adversarial critic validates the classification — eliminates false positives.' },
               { n: '04', title: 'Surface', desc: 'Findings rendered inline in IBM Bob with diff and remediation, logged to governance.' },
             ].map((step, i) => (
@@ -673,7 +674,7 @@ export default function LandingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
           {[
             { cat: 'IDE Integration', title: 'IBM Bob IDE', body: 'Native MCP registration. Findings appear inline at the point of authorship — not after the PR exists. No context switch.' },
-            { cat: 'Language Model', title: 'IBM Granite via watsonx.ai', body: 'Granite-3-8b for classification and critique. Runs in your IBM Cloud tenancy — zero data egress, enterprise SLA.' },
+            { cat: 'Language Model', title: 'IBM Granite 4 Haiku Small via watsonx.ai', body: 'Granite 4 Haiku Small for classification and critique. Runs in your IBM Cloud tenancy — zero data egress, enterprise SLA.' },
             { cat: 'Governance', title: 'watsonx.governance', body: 'Every finding, override, and approval is an immutable lineage record. Auditor-ready export. Full decision trail.' },
           ].map((card, i) => (
             <RevealSection key={card.title} delay={i * 0.07}>
@@ -711,7 +712,7 @@ export default function LandingPage() {
               </thead>
               <tbody>
                 {[
-                  ['LLM', 'IBM Granite via watsonx.ai', 'Ollama llama3.1:8b (MOCK_MODE)'],
+                  ['LLM', 'IBM Granite 4 Haiku Small via watsonx.ai', 'Ollama llama3.1:8b (MOCK_MODE)'],
                   ['Vector Store', 'watsonx.data / Milvus', 'Milvus-lite (embedded)'],
                   ['Governance', 'watsonx.governance', 'JSON file store (MOCK_MODE)'],
                   ['IDE Integration', 'IBM Bob MCP', 'stdio local MCP server'],
@@ -766,6 +767,7 @@ export default function LandingPage() {
               id: 'demo',
               tier: 'blocking',
               confidence: 0.94,
+              filename: 'payments/billing_service.py',
               title: 'Direct call to legacy_billing.charge() violates ADR-0042',
               description: 'The function charge_customer() calls legacy_billing.charge() directly. ADR-0042 mandates all billing operations route through BillingPort.',
               cited_adr: 'ADR-0042',
@@ -803,7 +805,7 @@ export default function LandingPage() {
                 </Link>
               </div>
               <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                IBM Granite · watsonx.governance · IBM Bob · 2026
+                IBM Granite 4 · watsonx.governance · IBM Bob · 2026
               </div>
             </div>
           </RevealSection>
@@ -813,7 +815,7 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer style={{ borderTop: '1px solid var(--border)', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Shield size={14} style={{ color: 'var(--primary)' }} />
+          <SentinelLogoMark size={14} style={{ flexShrink: 0 }} />
           <span className="font-display" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Sentinel Spec</span>
         </div>
         <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
@@ -822,7 +824,7 @@ export default function LandingPage() {
           ))}
         </div>
         <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          IBM Granite · watsonx.governance · IBM Bob · 2026
+          IBM Granite 4 · watsonx.governance · IBM Bob · 2026
         </div>
       </footer>
     </>

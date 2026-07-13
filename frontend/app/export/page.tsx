@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Download, Eye, Copy, Check, ChevronLeft, ChevronRight, Key, RefreshCw, ChevronDown, LogOut, Sun, Moon } from 'lucide-react'
+import { SentinelLogoMark } from '@/components/brand/SentinelLogoMark'
 
 import CodeBlock from '@/components/shared/CodeBlock'
 import LoginModal from '@/components/layout/LoginModal'
@@ -13,31 +14,409 @@ import { useThemeStore } from '@/lib/store/theme'
 // ── Data constants ───────────────────────────────────────────────────────────
 
 const OPENAPI_JSON = `{
-  "openapi": "3.1.0",
+  "openapi": "3.0.3",
   "info": {
-    "title": "Sentinel Spec",
-    "version": "1.2.0",
-    "description": "Autonomous architecture compliance reviewer for IBM Bob IDE"
+    "title": "Sentinel Spec Compliance Engine",
+    "version": "2.0.0",
+    "description": "Dual-agent IBM Granite 4 Haiku Small compliance engine. Sentinel Classifier + Adversarial Critic backed by IBM Cloud native services. Designed for import into watsonx Orchestrate as a reusable Agent-as-Code skill."
   },
-  "servers": [{"url": "https://api.sentinel-spec.ibm.com/v1"}],
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    }
+  ],
+  "security": [
+    { "XApiKeyAuth": [] }
+  ],
   "paths": {
-    "/analyze": {
+    "/evaluate": {
       "post": {
-        "operationId": "analyzeCode",
-        "summary": "Analyze code diff for policy violations",
+        "operationId": "evaluateCode",
+        "summary": "Run a compliance assessment against a source code snippet",
+        "description": "Accepts a code snippet with its file path and language, runs the Sentinel Spec compliance engine, and returns a structured ComplianceReport containing any detected violations.",
+        "security": [
+          { "XApiKeyAuth": [] },
+          { "BearerAuth": [] }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "diff": {"type": "string"},
-                  "repo": {"type": "string"},
-                  "actor": {"type": "string"},
-                  "trigger": {"type": "string", "enum": ["ide_time", "ci_time"]}
+                "$ref": "#/components/schemas/EvaluateRequest"
+              },
+              "example": {
+                "content": "def configure_client():\\n    aws_secret_access_key = 'AKIAIOSFODNN7EXAMPLE'\\n    return aws_secret_access_key",
+                "file_path": "examples/secret_example.py",
+                "language": "python",
+                "filename": "secret_example.py",
+                "mode": "code"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compliance assessment completed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComplianceReportResponse"
+                },
+                "example": {
+                  "is_compliant": false,
+                  "violations": [
+                    {
+                      "rule_id": "SEC-001",
+                      "severity": "CRITICAL",
+                      "line_number": 2,
+                      "description": "Hard-coded secret detected in source code.",
+                      "suggested_fix": "Move the secret to a secure secret manager and reference it at runtime.",
+                      "confidence": 0.96,
+                      "filename": "secret_example.py",
+                      "critic_verdict": "confirmed"
+                    }
+                  ],
+                  "metadata": {
+                    "engine": "ibm",
+                    "mode": "live",
+                    "source": "watsonx",
+                    "file_path": "examples/secret_example.py",
+                    "language": "python"
+                  },
+                  "duration_ms": 1420.5,
+                  "filename": "secret_example.py"
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid request payload — missing or malformed fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal engine error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/evaluate/stream": {
+      "post": {
+        "operationId": "evaluateCodeStream",
+        "summary": "SSE streaming compliance assessment with live agent thinking log",
+        "description": "Same as /evaluate but returns Server-Sent Events with incremental progress updates, agent reasoning traces, and a final event containing the complete ComplianceReport.",
+        "security": [
+          { "XApiKeyAuth": [] },
+          { "BearerAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of compliance assessment events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream. Events include 'thinking', 'finding', 'progress', and a final 'complete' event with the full ComplianceReport."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/compliance/matrix": {
+      "get": {
+        "operationId": "getComplianceMatrix",
+        "summary": "Retrieve the full 22-rule compliance matrix",
+        "description": "Returns the complete set of compliance rules organized by policy domain, with severity levels and rule names.",
+        "responses": {
+          "200": {
+            "description": "List of compliance matrix rules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatrixRule"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "healthCheck",
+        "summary": "Engine liveness probe",
+        "description": "Returns the current status of the compliance engine, including the active AI engine and model.",
+        "responses": {
+          "200": {
+            "description": "Engine is healthy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "XApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Static platform API key. Generate from the Export page."
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT access token from the Sentinel Spec auth service."
+      }
+    },
+    "schemas": {
+      "EvaluateRequest": {
+        "type": "object",
+        "description": "Request body for compliance evaluation. Supports single-file and multi-file modes.",
+        "required": [
+          "content",
+          "filename"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Source code to evaluate, or a natural-language question when mode='qa'."
+          },
+          "file_path": {
+            "type": "string",
+            "description": "Relative file path for single-file code context."
+          },
+          "language": {
+            "type": "string",
+            "default": "python",
+            "description": "Programming language identifier."
+          },
+          "filename": {
+            "type": "string",
+            "description": "Original filename attached to the analysis. Propagated through findings for multi-file traceability."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "code",
+              "qa"
+            ],
+            "default": "code",
+            "description": "Evaluation mode: 'code' for compliance scan, 'qa' for conversational query."
+          },
+          "files": {
+            "type": "array",
+            "description": "Multi-file payload — list of files to evaluate independently.",
+            "items": {
+              "$ref": "#/components/schemas/FileInput"
+            }
+          }
+        }
+      },
+      "FileInput": {
+        "type": "object",
+        "description": "A single file submitted for multi-file compliance evaluation.",
+        "required": [
+          "name",
+          "content"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Original filename (e.g. billing_service.py)."
+          },
+          "content": {
+            "type": "string",
+            "description": "Raw source code content of the file."
+          }
+        }
+      },
+      "ViolationResponse": {
+        "type": "object",
+        "description": "A single detected compliance violation with dual-agent confidence and critic verdict.",
+        "required": [
+          "rule_id",
+          "severity",
+          "line_number",
+          "description",
+          "suggested_fix",
+          "confidence",
+          "filename",
+          "critic_verdict"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Unique identifier for the violated rule (e.g. SEC-001)."
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severity level of the violation.",
+            "enum": [
+              "CRITICAL",
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "INFO"
+            ]
+          },
+          "line_number": {
+            "type": "integer",
+            "description": "Line number in the source file where the violation was detected.",
+            "minimum": 1
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable explanation of the violation."
+          },
+          "suggested_fix": {
+            "type": "string",
+            "description": "Recommended remediation action."
+          },
+          "confidence": {
+            "type": "number",
+            "format": "float",
+            "description": "Dual-agent confidence score between 0 and 1. Aggregate of classifier and adversarial critic agreement."
+          },
+          "filename": {
+            "type": "string",
+            "description": "The originating filename for this violation. Propagated from the request for multi-file traceability."
+          },
+          "critic_verdict": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "contested",
+              "overruled"
+            ],
+            "description": "Humanized adversarial critic verdict. 'confirmed' = critic agrees; 'contested' = critic disagrees with reasoning; 'overruled' = classifier overruled by critic."
+          }
+        }
+      },
+      "ComplianceReportResponse": {
+        "type": "object",
+        "description": "The complete compliance assessment result returned by the engine.",
+        "required": [
+          "is_compliant",
+          "violations"
+        ],
+        "properties": {
+          "is_compliant": {
+            "type": "boolean",
+            "description": "True when no violations were detected; false otherwise."
+          },
+          "violations": {
+            "type": "array",
+            "description": "List of all detected compliance violations. Empty when is_compliant is true.",
+            "items": {
+              "$ref": "#/components/schemas/ViolationResponse"
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Engine diagnostics and contextual data (engine name, mode, source, file path, language).",
+            "additionalProperties": true
+          },
+          "duration_ms": {
+            "type": "number",
+            "format": "float",
+            "description": "Total evaluation wall-clock time in milliseconds."
+          },
+          "filename": {
+            "type": "string",
+            "description": "The originating filename for this evaluation run."
+          }
+        }
+      },
+      "MatrixRule": {
+        "type": "object",
+        "description": "A single rule in the 22-rule compliance matrix.",
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Unique rule identifier (e.g. SEC-001)."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Policy domain (e.g. security, data_residency, architecture)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable rule name."
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severity level."
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "description": "Engine liveness probe response.",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Health status."
+          },
+          "engine": {
+            "type": "string",
+            "description": "Active AI engine adapter (ibm or local)."
+          },
+          "model": {
+            "type": "string",
+            "description": "Active model identifier."
+          },
+          "mock_mode": {
+            "type": "boolean",
+            "description": "Whether the engine is running in mock mode."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message."
           }
         }
       }
@@ -248,6 +627,7 @@ export default function ExportPage() {
   const [keyVisible, setKeyVisible] = useState(false)
   const [keyRegenerated, setKeyRegenerated] = useState(false)
   const [keyCopied, setKeyCopied] = useState(false)
+  const [snippetTab, setSnippetTab] = useState<'curl' | 'python' | 'node'>('curl')
 
   const MOCK_KEY = 'sk-sentinel-AQ.Ab8RN6JXDFEzd8fqUHly...'
   const MOCK_KEY_FULL = 'sk-sentinel-AQ.Ab8RN6JXDFEzd8fqUHly_x9mZpKc2vN4TwBsJYdE7qROgFL1hi3uD'
@@ -322,7 +702,7 @@ export default function ExportPage() {
             flexShrink: 0,
           }}
         >
-          <Shield size={18} style={{ color: 'var(--primary)' }} />
+          <SentinelLogoMark size={18} style={{ flexShrink: 0 }} />
           <span
             className="font-display"
             style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}
@@ -1260,6 +1640,146 @@ export default function ExportPage() {
                 >
                   1,247 requests this month · 3,753 remaining
                 </div>
+
+                {/* Interactive API Code Snippets */}
+                <div style={{ marginTop: 28, borderTop: '1px solid var(--border)', paddingTop: 28 }}>
+                  <h3 className="font-display" style={{ fontSize: 18, color: 'var(--text)', marginBottom: 8 }}>
+                    Interactive Client Snippets
+                  </h3>
+                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', marginBottom: 16 }}>
+                    Use these ready-to-run integration snippets to invoke the Sentinel compliance engine from scripts or CI pipelines.
+                  </p>
+
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                    {(['curl', 'python', 'node'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setSnippetTab(tab)}
+                        className="font-mono-product"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: '6px 12px',
+                          color: snippetTab === tab ? 'var(--primary)' : 'var(--text-muted)',
+                          borderBottom: snippetTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
+                          cursor: 'pointer',
+                          fontSize: 12,
+                          fontWeight: snippetTab === tab ? 600 : 400,
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {tab.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="code-block" style={{ borderRadius: 8, overflow: 'hidden' }}>
+                    <CodeBlock
+                      code={
+                        snippetTab === 'curl'
+                          ? `curl -X POST http://localhost:4000/api/v1/findings/bulk \\
+  -H "Content-Type: application/json" \\
+  -H "X-API-Key: ${keyVisible ? MOCK_KEY_FULL : MOCK_KEY}" \\
+  -d '{
+    "repo": "billing-service",
+    "actor": "dev-user",
+    "trigger": "ci_time",
+    "diff_id": "diff_9812",
+    "findings": [
+      {
+        "id": "violation_001",
+        "tier": "blocking",
+        "confidence": 0.95,
+        "title": "Hardcoded AWS Secret Key",
+        "description": "AWS Secret Key detected in config.",
+        "cited_adr": "SEC-001",
+        "cited_text": "aws_secret_access_key = ...",
+        "source_document": "ADR-0012",
+        "diff_old": "aws_secret_access_key = ...",
+        "diff_new": "aws_secret_access_key = ...",
+        "trace_id": "trace_8123",
+        "timestamp": "2026-07-13T12:00:00Z",
+        "record_id": "rec_01",
+        "filename": "app.py"
+      }
+    ]
+  }'`
+                          : snippetTab === 'python'
+                          ? `import requests
+
+url = "http://localhost:4000/api/v1/findings/bulk"
+headers = {
+    "Content-Type": "application/json",
+    "X-API-Key": "${keyVisible ? MOCK_KEY_FULL : MOCK_KEY}"
+}
+payload = {
+    "repo": "billing-service",
+    "actor": "dev-user",
+    "trigger": "ci_time",
+    "diff_id": "diff_9812",
+    "findings": [
+        {
+            "id": "violation_001",
+            "tier": "blocking",
+            "confidence": 0.95,
+            "title": "Hardcoded AWS Secret Key",
+            "description": "AWS Secret Key detected in config.",
+            "cited_adr": "SEC-001",
+            "cited_text": "aws_secret_access_key = ...",
+            "source_document": "ADR-0012",
+            "diff_old": "aws_secret_access_key = ...",
+            "diff_new": "aws_secret_access_key = ...",
+            "trace_id": "trace_8123",
+            "timestamp": "2026-07-13T12:00:00Z",
+            "record_id": "rec_01",
+            "filename": "app.py"
+        }
+    ]
+}
+
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())`
+                          : `const axios = require('axios');
+
+const url = 'http://localhost:4000/api/v1/findings/bulk';
+const headers = {
+  'Content-Type': 'application/json',
+  'X-API-Key': '${keyVisible ? MOCK_KEY_FULL : MOCK_KEY}'
+};
+const payload = {
+  repo: 'billing-service',
+  actor: 'dev-user',
+  trigger: 'ci_time',
+  diff_id: 'diff_9812',
+  findings: [
+    {
+      id: 'violation_001',
+      tier: 'blocking',
+      confidence: 0.95,
+      title: 'Hardcoded AWS Secret Key',
+      description: 'AWS Secret Key detected in config.',
+      cited_adr: 'SEC-001',
+      cited_text: 'aws_secret_access_key = ...',
+      source_document: 'ADR-0012',
+      diff_old: 'aws_secret_access_key = ...',
+      diff_new: 'aws_secret_access_key = ...',
+      trace_id: 'trace_8123',
+      timestamp: '2026-07-13T12:00:00Z',
+      record_id: 'rec_01',
+      filename: 'app.py'
+    }
+  ]
+};
+
+axios.post(url, payload, { headers })
+  .then(res => console.log(res.data))
+  .catch(err => console.error(err));`
+                      }
+                      language={snippetTab === 'curl' ? 'bash' : snippetTab === 'python' ? 'python' : 'javascript'}
+                      showLineNumbers={false}
+                    />
+                  </div>
+                </div>
               </motion.div>
             )}
           </div>
@@ -1279,7 +1799,7 @@ export default function ExportPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Shield size={14} style={{ color: 'var(--primary)' }} />
+          <SentinelLogoMark size={14} style={{ flexShrink: 0 }} />
           <span className="font-display" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
             Sentinel Spec
           </span>
@@ -1306,7 +1826,7 @@ export default function ExportPage() {
           ))}
         </div>
         <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          IBM Granite · watsonx.governance · IBM Bob · 2026
+          IBM Granite 4 · watsonx.governance · IBM Bob · 2026
         </div>
       </footer>
     </>

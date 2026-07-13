@@ -167,7 +167,7 @@ function generateConversationalResponse(contentLower: string): string {
 
   // Adversarial critic / dual-agent architecture
   if (/adversarial|critic|dual.?agent|sentinel|classifier|engine|how.*work/.test(contentLower)) {
-    return `Sentinel Spec uses a **dual-agent architecture** powered by IBM Granite:\n\n` +
+    return `Sentinel Spec uses a **dual-agent architecture** powered by IBM Granite 4 Haiku Small:\n\n` +
       `**Agent 1 \u2014 Sentinel Classifier:**\n\n` +
       `Receives your code snippet and cross-references it against the 22-rule compliance matrix. It identifies potential violations, maps them to ADRs, and assigns severity tiers (blocking, warning, logged_only).\n\n` +
       `**Agent 2 \u2014 Adversarial Critic:**\n\n` +

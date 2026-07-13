@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Sun, Moon,
 } from 'lucide-react'
 import { useThemeStore } from '@/lib/store/theme'
+import { SentinelLogoMark } from '@/components/brand/SentinelLogoMark'
 
 const NAV_ITEMS = [
   { label: 'Agent Workspace', icon: MessageSquare, href: '/agent' },
@@ -62,7 +63,7 @@ export default function Sidebar() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <Shield size={20} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+          <SentinelLogoMark size={22} style={{ flexShrink: 0 }} />
           <AnimatePresence>
             {!collapsed && (
               <motion.div

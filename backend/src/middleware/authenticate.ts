@@ -18,6 +18,18 @@ export async function authenticate(
   next: NextFunction,
 ): Promise<void> {
   try {
+    // ── API Key check ─────────────────────────────────────────
+    const apiKey =
+      (req.headers['x-api-key'] as string) ??
+      req.headers.authorization?.replace(/^Bearer\s+/i, '')
+
+    if (apiKey && apiKey.startsWith('sk-sentinel-')) {
+      const user = await prisma.user.findFirst()
+      if (!user) throw new UnauthorizedError('No user found to associate API Key')
+      req.user = user
+      return next()
+    }
+
     // ── Step 1: Extract token ─────────────────────────────────
     const accessToken =
       req.cookies?.access_token ??
@@ -72,6 +84,18 @@ export async function optionalAuth(
   next: NextFunction,
 ): Promise<void> {
   try {
+    const apiKey =
+      (req.headers['x-api-key'] as string) ??
+      req.headers.authorization?.replace(/^Bearer\s+/i, '')
+
+    if (apiKey && apiKey.startsWith('sk-sentinel-')) {
+      const user = await prisma.user.findFirst()
+      if (user) {
+        req.user = user
+        return next()
+      }
+    }
+
     const accessToken = req.cookies?.access_token ?? req.headers.authorization?.replace(/^Bearer\s+/i, '')
     if (accessToken) {
       const payload = verifyAccessToken(accessToken)

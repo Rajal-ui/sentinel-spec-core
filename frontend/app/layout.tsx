@@ -7,6 +7,13 @@ import ThemeInit from '@/components/ThemeInit'
 export const metadata: Metadata = {
   title: 'Sentinel Spec — Autonomous Architecture Compliance',
   description: 'Stop violations before the PR exists. Autonomous architecture and compliance reviewer inside IBM Bob IDE.',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/icon.svg',
+    apple: '/logo-mark.svg',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

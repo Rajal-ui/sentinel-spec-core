@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Sentinel Spec Compliance Engine",
-    "version": "1.0.0",
-    "description": "Evaluates source code snippets for security violations and architectural drift. Designed for import into watsonx Orchestrate as a reusable Agent-as-Code skill."
+    "version": "2.0.0",
+    "description": "Dual-agent IBM Granite compliance engine. Sentinel Classifier + Adversarial Critic backed by IBM Cloud native services. Designed for import into watsonx Orchestrate as a reusable Agent-as-Code skill."
   },
   "servers": [
     {
@@ -11,23 +11,32 @@
       "description": "Local development server"
     }
   ],
+  "security": [
+    { "XApiKeyAuth": [] }
+  ],
   "paths": {
     "/evaluate": {
       "post": {
         "operationId": "evaluateCode",
         "summary": "Run a compliance assessment against a source code snippet",
         "description": "Accepts a code snippet with its file path and language, runs the Sentinel Spec compliance engine, and returns a structured ComplianceReport containing any detected violations.",
+        "security": [
+          { "XApiKeyAuth": [] },
+          { "BearerAuth": [] }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CodeSnippet"
+                "$ref": "#/components/schemas/EvaluateRequest"
               },
               "example": {
                 "content": "def configure_client():\n    aws_secret_access_key = 'AKIAIOSFODNN7EXAMPLE'\n    return aws_secret_access_key",
                 "file_path": "examples/secret_example.py",
-                "language": "python"
+                "language": "python",
+                "filename": "secret_example.py",
+                "mode": "code"
               }
             }
           }
@@ -38,7 +47,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ComplianceReport"
+                  "$ref": "#/components/schemas/ComplianceReportResponse"
                 },
                 "example": {
                   "is_compliant": false,
@@ -47,8 +56,11 @@
                       "rule_id": "SEC-001",
                       "severity": "CRITICAL",
                       "line_number": 2,
-                      "description": "Potential exposure of an AWS secret access key detected in source code.",
-                      "suggested_fix": "Move the secret to a secure secret manager and reference it at runtime."
+                      "description": "Hard-coded secret detected in source code.",
+                      "suggested_fix": "Move the secret to a secure secret manager and reference it at runtime.",
+                      "confidence": 0.96,
+                      "filename": "secret_example.py",
+                      "critic_verdict": "confirmed"
                     }
                   ],
                   "metadata": {
@@ -57,7 +69,9 @@
                     "source": "watsonx",
                     "file_path": "examples/secret_example.py",
                     "language": "python"
-                  }
+                  },
+                  "duration_ms": 1420.5,
+                  "filename": "secret_example.py"
                 }
               }
             }
@@ -84,33 +98,164 @@
           }
         }
       }
+    },
+    "/evaluate/stream": {
+      "post": {
+        "operationId": "evaluateCodeStream",
+        "summary": "SSE streaming compliance assessment with live agent thinking log",
+        "description": "Same as /evaluate but returns Server-Sent Events with incremental progress updates, agent reasoning traces, and a final event containing the complete ComplianceReport.",
+        "security": [
+          { "XApiKeyAuth": [] },
+          { "BearerAuth": [] }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvaluateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of compliance assessment events.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream. Events include 'thinking', 'finding', 'progress', and a final 'complete' event with the full ComplianceReport."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/compliance/matrix": {
+      "get": {
+        "operationId": "getComplianceMatrix",
+        "summary": "Retrieve the full 22-rule compliance matrix",
+        "description": "Returns the complete set of compliance rules organized by policy domain, with severity levels and rule names.",
+        "responses": {
+          "200": {
+            "description": "List of compliance matrix rules.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatrixRule"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "healthCheck",
+        "summary": "Engine liveness probe",
+        "description": "Returns the current status of the compliance engine, including the active AI engine and model.",
+        "responses": {
+          "200": {
+            "description": "Engine is healthy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
+    "securitySchemes": {
+      "XApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Static platform API key. Generate from the Export page."
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT access token from the Sentinel Spec auth service."
+      }
+    },
     "schemas": {
-      "CodeSnippet": {
+      "EvaluateRequest": {
         "type": "object",
-        "description": "A source code snippet submitted for compliance evaluation.",
-        "required": ["content", "file_path", "language"],
+        "description": "Request body for compliance evaluation. Supports single-file and multi-file modes.",
+        "required": ["content", "filename"],
         "properties": {
           "content": {
             "type": "string",
-            "description": "The raw source code to analyse."
+            "description": "Source code to evaluate, or a natural-language question when mode='qa'."
           },
           "file_path": {
             "type": "string",
-            "description": "The originating file name or path, used for context in violation reports."
+            "description": "Relative file path for single-file code context."
           },
           "language": {
             "type": "string",
-            "description": "The programming language of the snippet (e.g. python, javascript, go)."
+            "default": "python",
+            "description": "Programming language identifier."
+          },
+          "filename": {
+            "type": "string",
+            "description": "Original filename attached to the analysis. Propagated through findings for multi-file traceability."
+          },
+          "mode": {
+            "type": "string",
+            "enum": ["code", "qa"],
+            "default": "code",
+            "description": "Evaluation mode: 'code' for compliance scan, 'qa' for conversational query."
+          },
+          "files": {
+            "type": "array",
+            "description": "Multi-file payload — list of files to evaluate independently.",
+            "items": {
+              "$ref": "#/components/schemas/FileInput"
+            }
           }
         }
       },
-      "ComplianceViolation": {
+      "FileInput": {
         "type": "object",
-        "description": "A single detected compliance or security violation.",
-        "required": ["rule_id", "severity", "line_number", "description", "suggested_fix"],
+        "description": "A single file submitted for multi-file compliance evaluation.",
+        "required": ["name", "content"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Original filename (e.g. billing_service.py)."
+          },
+          "content": {
+            "type": "string",
+            "description": "Raw source code content of the file."
+          }
+        }
+      },
+      "ViolationResponse": {
+        "type": "object",
+        "description": "A single detected compliance violation with dual-agent confidence and critic verdict.",
+        "required": [
+          "rule_id",
+          "severity",
+          "line_number",
+          "description",
+          "suggested_fix",
+          "confidence",
+          "filename",
+          "critic_verdict"
+        ],
         "properties": {
           "rule_id": {
             "type": "string",
@@ -133,10 +278,24 @@
           "suggested_fix": {
             "type": "string",
             "description": "Recommended remediation action."
+          },
+          "confidence": {
+            "type": "number",
+            "format": "float",
+            "description": "Dual-agent confidence score between 0 and 1. Aggregate of classifier and adversarial critic agreement."
+          },
+          "filename": {
+            "type": "string",
+            "description": "The originating filename for this violation. Propagated from the request for multi-file traceability."
+          },
+          "critic_verdict": {
+            "type": "string",
+            "enum": ["confirmed", "contested", "overruled"],
+            "description": "Humanized adversarial critic verdict. 'confirmed' = critic agrees; 'contested' = critic disagrees with reasoning; 'overruled' = classifier overruled by critic."
           }
         }
       },
-      "ComplianceReport": {
+      "ComplianceReportResponse": {
         "type": "object",
         "description": "The complete compliance assessment result returned by the engine.",
         "required": ["is_compliant", "violations"],
@@ -149,13 +308,66 @@
             "type": "array",
             "description": "List of all detected compliance violations. Empty when is_compliant is true.",
             "items": {
-              "$ref": "#/components/schemas/ComplianceViolation"
+              "$ref": "#/components/schemas/ViolationResponse"
             }
           },
           "metadata": {
             "type": "object",
             "description": "Engine diagnostics and contextual data (engine name, mode, source, file path, language).",
             "additionalProperties": true
+          },
+          "duration_ms": {
+            "type": "number",
+            "format": "float",
+            "description": "Total evaluation wall-clock time in milliseconds."
+          },
+          "filename": {
+            "type": "string",
+            "description": "The originating filename for this evaluation run."
+          }
+        }
+      },
+      "MatrixRule": {
+        "type": "object",
+        "description": "A single rule in the 22-rule compliance matrix.",
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Unique rule identifier (e.g. SEC-001)."
+          },
+          "domain": {
+            "type": "string",
+            "description": "Policy domain (e.g. security, data_residency, architecture)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable rule name."
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severity level."
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "description": "Engine liveness probe response.",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Health status."
+          },
+          "engine": {
+            "type": "string",
+            "description": "Active AI engine adapter (ibm or local)."
+          },
+          "model": {
+            "type": "string",
+            "description": "Active model identifier."
+          },
+          "mock_mode": {
+            "type": "boolean",
+            "description": "Whether the engine is running in mock mode."
           }
         }
       },

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, ChevronDown, ChevronRight, ExternalLink, LogOut, User, Settings, Sun, Moon } from 'lucide-react'
+import { SentinelLogoMark } from '@/components/brand/SentinelLogoMark'
 
 import LoginModal from '@/components/layout/LoginModal'
 import { useAuthStore } from '@/lib/store/auth'
@@ -52,11 +53,11 @@ const CAPABILITIES: Capability[] = [
     id: 'granite',
     icon: '⬡',
     title: 'Violation Classification (Granite)',
-    summary: 'Granite-3-8b via watsonx.ai, structured JSON output, confidence scoring.',
+    summary: 'Granite 4 Haiku Small via watsonx.ai, structured JSON output, confidence scoring.',
     prose:
-      'The classification agent sends the retrieved policy chunks plus the diff to Granite-3-8b running inside the caller\'s IBM Cloud tenancy via the watsonx.ai inference endpoint. The prompt template enforces structured JSON output using a response_format schema. Each finding carries a rule_id (mapped to the source ADR), a severity (blocking / warning / logged_only), a confidence float in [0.0, 1.0], a plain-language rationale, and a remediation suggestion. Temperature is set to 0 for deterministic output.',
+      'The classification agent sends the retrieved policy chunks plus the diff to Granite 4 Haiku Small running inside the caller\'s IBM Cloud tenancy via the watsonx.ai inference endpoint. The prompt template enforces structured JSON output using a response_format schema. Each finding carries a rule_id (mapped to the source ADR), a severity (blocking / warning / logged_only), a confidence float in [0.0, 1.0], a plain-language rationale, and a remediation suggestion. Temperature is set to 0 for deterministic output.',
     schema:
-      `// Classification response (Granite structured output)
+      `// Classification response (Granite 4 Haiku Small structured output)
 {
   "findings": [
     {
@@ -67,7 +68,7 @@ const CAPABILITIES: Capability[] = [
       "remediation": "Use PaymentGatewayPort instead of..."
     }
   ],
-  "model": "granite-3-8b",
+  "model": "granite-4-h-small",
   "latency_ms": 312
 }`,
   },
@@ -75,9 +76,9 @@ const CAPABILITIES: Capability[] = [
     id: 'critic',
     icon: '⬡',
     title: 'Adversarial Compliance Critic',
-    summary: 'Second Granite pass, validates classification, reduces false positives by 60%.',
+    summary: 'Second Granite 4 Haiku Small pass, validates classification, reduces false positives by 60%.',
     prose:
-      'After the primary classification the critic agent runs a second Granite inference with an adversarial prompt: it is explicitly instructed to find reasons the primary classification might be wrong. If the critic disagrees with a finding\'s severity the confidence is down-weighted and the discrepancy is logged. Empirically this two-pass pattern reduces false positives by ~60% compared to single-pass classification. The critic output is merged into the final finding list before routing.',
+      'After the primary classification the critic agent runs a second Granite 4 Haiku Small inference with an adversarial prompt: it is explicitly instructed to find reasons the primary classification might be wrong. If the critic disagrees with a finding\'s severity the confidence is down-weighted and the discrepancy is logged. Empirically this two-pass pattern reduces false positives by ~60% compared to single-pass classification. The critic output is merged into the final finding list before routing.',
     schema:
       `// Critic prompt pattern (IBM Plex Mono)
 SYSTEM: You are an adversarial compliance critic.
@@ -113,7 +114,7 @@ confidence < 0.50   → severity: "logged_only" → silent record
     title: 'Immutable Governance Lineage',
     summary: 'watsonx.governance lineage records, append-only, approver-attributed overrides.',
     prose:
-      'Every finding, suppression, and human override is written as an append-only record to watsonx.governance. Records include the finding content, the Granite model version, the policy chunk IDs used, a timestamp, and the identity of any human who approved an exception. Records are cryptographically signed and cannot be edited — only new records can supersede previous ones. This produces an auditor-ready decision trail that satisfies SOC 2, ISO 27001, and financial-services regulatory requirements without any additional tooling.',
+      'Every finding, suppression, and human override is written as an append-only record to watsonx.governance. Records include the finding content, the Granite 4 Haiku Small model version, the policy chunk IDs used, a timestamp, and the identity of any human who approved an exception. Records are cryptographically signed and cannot be edited — only new records can supersede previous ones. This produces an auditor-ready decision trail that satisfies SOC 2, ISO 27001, and financial-services regulatory requirements without any additional tooling.',
     schema:
       `// LineageRecord (watsonx.governance schema)
 {
@@ -152,7 +153,7 @@ Authorization: Bearer <IAM token>
 
 // ── IBM Services table data ───────────────────────────────────────────────────
 const IBM_SERVICES = [
-  { component: 'LLM', service: 'IBM Granite-3-8b via watsonx.ai', purpose: 'Violation classification and adversarial critique', href: 'https://docs.ibm.com/watsonx' },
+  { component: 'LLM', service: 'IBM Granite 4 Haiku Small via watsonx.ai', purpose: 'Violation classification and adversarial critique', href: 'https://docs.ibm.com/watsonx' },
   { component: 'Vector Store', service: 'Milvus via watsonx.data', purpose: 'Policy chunk storage and retrieval', href: 'https://docs.ibm.com/milvus' },
   { component: 'Governance', service: 'watsonx.governance', purpose: 'Immutable lineage records for all decisions', href: 'https://docs.ibm.com/governance' },
   { component: 'Orchestration', service: 'watsonx Orchestrate', purpose: 'Agent pipeline coordination', href: 'https://docs.ibm.com/orchestrate' },
@@ -166,7 +167,7 @@ const IBM_SERVICES = [
 const TECH_BADGES = [
   'Next.js 15', 'TypeScript', 'Tailwind v4', 'Framer Motion',
   'Zustand', 'React Hook Form', 'Zod', 'Recharts',
-  'Lucide React', 'Milvus-lite', 'IBM Granite', 'watsonx.governance',
+  'Lucide React', 'Milvus-lite', 'IBM Granite 4', 'watsonx.governance',
 ]
 
 // ── Pipeline step data ────────────────────────────────────────────────────────
@@ -180,8 +181,8 @@ const PIPELINE_STEPS = [
   {
     n: '02',
     title: 'Classify',
-    desc: 'Granite-3-8b classifies the diff against retrieved policy chunks. Structured JSON output enforces schema compliance with confidence scoring.',
-    annotation: '// granite-3-8b · temp=0 · JSON mode',
+    desc: 'Granite 4 Haiku Small classifies the diff against retrieved policy chunks. Structured JSON output enforces schema compliance with confidence scoring.',
+    annotation: '// granite-4-h-small · temp=0 · JSON mode',
   },
   {
     n: '03',
@@ -512,7 +513,7 @@ export default function DocsPage() {
             textDecoration: 'none',
           }}
         >
-          <Shield size={18} style={{ color: 'var(--primary)' }} />
+          <SentinelLogoMark size={18} style={{ flexShrink: 0 }} />
           <span
             className="font-display"
             style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}
@@ -1528,7 +1529,7 @@ export default function DocsPage() {
             textDecoration: 'none',
           }}
         >
-          <Shield size={14} style={{ color: 'var(--primary)' }} />
+          <SentinelLogoMark size={14} style={{ flexShrink: 0 }} />
           <span
             className="font-display"
             style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}
@@ -1562,7 +1563,7 @@ export default function DocsPage() {
           className="font-mono-product"
           style={{ fontSize: 12, color: 'var(--text-muted)' }}
         >
-          IBM Granite · watsonx.governance · IBM Bob · 2026
+          IBM Granite 4 · watsonx.governance · IBM Bob · 2026
         </div>
       </footer>
     </>

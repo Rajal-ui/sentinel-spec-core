@@ -1,7 +1,7 @@
 {
   "name": "sentinel-spec",
   "description": "Autonomous Architecture Compliance Reviewer for IBM Bob IDE. Captures policy violations at authorship time using IBM Granite.",
-  "repository": "https://github.com/your-username/sentinel-spec",
+  "service_name": "sentinel-spec-service",
   "keywords": [
     "python",
     "fastapi",

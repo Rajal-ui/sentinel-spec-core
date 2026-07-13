@@ -62,10 +62,20 @@ export default function FindingCard({ finding, onOverride, onApplyFix, onViewRea
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(12px) saturate(1.4)',
         WebkitBackdropFilter: 'blur(12px) saturate(1.4)',
-        borderLeft: `3px solid ${borderColor}`,
+        border: 'none',
         boxShadow: glowStyle,
       }}
-      whileHover={prefersReducedMotion ? {} : { scale: 1.008 }}
+      whileHover={
+        prefersReducedMotion
+          ? {}
+          : {
+              scale: 1.008,
+              boxShadow:
+                finding.tier === 'blocking' || finding.tier === 'warning'
+                  ? '0 0 36px rgba(232,165,75,0.22), 0 4px 16px rgba(0,0,0,0.08)'
+                  : '0 4px 20px rgba(0,0,0,0.06)',
+            }
+      }
       animate={pulseAnimation}
       transition={
         isPulsing
@@ -105,6 +115,24 @@ export default function FindingCard({ finding, onOverride, onApplyFix, onViewRea
       </div>
 
       <div style={{ padding: '14px 16px 16px' }}>
+        {/* Filename marker — shown when filename is available */}
+        {finding.filename && (
+          <div style={{ marginBottom: 8 }}>
+            <span
+              className="font-mono-product"
+              style={{
+                fontSize: 10,
+                padding: '2px 8px',
+                borderRadius: 4,
+                background: 'rgba(255,92,0,0.08)',
+                color: 'var(--primary)',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {finding.filename}
+            </span>
+          </div>
+        )}
         {/* Finding ID */}
         <div
           className="font-mono-product"
