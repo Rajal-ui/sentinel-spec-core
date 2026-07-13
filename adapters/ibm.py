@@ -355,9 +355,11 @@ class IBMAIEngine(AIEnginePort):
     # Public synchronous interface
     # ------------------------------------------------------------------
 
-    def evaluate_code(self, code: CodeSnippet) -> ComplianceReport:
+    def evaluate_code(self, code: CodeSnippet, filename: str | None = None) -> ComplianceReport:
+        resolved_filename = filename or code.file_path
+
         if self._model is None:
-            return self._fallback_report(code, reason=self._setup_error or "missing_environment_configuration")
+            return self._fallback_report(code, reason=self._setup_error or "missing_environment_configuration", filename=resolved_filename)
 
         try:
             classifications = self._run_classifier(code)
@@ -383,6 +385,7 @@ class IBMAIEngine(AIEnginePort):
                             suggested_fix=cls.suggested_fix,
                             confidence=critic.adjusted_confidence,
                             cited_chunk_ids=tuple(cls.cited_chunk_ids),
+                            filename=resolved_filename,
                         )
                     )
 
@@ -398,26 +401,29 @@ class IBMAIEngine(AIEnginePort):
                     "language": code.language,
                     "routing": routing_summary,
                 },
+                filename=resolved_filename,
             )
             self._persist_record(code, classifications, report)
             return report
 
         except Exception as exc:
-            return self._fallback_report(code, reason=str(exc))
+            return self._fallback_report(code, reason=str(exc), filename=resolved_filename)
 
     # ------------------------------------------------------------------
     # Public streaming interface (async generator — yields thinking steps)
     # ------------------------------------------------------------------
 
     async def evaluate_code_stream(
-        self, code: CodeSnippet
+        self, code: CodeSnippet, filename: str | None = None
     ) -> AsyncGenerator[AgentThinkingStep, None]:
         """Run the dual-agent DAG and yield observable thinking steps for live streaming."""
+        resolved_filename = filename or code.file_path
 
         yield AgentThinkingStep(
             agent="system",
             phase="init",
-            detail=f"Sentinel Spec initialised. Model: {self.model_id}. Analysing `{code.file_path}` ({code.language}).",
+            detail=f"Sentinel Spec initialised. Model: {self.model_id}. Analysing `{resolved_filename}` ({code.language}).",
+            payload={"filename": resolved_filename},
         )
 
         if self._model is None:
@@ -426,8 +432,9 @@ class IBMAIEngine(AIEnginePort):
                 agent="system",
                 phase="error",
                 detail=f"IBM Granite engine unavailable: {reason}. Running local fallback rules.",
+                payload={"filename": resolved_filename},
             )
-            report = self._fallback_report(code, reason=reason)
+            report = self._fallback_report(code, reason=reason, filename=resolved_filename)
             yield AgentThinkingStep(
                 agent="system",
                 phase="complete",
@@ -441,6 +448,7 @@ class IBMAIEngine(AIEnginePort):
             agent="classifier",
             phase="start",
             detail="Agent 1 (Sentinel Classifier) engaging. Cross-referencing code against the 22-rule IBM compliance matrix via IBM Granite.",
+            payload={"filename": resolved_filename},
         )
 
         await asyncio.sleep(0)  # yield control to event loop
@@ -451,8 +459,9 @@ class IBMAIEngine(AIEnginePort):
                 agent="classifier",
                 phase="error",
                 detail=f"Classifier error: {exc}. Falling back to local rule engine.",
+                payload={"filename": resolved_filename},
             )
-            report = self._fallback_report(code, reason=str(exc))
+            report = self._fallback_report(code, reason=str(exc), filename=resolved_filename)
             yield AgentThinkingStep(
                 agent="system",
                 phase="complete",
@@ -466,14 +475,14 @@ class IBMAIEngine(AIEnginePort):
                 agent="classifier",
                 phase="result",
                 detail="Classifier found no violations against the compliance matrix.",
-                payload={"violations_found": 0},
+                payload={"violations_found": 0, "filename": resolved_filename},
             )
         else:
             yield AgentThinkingStep(
                 agent="classifier",
                 phase="result",
                 detail=f"Classifier identified {len(classifications)} potential violation(s). Handing off to Adversarial Critic.",
-                payload={"violations_found": len(classifications), "rules": [c.rule_id for c in classifications]},
+                payload={"violations_found": len(classifications), "rules": [c.rule_id for c in classifications], "filename": resolved_filename},
             )
 
         # ---- Agent 2: Critic — iterates per classification ----
@@ -489,7 +498,7 @@ class IBMAIEngine(AIEnginePort):
                     f"[{cls.rule_id}] \"{cls.rationale[:120]}\" "
                     f"(classifier confidence: {cls.confidence:.2f})"
                 ),
-                payload={"rule_id": cls.rule_id, "classifier_confidence": cls.confidence},
+                payload={"rule_id": cls.rule_id, "classifier_confidence": cls.confidence, "filename": resolved_filename},
             )
 
             await asyncio.sleep(0)
@@ -500,6 +509,7 @@ class IBMAIEngine(AIEnginePort):
                     agent="critic",
                     phase="error",
                     detail=f"Critic error for {cls.rule_id}: {exc}. Treating as unentailed to avoid false positive.",
+                    payload={"filename": resolved_filename},
                 )
                 critic = CriticVerdict(entailed=False, reasoning=f"Critic error: {exc}", adjusted_confidence=0.0)
 
@@ -517,7 +527,7 @@ class IBMAIEngine(AIEnginePort):
                     agent="critic",
                     phase="rejected",
                     detail=f"Claim [{cls.rule_id}] REJECTED — {critic.reasoning}. False positive eliminated.",
-                    payload={"rule_id": cls.rule_id, "verdict": "rejected"},
+                    payload={"rule_id": cls.rule_id, "verdict": "rejected", "filename": resolved_filename},
                 )
             else:
                 yield AgentThinkingStep(
@@ -531,6 +541,7 @@ class IBMAIEngine(AIEnginePort):
                         "rule_id": cls.rule_id,
                         "verdict": tier.value,
                         "adjusted_confidence": critic.adjusted_confidence,
+                        "filename": resolved_filename,
                     },
                 )
                 if tier in (FindingTier.BLOCKING, FindingTier.WARNING):
@@ -543,6 +554,7 @@ class IBMAIEngine(AIEnginePort):
                             suggested_fix=cls.suggested_fix,
                             confidence=critic.adjusted_confidence,
                             cited_chunk_ids=tuple(cls.cited_chunk_ids),
+                            filename=resolved_filename,
                         )
                     )
 
@@ -556,7 +568,7 @@ class IBMAIEngine(AIEnginePort):
                 f"{len([r for r in routing_summary if r['tier'] == 'warning'])} warning, "
                 f"{len([r for r in routing_summary if r['tier'] == 'rejected'])} rejected)."
             ),
-            payload={"routing": routing_summary},
+            payload={"routing": routing_summary, "filename": resolved_filename},
         )
 
         report = ComplianceReport(
@@ -571,6 +583,7 @@ class IBMAIEngine(AIEnginePort):
                 "language": code.language,
                 "routing": routing_summary,
             },
+            filename=resolved_filename,
         )
         self._persist_record(code, classifications, report)
 
@@ -613,6 +626,7 @@ class IBMAIEngine(AIEnginePort):
                     "description": v.description,
                     "suggested_fix": v.suggested_fix,
                     "confidence": v.confidence,
+                    "filename": v.filename,
                 }
                 for v in report.violations
             ],
@@ -624,7 +638,8 @@ class IBMAIEngine(AIEnginePort):
     # Fallback (no model / credential error)
     # ------------------------------------------------------------------
 
-    def _fallback_report(self, code: CodeSnippet, reason: str) -> ComplianceReport:
+    def _fallback_report(self, code: CodeSnippet, reason: str, filename: str | None = None) -> ComplianceReport:
+        resolved_filename = filename or code.file_path
         lowered = code.content.lower()
         violations: list[ComplianceViolation] = []
 
@@ -646,6 +661,7 @@ class IBMAIEngine(AIEnginePort):
                         description=desc,
                         suggested_fix="Use a managed secret store (IBM Secrets Manager) and inject credentials at runtime.",
                         confidence=0.90,
+                        filename=resolved_filename,
                     )
                 )
                 seen_rules.add(rule_id)
@@ -661,6 +677,7 @@ class IBMAIEngine(AIEnginePort):
                 "file_path": code.file_path,
                 "language": code.language,
             },
+            filename=resolved_filename,
         )
 
 
@@ -671,6 +688,7 @@ class IBMAIEngine(AIEnginePort):
 def _report_to_dict(report: ComplianceReport) -> dict[str, Any]:
     return {
         "is_compliant": report.is_compliant,
+        "filename": report.filename,
         "violations": [
             {
                 "rule_id": v.rule_id,
@@ -679,6 +697,7 @@ def _report_to_dict(report: ComplianceReport) -> dict[str, Any]:
                 "description": v.description,
                 "suggested_fix": v.suggested_fix,
                 "confidence": v.confidence,
+                "filename": v.filename,
             }
             for v in report.violations
         ],

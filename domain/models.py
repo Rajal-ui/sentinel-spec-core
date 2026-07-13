@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from pydantic import BaseModel, Field
+
 
 # ---------------------------------------------------------------------------
 # Inputs
@@ -19,6 +21,22 @@ class CodeSnippet:
     content: str
     file_path: str
     language: str
+
+
+# ---------------------------------------------------------------------------
+# Request schemas (Pydantic — used by FastAPI endpoints)
+# ---------------------------------------------------------------------------
+
+class FileInput(BaseModel):
+    """A single file in a multi-file evaluation request."""
+    filename: str
+    content: str
+    language: str | None = None
+
+
+class MultiFileRequest(BaseModel):
+    """Multi-file evaluation payload — carries one or more files."""
+    files: list[FileInput]
 
 
 # ---------------------------------------------------------------------------
@@ -49,6 +67,7 @@ class ComplianceViolation:
     suggested_fix: str
     confidence: float = 0.0
     cited_chunk_ids: tuple[str, ...] = field(default_factory=tuple)
+    filename: str = ""
 
 
 @dataclass(frozen=True)
@@ -56,6 +75,7 @@ class ComplianceReport:
     is_compliant: bool
     violations: list[ComplianceViolation]
     metadata: dict[str, Any] = field(default_factory=dict)
+    filename: str = ""
 
 
 # ---------------------------------------------------------------------------

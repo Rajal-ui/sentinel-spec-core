@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 
 from adapters.ibm import COMPLIANCE_MATRIX, IBMAIEngine
 from adapters.local import LocalAIEngine
-from domain.models import CodeSnippet
+from domain.models import CodeSnippet, FileInput, MultiFileRequest
 from ports.ai_engine_port import AIEnginePort
 
 # ---------------------------------------------------------------------------
@@ -66,10 +66,15 @@ from fastapi.staticfiles import StaticFiles
 # ---------------------------------------------------------------------------
 
 class EvaluateRequest(BaseModel):
+    """Accepts either a single ``content`` string (backward compat) or a
+    ``files`` array for multi-file evaluation.  Both may be omitted when
+    ``mode="qa"``.
+    """
     content: str = Field(default="", description="Source code to evaluate, or a natural-language question when mode='qa'")
-    file_path: str | None = Field(default=None, description="Relative file path (for code context)")
+    file_path: str | None = Field(default=None, description="Relative file path (for single-file code context)")
     language: str = Field(default="python", description="Programming language identifier")
     mode: str = Field(default="code", description="Evaluation mode: 'code' for compliance scan, 'qa' for conversational query")
+    files: list[FileInput] | None = Field(default=None, description="Multi-file payload — list of files to evaluate independently")
 
 
 class ViolationResponse(BaseModel):
@@ -79,6 +84,7 @@ class ViolationResponse(BaseModel):
     description: str
     suggested_fix: str
     confidence: float = 0.0
+    filename: str = ""
 
 
 class ComplianceReportResponse(BaseModel):
@@ -86,6 +92,7 @@ class ComplianceReportResponse(BaseModel):
     violations: list[ViolationResponse]
     metadata: dict[str, Any] = {}
     duration_ms: float = 0.0
+    filename: str = ""
 
 
 class HealthResponse(BaseModel):
@@ -103,12 +110,43 @@ class MatrixRuleResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _violation_to_response(v: Any) -> ViolationResponse:
+    """Convert a domain ComplianceViolation (or dict) to a ViolationResponse."""
+    if isinstance(v, dict):
+        return ViolationResponse(
+            rule_id=v["rule_id"],
+            severity=v["severity"],
+            line_number=v["line_number"],
+            description=v["description"],
+            suggested_fix=v["suggested_fix"],
+            confidence=v.get("confidence", 0.0),
+            filename=v.get("filename", ""),
+        )
+    return ViolationResponse(
+        rule_id=v.rule_id,
+        severity=v.severity,
+        line_number=v.line_number,
+        description=v.description,
+        suggested_fix=v.suggested_fix,
+        confidence=v.confidence,
+        filename=v.filename,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
 @app.post("/evaluate", response_model=ComplianceReportResponse)
 def evaluate(request: EvaluateRequest) -> ComplianceReportResponse:
     """Synchronous compliance check — run the full dual-agent DAG and return structured results.
+
+    Supports two payload shapes:
+      - Single-file (backward compat): {"content": "...", "file_path": "...", "language": "..."}
+      - Multi-file: {"files": [{"filename": "a.py", "content": "..."}, ...]}
 
     When mode='qa', returns a conversational response without running the engine.
     """
@@ -122,33 +160,53 @@ def evaluate(request: EvaluateRequest) -> ComplianceReportResponse:
             duration_ms=0.0,
         )
 
+    # ── Multi-file path ──
+    if request.files:
+        t0 = time.monotonic()
+        all_violations: list[ViolationResponse] = []
+        all_metadata: dict[str, Any] = {"files_evaluated": len(request.files)}
+
+        for file_input in request.files:
+            snippet = CodeSnippet(
+                content=file_input.content,
+                file_path=file_input.filename,
+                language=file_input.language or request.language,
+            )
+            report = _engine.evaluate_code(snippet, filename=file_input.filename)
+            for v in report.violations:
+                all_violations.append(_violation_to_response(v))
+
+        duration_ms = round((time.monotonic() - t0) * 1000, 1)
+        return ComplianceReportResponse(
+            is_compliant=len(all_violations) == 0,
+            violations=all_violations,
+            metadata=all_metadata,
+            duration_ms=duration_ms,
+        )
+
+    # ── Single-file path (backward compat) ──
     if not request.content.strip():
         raise HTTPException(status_code=400, detail="content must not be empty")
 
     t0 = time.monotonic()
+    resolved_filename = request.file_path or "untitled"
     snippet = CodeSnippet(
         content=request.content,
-        file_path=request.file_path or "untitled",
+        file_path=resolved_filename,
         language=request.language,
     )
-    report = _engine.evaluate_code(snippet)
+    report = _engine.evaluate_code(snippet, filename=resolved_filename)
     duration_ms = round((time.monotonic() - t0) * 1000, 1)
 
     return ComplianceReportResponse(
         is_compliant=report.is_compliant,
         violations=[
-            ViolationResponse(
-                rule_id=v.rule_id,
-                severity=v.severity,
-                line_number=v.line_number,
-                description=v.description,
-                suggested_fix=v.suggested_fix,
-                confidence=v.confidence,
-            )
+            _violation_to_response(v)
             for v in report.violations
         ],
         metadata=report.metadata,
         duration_ms=duration_ms,
+        filename=report.filename,
     )
 
 
@@ -158,6 +216,13 @@ async def evaluate_stream(request: EvaluateRequest) -> StreamingResponse:
 
     Clients receive a stream of JSON-encoded AgentThinkingStep objects.
     The final event (phase == "complete") carries the full compliance payload in its `payload` field.
+
+    Supports two payload shapes:
+      - Single-file (backward compat): {"content": "...", "file_path": "...", "language": "..."}
+      - Multi-file: {"files": [{"filename": "a.py", "content": "..."}, ...]}
+
+    For multi-file payloads, each SSE chunk includes a ``filename`` key so
+    clients can attribute findings to specific files.
 
     When mode='qa', yields a single conversational response event.
     """
@@ -184,18 +249,49 @@ async def evaluate_stream(request: EvaluateRequest) -> StreamingResponse:
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
 
+    # ── Multi-file path ──
+    if request.files:
+        async def multi_file_generator() -> AsyncGenerator[str, None]:
+            try:
+                for file_input in request.files:
+                    snippet = CodeSnippet(
+                        content=file_input.content,
+                        file_path=file_input.filename,
+                        language=file_input.language or request.language,
+                    )
+                    async for step in await _engine.evaluate_code_stream(snippet, filename=file_input.filename):
+                        data = json.dumps({
+                            "agent": step.agent,
+                            "phase": step.phase,
+                            "detail": step.detail,
+                            "payload": step.payload,
+                        })
+                        yield f"data: {data}\n\n"
+                        await asyncio.sleep(0)
+            except Exception as exc:
+                error_data = json.dumps({"agent": "system", "phase": "error", "detail": str(exc), "payload": {}})
+                yield f"data: {error_data}\n\n"
+
+        return StreamingResponse(
+            multi_file_generator(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    # ── Single-file path (backward compat) ──
     if not request.content.strip():
         raise HTTPException(status_code=400, detail="content must not be empty")
 
+    resolved_filename = request.file_path or "untitled"
     snippet = CodeSnippet(
         content=request.content,
-        file_path=request.file_path or "untitled",
+        file_path=resolved_filename,
         language=request.language,
     )
 
     async def event_generator() -> AsyncGenerator[str, None]:
         try:
-            async for step in await _engine.evaluate_code_stream(snippet):
+            async for step in await _engine.evaluate_code_stream(snippet, filename=resolved_filename):
                 data = json.dumps({
                     "agent":   step.agent,
                     "phase":   step.phase,

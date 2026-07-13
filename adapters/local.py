@@ -91,21 +91,26 @@ _STATIC_RULES: list[dict] = [
 class LocalAIEngine(AIEnginePort):
     """Pattern-based offline compliance engine — no IBM SDK required."""
 
-    def evaluate_code(self, code: CodeSnippet) -> ComplianceReport:
-        violations = self._scan(code)
+    def evaluate_code(self, code: CodeSnippet, filename: str | None = None) -> ComplianceReport:
+        resolved_filename = filename or code.file_path
+        violations = self._scan(code, resolved_filename)
         return ComplianceReport(
             is_compliant=not violations,
             violations=violations,
             metadata={"engine": "local", "mode": "mock", "file_path": code.file_path, "language": code.language},
+            filename=resolved_filename,
         )
 
     async def evaluate_code_stream(
-        self, code: CodeSnippet
+        self, code: CodeSnippet, filename: str | None = None
     ) -> AsyncGenerator[AgentThinkingStep, None]:
+        resolved_filename = filename or code.file_path
+
         yield AgentThinkingStep(
             agent="system",
             phase="init",
-            detail=f"Local rule engine engaged (offline/mock mode). Scanning `{code.file_path}`.",
+            detail=f"Local rule engine engaged (offline/mock mode). Scanning `{resolved_filename}`.",
+            payload={"filename": resolved_filename},
         )
         await asyncio.sleep(0)
 
@@ -113,16 +118,17 @@ class LocalAIEngine(AIEnginePort):
             agent="classifier",
             phase="start",
             detail="Running static pattern classifier against 22-rule compliance matrix.",
+            payload={"filename": resolved_filename},
         )
         await asyncio.sleep(0)
 
-        violations = self._scan(code)
+        violations = self._scan(code, resolved_filename)
 
         yield AgentThinkingStep(
             agent="classifier",
             phase="result",
             detail=f"Static scan complete. {len(violations)} violation(s) found.",
-            payload={"violations_found": len(violations)},
+            payload={"violations_found": len(violations), "filename": resolved_filename},
         )
 
         for v in violations:
@@ -130,7 +136,7 @@ class LocalAIEngine(AIEnginePort):
                 agent="critic",
                 phase="confirmed",
                 detail=f"[{v.rule_id}] {v.description}",
-                payload={"rule_id": v.rule_id, "severity": v.severity, "verdict": "confirmed"},
+                payload={"rule_id": v.rule_id, "severity": v.severity, "verdict": "confirmed", "filename": resolved_filename},
             )
             await asyncio.sleep(0)
 
@@ -138,6 +144,7 @@ class LocalAIEngine(AIEnginePort):
             is_compliant=not violations,
             violations=violations,
             metadata={"engine": "local", "mode": "mock"},
+            filename=resolved_filename,
         )
         yield AgentThinkingStep(
             agent="system",
@@ -145,14 +152,15 @@ class LocalAIEngine(AIEnginePort):
             detail="Local analysis complete." if report.is_compliant else f"{len(violations)} violation(s) detected.",
             payload={
                 "is_compliant": report.is_compliant,
+                "filename": resolved_filename,
                 "violations": [
-                    {"rule_id": v.rule_id, "severity": v.severity, "description": v.description}
+                    {"rule_id": v.rule_id, "severity": v.severity, "description": v.description, "filename": v.filename}
                     for v in violations
                 ],
             },
         )
 
-    def _scan(self, code: CodeSnippet) -> list[ComplianceViolation]:
+    def _scan(self, code: CodeSnippet, filename: str) -> list[ComplianceViolation]:
         violations: list[ComplianceViolation] = []
         lines = code.content.splitlines()
         for rule in _STATIC_RULES:
@@ -171,6 +179,7 @@ class LocalAIEngine(AIEnginePort):
                                 description=rule["description"],
                                 suggested_fix=rule["suggested_fix"],
                                 confidence=0.90,
+                                filename=filename,
                             )
                         )
                         rule_matched = True
