@@ -231,7 +231,7 @@ function LeftPanel() {
               className="font-mono-product"
               style={{ fontSize: 12, color: isDragOver ? '#FF5C00' : 'var(--text-muted)', lineHeight: 1.5 }}
             >
-              Click to upload a file
+              {isDragOver ? 'Drop files here' : 'Drag & drop files here'}
             </div>
           </motion.div>
           <input
