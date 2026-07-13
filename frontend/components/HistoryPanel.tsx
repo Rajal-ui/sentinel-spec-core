@@ -105,6 +105,7 @@ export default function HistoryPanel() {
                   padding: '8px 10px',
                   WebkitBackdropFilter: 'blur(8px)',
                   boxShadow: isActive ? '0 0 12px rgba(255,92,0,0.10)' : undefined,
+                  borderBottom: '1px solid rgba(255,255,255,0.04)',
                 }}
               >
                 {/* ── Row 1: name + delete ── */}

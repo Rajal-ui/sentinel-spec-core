@@ -245,6 +245,7 @@ export default function ViolationCard({
                     className="text-slate-800 dark:text-zinc-300 transition-all duration-300 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]"
                     style={{
                       background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: 6,
                       padding: '6px 16px',
                       fontSize: 12,
@@ -252,7 +253,6 @@ export default function ViolationCard({
                       cursor: 'pointer',
                       fontWeight: 600,
                       letterSpacing: '0.02em',
-                      transition: 'border-color 150ms ease, color 150ms ease',
                     }}
                   >
                     Apply Fix

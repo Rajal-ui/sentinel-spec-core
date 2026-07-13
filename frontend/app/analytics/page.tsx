@@ -283,7 +283,7 @@ function TopControls({ dateRange, groupBy, customStartDate, customEndDate, onDat
       )}
 
       {/* Separator */}
-      <div style={{ width: 1, height: 22, background: 'var(--border)' }} />
+      <div style={{ width: 1, height: 22, background: 'rgba(255,255,255,0.08)' }} />
 
       {/* Group by */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -326,6 +326,7 @@ function TopControls({ dateRange, groupBy, customStartDate, customEndDate, onDat
         className="font-mono-product text-slate-600 dark:text-zinc-400 transition-all duration-300 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]"
         style={{
           padding: '6px 16px',
+          border: '1px solid rgba(255,255,255,0.1)',
           borderRadius: 6,
           fontSize: 12,
           cursor: 'pointer',

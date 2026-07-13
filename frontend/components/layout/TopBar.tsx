@@ -121,7 +121,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
 
   return (
     <header
-      className="w-full max-w-[100vw] px-6 mx-auto sticky top-0 z-50 transition-all bg-white/60 dark:bg-[#08080A]/60 backdrop-blur-xl"
+      className="w-full max-w-[100vw] px-6 mx-auto sticky top-0 z-50 transition-all bg-zinc-950/95 backdrop-blur-md border-b border-zinc-900/60"
       style={{
         display: 'flex',
         flexDirection: 'column',

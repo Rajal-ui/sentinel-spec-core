@@ -332,6 +332,7 @@ function LeftPanel() {
                     gap: 6,
                     padding: 6,
                     background: 'var(--surface-raised)',
+                    border: '1px solid rgba(255,255,255,0.06)',
                     borderRadius: 5,
                     backdropFilter: 'blur(4px)',
                     WebkitBackdropFilter: 'blur(4px)',

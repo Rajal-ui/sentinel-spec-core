@@ -573,7 +573,7 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          padding: '10px 14px',
+          padding: '14px 16px',
           cursor: 'pointer',
         }}
         onClick={() => setExpanded((x) => !x)}
@@ -1166,7 +1166,9 @@ function ResultsFeed({ records, activeTab, onTabChange, onOpenFilter, activeFilt
             {records.length === 0 ? (
               <EmptyState icon={ShieldAlert} message="No records match the current filters. Try adjusting your filter criteria." />
             ) : (
-              records.map((r) => <RecordRow key={r.record_id} record={r} />)
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {records.map((r) => <RecordRow key={r.record_id} record={r} />)}
+              </div>
             )}
           </motion.div>
         )}
@@ -1182,7 +1184,9 @@ function ResultsFeed({ records, activeTab, onTabChange, onOpenFilter, activeFilt
             {pendingOverrides.length === 0 ? (
               <EmptyState icon={ShieldAlert} message="No pending architecture override requests found." />
             ) : (
-              pendingOverrides.map((ov) => <PendingOverrideCard key={ov.id} override={ov} />)
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {pendingOverrides.map((ov) => <PendingOverrideCard key={ov.id} override={ov} />)}
+              </div>
             )}
           </motion.div>
         )}
@@ -1198,7 +1202,9 @@ function ResultsFeed({ records, activeTab, onTabChange, onOpenFilter, activeFilt
             {overrideHistory.length === 0 ? (
               <EmptyState icon={ShieldAlert} message="No override history yet. Resolved overrides will appear here." />
             ) : (
-              overrideHistory.map((ov) => <HistoryCard key={ov.id} override={ov} />)
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {overrideHistory.map((ov) => <HistoryCard key={ov.id} override={ov} />)}
+              </div>
             )}
           </motion.div>
         )}
