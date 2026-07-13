@@ -1,180 +1,223 @@
-"""adapters/watsonx_governance_adapter.py — Watsonx governance lineage tracking adapter."""
+"""adapters/watsonx_governance_adapter.py — Watsonx governance lineage tracking adapter using the ibm-watsonx-ai SDK."""
 from __future__ import annotations
 
 import logging
 import os
+import sys
 import time
+import traceback
 from typing import Any
 
 import httpx
+from ibm_watsonx_ai import APIClient, Credentials
 
 from ports.governance_port import GovernancePort
 
+# ---------------------------------------------------------------------------
+# Guaranteed-visible logger — always writes to stderr even with no handler
+# ---------------------------------------------------------------------------
+
 logger = logging.getLogger("sentinel.governance")
+if not logger.handlers:
+    _handler = logging.StreamHandler(sys.stderr)
+    _handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] sentinel.governance: %(message)s")
+    )
+    logger.addHandler(_handler)
+    logger.setLevel(logging.DEBUG)
+    logger.propagate = False
 
 
 class WatsonxGovernanceAdapter(GovernancePort):
-    """Adapter to log runtime compliance events to IBM watsonx.governance."""
+    """Adapter to log runtime compliance events to IBM watsonx.governance using the official SDK."""
 
     def __init__(self) -> None:
-        self.apikey = os.getenv("WATSONX_APIKEY")
-        self.use_case_id = os.getenv(
-            "WATSONX_GOV_USE_CASE_ID", "019f5c23-34c8-75c6-a452-a014919d7e56"
-        )
-        # Remap or default the governance base URL
-        watsonx_url = os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com")
-        self.gov_url = os.getenv("WATSONX_GOV_URL", watsonx_url).rstrip("/")
-        
-        # Check mock mode
+        self.apikey = os.getenv("WATSONX_APIKEY", "").strip()
+        self.watsonx_url = os.getenv("WATSONX_URL", "https://us-south.ml.cloud.ibm.com").strip()
+        self.project_id = os.getenv("PROJECT_ID", "4f694685-8508-4e8a-8b1b-3e78fdd2b6fc").strip()
+        self.use_case_id = os.getenv("WATSONX_GOV_USE_CASE_ID", "019f5c23-34c8-75c6-a452-a014919d7e56").strip()
+        self.inventory_id = os.getenv("WATSONX_INVENTORY_ID", "019f5c00-410a-7344-8c5b-c38acca3483d").strip()
+
+        # Dedicated regional governance host
+        gov_url = os.getenv("WATSONX_GOVERNANCE_URL", "").strip() or "https://api.ai.cloud.ibm.com"
+        self.gov_url = gov_url.rstrip("/")
+
         mock_mode_val = os.getenv("MOCK_MODE", "false").strip().lower()
         self.mock_mode = mock_mode_val not in {"false", "0", "no", "off"}
-        
-        # Token cache
-        self._token: str | None = None
-        self._token_expires_at: float = 0.0
 
-    async def _get_iam_token(self) -> str | None:
-        """Fetch IBM Cloud IAM token using the configured API Key."""
+        # Initialize the official ibm-watsonx-ai SDK client
+        self.client: APIClient | None = None
+        self._init_sdk_client()
+
+    def _init_sdk_client(self) -> None:
+        if self.mock_mode:
+            logger.info("[SDK-INIT] MOCK_MODE=true — skipping SDK initialization.")
+            return
+
         if not self.apikey:
-            logger.warning("WATSONX_APIKEY is not set. Cannot fetch IAM token.")
-            return None
-
-        # Reuse cached token if valid
-        now = time.monotonic()
-        if self._token and now < self._token_expires_at:
-            return self._token
-
-        iam_url = "https://iam.cloud.ibm.com/identity/token"
-        headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        data = {
-            "grant_type": "urn:ibm:params:oauth:grant-type:apikey",
-            "apikey": self.apikey,
-        }
+            logger.error("[SDK-INIT] WATSONX_APIKEY is not set — events cannot be shipped.")
+            return
 
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                response = await client.post(iam_url, headers=headers, data=data)
-                response.raise_for_status()
-                res_data = response.json()
-                
-                self._token = res_data["access_token"]
-                # Expire 60 seconds early to prevent edge failures
-                expires_in = float(res_data.get("expires_in", 3600))
-                self._token_expires_at = now + expires_in - 60.0
-                return self._token
+            logger.info("[SDK-INIT] Initialising APIClient for %s", self.watsonx_url)
+            creds = Credentials(url=self.watsonx_url, api_key=self.apikey)
+            self.client = APIClient(creds)
+            if self.project_id:
+                self.client.set.default_project(self.project_id)
+            logger.info("[SDK-INIT] APIClient successfully configured.")
         except Exception as exc:
-            logger.error(f"Failed to fetch IAM token from IBM Cloud: {exc}")
-            return None
+            logger.error("[SDK-INIT] Failed to configure APIClient: %s\n%s", exc, traceback.format_exc())
+
+    async def push_lifecycle_facts(self, endpoint: str, payload: dict[str, Any]) -> bool:
+        """Pushes lifecycle facts using the official SDK call, falling back to REST if unavailable."""
+        if not self.client:
+            logger.error("[SDK-PUSH] APIClient is not initialised.")
+            return False
+
+        # Attempt to use the requested client.governance.external_lifecycle_facts.add method
+        try:
+            logger.info("[SDK-PUSH] Attempting native client.governance.external_lifecycle_facts.add call")
+            logger.info("[SDK-PUSH] Request Payload: %s", payload)
+            
+            # The client.governance attribute is checked dynamically
+            gov_ref = getattr(self.client, "governance", None)
+            if gov_ref is None:
+                raise AttributeError("client.governance module not present in current SDK version")
+            
+            facts_ref = getattr(gov_ref, "external_lifecycle_facts", None)
+            if facts_ref is None:
+                raise AttributeError("governance.external_lifecycle_facts module not present in current SDK version")
+            
+            # Call native add method
+            response = facts_ref.add(
+                use_case_id=self.use_case_id,
+                inventory_id=self.inventory_id,
+                payload=payload
+            )
+            print("[SDK-PUSH] Response object from native SDK:", response)
+            logger.info("[SDK-PUSH] Native SDK call successful. Response: %s", response)
+            return True
+            
+        except AttributeError as attr_err:
+            logger.warning("[SDK-PUSH] Native SDK method unavailable (%s). Falling back to REST pipeline.", attr_err)
+        except Exception as exc:
+            print("[SDK-PUSH] Native SDK call failed with exception:", exc)
+            logger.error(
+                "[SDK-PUSH] Native SDK call failed.\n"
+                "  Payload   : %s\n"
+                "  Exception : %s\n"
+                "  Traceback : %s",
+                payload, exc, traceback.format_exc()
+            )
+            # Fall back to HTTP pipeline on general invocation error
+
+        # HTTP fallback
+        try:
+            headers = self.client.get_headers()
+            headers["Content-Type"] = "application/json"
+            headers["Accept"] = "application/json"
+        except Exception as exc:
+            logger.error("[SDK-PUSH] Failed to retrieve auth headers from SDK: %s", exc)
+            return False
+
+        logger.info("[SDK-PUSH] POST %s", endpoint)
+        logger.debug("[SDK-PUSH] Payload: %s", payload)
+
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0)) as http_client:
+                response = await http_client.post(endpoint, headers=headers, json=payload)
+
+            if response.status_code in (200, 201, 202):
+                logger.info("[SDK-PUSH] Fact accepted via fallback (HTTP %s).", response.status_code)
+                return True
+
+            logger.error(
+                "[SDK-PUSH] REST Fallback REJECTED — HTTP %s\n"
+                "  URL  : %s\n"
+                "  Body : %s",
+                response.status_code,
+                endpoint,
+                response.text,
+            )
+            return False
+
+        except httpx.ConnectError as exc:
+            logger.error("[SDK-PUSH] Connection failed to %s: %s", endpoint, exc)
+        except httpx.TimeoutException as exc:
+            logger.error("[SDK-PUSH] Timeout posting to %s: %s", endpoint, exc)
+        except Exception as exc:
+            logger.error("[SDK-PUSH] Unexpected error: %s\n%s", exc, traceback.format_exc())
+
+        return False
+
+    def _facts_endpoint(self, use_case_id: str) -> str:
+        # Route prefix: /ml/v4/governance/model_inventories/...
+        return (
+            f"{self.gov_url}/ml/v4/governance/model_inventories/{self.inventory_id}"
+            f"/ai_use_cases/{use_case_id}/external_lifecycle_facts"
+        )
+
+    # ------------------------------------------------------------------
+    # GovernancePort implementation
+    # ------------------------------------------------------------------
 
     async def log_evaluation_event(
         self, asset_id: str, findings: list[Any], execution_metadata: dict[str, Any]
     ) -> bool:
-        """Log a code compliance evaluation event to watsonx.governance."""
-        resolved_asset_id = asset_id or self.use_case_id
-        
-        payload = {
-            "asset_id": resolved_asset_id,
-            "event_type": "evaluation",
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "findings": [
-                {
-                    "rule_id": getattr(f, "rule_id", f.get("rule_id") if isinstance(f, dict) else str(f)),
-                    "severity": getattr(f, "severity", f.get("severity") if isinstance(f, dict) else "UNKNOWN"),
-                    "line_number": getattr(f, "line_number", f.get("line_number") if isinstance(f, dict) else 1),
-                    "description": getattr(f, "description", f.get("description") if isinstance(f, dict) else ""),
-                    "confidence": getattr(f, "confidence", f.get("confidence") if isinstance(f, dict) else 0.0),
-                    "filename": getattr(f, "filename", f.get("filename") if isinstance(f, dict) else ""),
-                }
-                for f in findings
-            ],
-            "metadata": execution_metadata,
+        resolved_id = (asset_id or self.use_case_id).strip()
+
+        # Calculate average confidence
+        valid_findings = []
+        for f in findings:
+            if isinstance(f, dict):
+                valid_findings.append(f)
+            else:
+                valid_findings.append({
+                    "confidence": getattr(f, "confidence", 0.0),
+                })
+        conf_sum = sum(float(f.get("confidence", 0.0)) for f in valid_findings)
+        avg_conf = round(conf_sum / len(valid_findings), 4) if valid_findings else 0.0
+
+        payload: dict[str, Any] = {
+            "entity": {
+                "name": "Sentinel Automated Review",
+                "description": "Asynchronous dual-agent code analysis rule verification.",
+                "state": "completed",
+                "system": "Sentinel-Spec-Engine",
+                "metrics": [
+                    {"id": "policy_violations", "value": len(findings)},
+                    {"id": "confidence_score", "value": avg_conf},
+                ],
+            }
         }
 
         if self.mock_mode:
-            logger.info(
-                f"[MOCK MODE] Logging evaluation event for asset {resolved_asset_id}: {payload}"
-            )
+            logger.info("[MOCK] log_evaluation_event — use_case=%s violations=%d",
+                        resolved_id, len(findings))
             return True
 
-        token = await self._get_iam_token()
-        if not token:
-            logger.error("Could not obtain auth token to log evaluation event.")
-            return False
-
-        # Post event directly to the watsonx.governance Factsheets events backend API
-        endpoint = f"{self.gov_url}/v2/model_entries/{resolved_asset_id}/events"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                # Include query version parameter required by watsonx data platform APIs
-                response = await client.post(
-                    endpoint,
-                    headers=headers,
-                    json=payload,
-                    params={"version": "2024-03-01"},
-                )
-                if response.status_code >= 400:
-                    logger.error(
-                        f"watsonx.governance API returned error status {response.status_code}: {response.text}"
-                    )
-                    return False
-                return True
-        except Exception as exc:
-            logger.error(f"Error calling watsonx.governance REST API: {exc}")
-            return False
+        endpoint = self._facts_endpoint(resolved_id)
+        return await self.push_lifecycle_facts(endpoint, payload)
 
     async def log_human_override(
         self, finding_id: str, justification: str, user: str
     ) -> bool:
-        """Log a human override or policy rejection event to watsonx.governance."""
-        payload = {
-            "finding_id": finding_id,
-            "event_type": "override",
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "override": {
-                "occurred": True,
-                "actor": user,
-                "justification": justification,
-            },
+        payload: dict[str, Any] = {
+            "entity": {
+                "name": "Sentinel Automated Review",
+                "description": f"Human override by {user} for finding {finding_id}: {justification}",
+                "state": "completed",
+                "system": "Sentinel-Spec-Engine",
+                "metrics": [
+                    {"id": "policy_violations", "value": 0},
+                    {"id": "confidence_score", "value": 1.0},
+                ],
+            }
         }
-
-        resolved_asset_id = self.use_case_id
 
         if self.mock_mode:
-            logger.info(
-                f"[MOCK MODE] Logging human override for finding {finding_id}: {payload}"
-            )
+            logger.info("[MOCK] log_human_override — finding=%s user=%s", finding_id, user)
             return True
 
-        token = await self._get_iam_token()
-        if not token:
-            logger.error("Could not obtain auth token to log human override event.")
-            return False
-
-        endpoint = f"{self.gov_url}/v2/model_entries/{resolved_asset_id}/events"
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                response = await client.post(
-                    endpoint,
-                    headers=headers,
-                    json=payload,
-                    params={"version": "2024-03-01"},
-                )
-                if response.status_code >= 400:
-                    logger.error(
-                        f"watsonx.governance API returned error status {response.status_code}: {response.text}"
-                    )
-                    return False
-                return True
-        except Exception as exc:
-            logger.error(f"Error logging human override to watsonx.governance: {exc}")
-            return False
+        endpoint = self._facts_endpoint(self.use_case_id)
+        return await self.push_lifecycle_facts(endpoint, payload)
