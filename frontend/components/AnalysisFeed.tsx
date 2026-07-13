@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useSessionStore } from '@/lib/store/session'
 import AnalysisResults from '@/components/AnalysisResults'
+import { Markdown } from '@/lib/markdown'
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', {
@@ -124,7 +125,7 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
                       lineHeight: 1.65,
                     }}
                   >
-                    {msg.content}
+                    <Markdown content={msg.content} />
                     {msg.is_streaming && <StreamingCursor />}
                   </div>
                 )}

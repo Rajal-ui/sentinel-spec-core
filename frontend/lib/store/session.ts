@@ -123,6 +123,71 @@ function findContentLine(content: string, pattern: RegExp): number {
   return 1
 }
 
+// ── Conversational QA response generator ──────────────────────────────────────
+
+function generateConversationalResponse(contentLower: string): string {
+  // Compliance matrix / rules questions
+  if (/compliance|rule|matrix|policy|policies|22|twenty/.test(contentLower)) {
+    return `The Sentinel Spec compliance engine enforces **22 rules** across 8 policy domains:\n\n` +
+      `**Security (SEC-001 \u2013 SEC-013):**\n\n` +
+      `- **SEC-001**: Hard-coded credential \u2014 CRITICAL\n` +
+      `- **SEC-002**: API key in source \u2014 CRITICAL\n` +
+      `- **SEC-003/004/005**: SQL, OS command, and template injection \u2014 HIGH\n` +
+      `- **SEC-006/007**: Path traversal & unsafe file open \u2014 HIGH/MEDIUM\n` +
+      `- **SEC-008/009**: Weak cipher & insecure random \u2014 HIGH/MEDIUM\n` +
+      `- **SEC-010/011**: Missing auth & broken access control \u2014 CRITICAL/HIGH\n` +
+      `- **SEC-012/013**: PII in logs & sensitive data in stack traces \u2014 HIGH/MEDIUM\n\n` +
+      `**Architecture (ARCH-001 \u2013 ARCH-007):**\n\n` +
+      `- **ARCH-001/002**: Hexagonal domain leakage & framework imports in domain\n` +
+      `- **ARCH-003/004**: Direct DB calls from domain & missing port abstraction\n` +
+      `- **ARCH-005**: Data residency violation \u2014 CRITICAL\n` +
+      `- **ARCH-006/007**: API contract drift & undocumented public endpoints\n\n` +
+      `**Quality (QUAL-001 \u2013 QUAL-002):**\n\n` +
+      `- **QUAL-001**: Unsafe deserialization \u2014 HIGH\n` +
+      `- **QUAL-002**: Unhandled exception exposure \u2014 MEDIUM\n\n` +
+      `Upload a code file or paste code to run these checks against your source.`
+  }
+
+  // Adversarial critic / dual-agent architecture
+  if (/adversarial|critic|dual.?agent|sentinel|classifier|engine|how.*work/.test(contentLower)) {
+    return `Sentinel Spec uses a **dual-agent architecture** powered by IBM Granite:\n\n` +
+      `**Agent 1 \u2014 Sentinel Classifier:**\n\n` +
+      `Receives your code snippet and cross-references it against the 22-rule compliance matrix. It identifies potential violations, maps them to ADRs, and assigns severity tiers (blocking, warning, logged_only).\n\n` +
+      `**Agent 2 \u2014 Adversarial Critic:**\n\n` +
+      `Intercepts Agent 1\u2019s analysis in an independent, zero-bias context block. It performs strict **entailment verification** \u2014 confirming that each flagged violation is genuinely supported by the code evidence. This eliminates false positives before results reach you.\n\n` +
+      `**Execution Records**\n\n` +
+      `Persisted to IBM Cloud Object Storage for audit trail and governance reporting.\n\n` +
+      `Upload code to see both agents in action.`
+  }
+
+  // ADR questions
+  if (/adr|decision.?record/.test(contentLower)) {
+    return `Architecture Decision Records (ADRs) are the policy backbone of Sentinel Spec. Key ADRs include:\n\n` +
+      `- **ADR-0017** \u2014 Secrets Management: All credentials MUST be injected at runtime via env vars or IBM Secrets Manager\n` +
+      `- **ADR-0042** \u2014 Billing Abstraction: All billing operations MUST route through BillingPort\n` +
+      `- **ADR-0019** \u2014 PII Handling: PII fields MUST be masked before writing to any log stream\n` +
+      `- **ADR-0031** \u2014 SDK Migration: Deprecated modules must be replaced with current versions\n\n` +
+      `These are enforced automatically when you submit code for analysis. Paste or upload code to check compliance.`
+  }
+
+  // Getting started / how to use
+  if (/how|start|use|upload|paste|begin|guide|help|getting/.test(contentLower)) {
+    return `**Getting started with Sentinel Spec:**\n\n` +
+      `1. **Upload a file** \u2014 Click the upload zone in the left panel or drag-and-drop a source file\n` +
+      `2. **Paste code** \u2014 Switch to the "Paste Code" tab and paste your code snippet\n` +
+      `3. **Ask questions** \u2014 Type questions about compliance rules, ADRs, or the analysis engine\n\n` +
+      `The engine will check your code against all 22 compliance rules and report violations with suggested fixes.`
+  }
+
+  // Default conversational response
+  return `I can help with compliance analysis and architecture questions. Here\u2019s what I can do:\n\n` +
+    `- **Analyze code** \u2014 Upload a file or paste code to check against 22 compliance rules\n` +
+    `- **Explain rules** \u2014 Ask about specific rules (e.g., "What is SEC-001?") or the full compliance matrix\n` +
+    `- **ADR guidance** \u2014 Ask about Architecture Decision Records and policy requirements\n` +
+    `- **System overview** \u2014 Learn about the dual-agent engine and how the Sentinel Classifier and Adversarial Critic work\n\n` +
+    `To run a compliance scan, upload or paste your source code using the left panel.`
+}
+
 interface SessionStore {
   sessions: AuditSession[]
   activeSessionId: string | null
@@ -293,28 +358,39 @@ export const useSessionStore = create<SessionStore>()(
 
         const isQuestion = /^(what|how|why|can|could|would|should|is|are|do|does|describe|explain|check|review|scan|give|show|list|summarize|tell)/i.test(content.trim())
         const hasCodeContent = matchedFindings.length > 0 || /import|function|const|let|class|def|export|interface|type|impl|fn /.test(contentLower)
+        const hasFileAttachment = !!meta?.originalCode || !!meta?.fileName
 
         let summary = ''
         if (matchedFindings.length > 0) {
           summary = matchedFindings.length === 1
-            ? `Analysis complete. I found 1 policy violation in the submitted code related to ${matchedDomains[0]}.`
-            : `Analysis complete. I found ${matchedFindings.length} policy violations in the submitted code related to ${matchedDomains.join(', ')}.`
+            ? `Analysis complete. I found **1 policy violation** in the submitted code related to **${matchedDomains[0]}**.`
+            : `Analysis complete. I found **${matchedFindings.length} policy violations** in the submitted code related to ${matchedDomains.map(d => `**${d}**`).join(', ')}.`
         } else if (activeCode && isQuestion) {
           // User asked a question and we have code/findings context!
           if (contentLower.includes('violation') || contentLower.includes('finding') || contentLower.includes('summary') || contentLower.includes('report') || contentLower.includes('flag')) {
             if (activeFindings.length > 0) {
               summary = `Based on the active analysis of \`${activeFileName}\`, here is a summary of the compliance findings:\n\n` +
-                activeFindings.map((f, i) => `**Finding ${i + 1}: ${f.title} (${f.tier.toUpperCase()})**\n- **ADR Reference:** ${f.cited_adr}\n- **Description:** ${f.description}\n- **Suggested Fix:** \`${f.diff_new}\``).join('\n\n')
+                activeFindings.map((f, i) =>
+                  `**Finding ${i + 1}: ${f.title}**\n\n` +
+                  `**Severity:** ${f.tier.toUpperCase()} (confidence: ${Math.round(f.confidence * 100)}%)\n\n` +
+                  `- **ADR Reference:** ${f.cited_adr}\n` +
+                  `- **Description:** ${f.description}\n` +
+                  `- **Suggested Fix:** \`${f.diff_new}\``
+                ).join('\n\n---\n\n')
             } else {
-              summary = `I checked the active file \`${activeFileName}\` and found no compliance violations. The code aligns with all active architecture decision records (ADRs).`
+              summary = `I checked the active file \`${activeFileName}\` and found **no compliance violations**. The code aligns with all active architecture decision records (ADRs).`
             }
           } else if (contentLower.includes('code') || contentLower.includes('file') || contentLower.includes('contents') || contentLower.includes('source')) {
             summary = `The active code file is \`${activeFileName}\`. Here is the source code being analyzed:\n\n\`\`\`python\n${activeCode}\n\`\`\``
           } else {
-            summary = `I understand your question about \`${activeFileName}\`. The active analysis has flagged ${activeFindings.length} finding(s). You can ask me for a "summary of violations" or to view the "code content" in detail.`
+            summary = `I understand your question about \`${activeFileName}\`. The active analysis has flagged **${activeFindings.length} finding(s)**. You can ask me for a "summary of violations" or to view the "code content" in detail.`
           }
-        } else if (!hasCodeContent || isQuestion) {
-          summary = `I understand your question. To perform a compliance analysis, please provide the actual code or files you'd like me to review. I can check for ADR violations, PII handling, deprecated API usage, and architectural compliance issues.`
+        } else if (!hasCodeContent && !hasFileAttachment && isQuestion) {
+          // Text-only conversational query — answer directly
+          summary = generateConversationalResponse(contentLower)
+        } else if (!hasCodeContent && !hasFileAttachment) {
+          // Non-question text without code — prompt for code
+          summary = `I can analyze that for you. To run a compliance scan, please upload a file, paste code in the left panel, or drag-and-drop a source file. I\u2019ll check it against all 22 compliance rules.\n\nYou can also ask me questions about the compliance matrix, ADR policies, or how the dual-agent engine works.`
         } else {
           summary = `Analysis complete. I did not find any policy violations in the submitted code. It appears to comply with all relevant ADRs.`
         }

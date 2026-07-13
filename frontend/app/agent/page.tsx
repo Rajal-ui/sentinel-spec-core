@@ -165,7 +165,12 @@ function LeftPanel() {
       {/* New Analysis button */}
       <div style={{ padding: '16px 14px 12px' }}>
         <button
-          onClick={() => createSession()}
+          onClick={() => {
+            createSession()
+            setStagedFiles([])
+            setPasteCode('')
+            if (fileInputRef.current) fileInputRef.current.value = ''
+          }}
           className="font-display"
           style={{
             display: 'flex',

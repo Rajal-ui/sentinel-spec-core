@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Finding } from '@/lib/types'
 import ViolationCard from '@/components/ViolationCard'
+import { Markdown } from '@/lib/markdown'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
 interface AnalysisResultsProps {
@@ -106,7 +107,8 @@ export default function AnalysisResults({
             style={{ overflow: 'hidden' }}
           >
             <div style={{ padding: '14px 14px 16px' }}>
-              <p
+              <Markdown
+                content={summary}
                 style={{
                   fontSize: 14,
                   fontFamily: 'Inter, sans-serif',
@@ -115,9 +117,7 @@ export default function AnalysisResults({
                   marginBottom: 14,
                   marginTop: 0,
                 }}
-              >
-                {summary}
-              </p>
+              />
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {findings.map((finding) => {

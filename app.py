@@ -66,9 +66,10 @@ from fastapi.staticfiles import StaticFiles
 # ---------------------------------------------------------------------------
 
 class EvaluateRequest(BaseModel):
-    content: str = Field(..., description="Raw source code to evaluate")
-    file_path: str = Field(default="untitled", description="Relative file path (for context)")
+    content: str = Field(default="", description="Source code to evaluate, or a natural-language question when mode='qa'")
+    file_path: str | None = Field(default=None, description="Relative file path (for code context)")
     language: str = Field(default="python", description="Programming language identifier")
+    mode: str = Field(default="code", description="Evaluation mode: 'code' for compliance scan, 'qa' for conversational query")
 
 
 class ViolationResponse(BaseModel):
@@ -107,14 +108,27 @@ class MatrixRuleResponse(BaseModel):
 
 @app.post("/evaluate", response_model=ComplianceReportResponse)
 def evaluate(request: EvaluateRequest) -> ComplianceReportResponse:
-    """Synchronous compliance check — run the full dual-agent DAG and return structured results."""
+    """Synchronous compliance check — run the full dual-agent DAG and return structured results.
+
+    When mode='qa', returns a conversational response without running the engine.
+    """
+    if request.mode == "qa":
+        if not request.content.strip():
+            raise HTTPException(status_code=400, detail="content must not be empty for qa mode")
+        return ComplianceReportResponse(
+            is_compliant=True,
+            violations=[],
+            metadata={"mode": "qa", "question": request.content},
+            duration_ms=0.0,
+        )
+
     if not request.content.strip():
         raise HTTPException(status_code=400, detail="content must not be empty")
 
     t0 = time.monotonic()
     snippet = CodeSnippet(
         content=request.content,
-        file_path=request.file_path,
+        file_path=request.file_path or "untitled",
         language=request.language,
     )
     report = _engine.evaluate_code(snippet)
@@ -144,13 +158,38 @@ async def evaluate_stream(request: EvaluateRequest) -> StreamingResponse:
 
     Clients receive a stream of JSON-encoded AgentThinkingStep objects.
     The final event (phase == "complete") carries the full compliance payload in its `payload` field.
+
+    When mode='qa', yields a single conversational response event.
     """
+    if request.mode == "qa":
+        if not request.content.strip():
+            raise HTTPException(status_code=400, detail="content must not be empty for qa mode")
+
+        async def qa_generator() -> AsyncGenerator[str, None]:
+            answer = json.dumps({
+                "agent": "sentinel",
+                "phase": "complete",
+                "detail": f"Conversational response to: {request.content}",
+                "payload": {
+                    "is_compliant": True,
+                    "violations": [],
+                    "metadata": {"mode": "qa", "question": request.content},
+                },
+            })
+            yield f"data: {answer}\n\n"
+
+        return StreamingResponse(
+            qa_generator(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     if not request.content.strip():
         raise HTTPException(status_code=400, detail="content must not be empty")
 
     snippet = CodeSnippet(
         content=request.content,
-        file_path=request.file_path,
+        file_path=request.file_path or "untitled",
         language=request.language,
     )
 
