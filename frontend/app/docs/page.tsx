@@ -154,9 +154,9 @@ Authorization: Bearer <IAM token>
 // ── IBM Services table data ───────────────────────────────────────────────────
 const IBM_SERVICES = [
   { component: 'LLM', service: 'IBM Granite 4 Haiku Small via watsonx.ai', purpose: 'Violation classification and adversarial critique', href: 'https://www.ibm.com/docs/watsonx' },
-  { component: 'Vector Store', service: 'Milvus via watsonx.data', purpose: 'Policy chunk storage and retrieval', href: 'https://www.ibm.com/docs/milvus' },
-  { component: 'Governance', service: 'watsonx.governance', purpose: 'Immutable lineage records for all decisions', href: 'https://www.ibm.com/docs/governance' },
-  { component: 'Orchestration', service: 'watsonx Orchestrate', purpose: 'Agent pipeline coordination', href: 'https://www.ibm.com/docs/orchestrate' },
+  { component: 'Vector Store', service: 'Milvus via watsonx.data', purpose: 'Policy chunk storage and retrieval', href: 'https://www.ibm.com/products/watsonx-data' },
+  { component: 'Governance', service: 'watsonx.governance', purpose: 'Immutable lineage records for all decisions', href: 'https://www.ibm.com/products/watsonx-governance' },
+  { component: 'Orchestration', service: 'watsonx Orchestrate', purpose: 'Agent pipeline coordination', href: 'https://www.ibm.com/products/watsonx-orchestrate' },
   { component: 'IDE', service: 'IBM Bob', purpose: 'Native MCP tool registration and finding display', href: 'https://ibm.com/bob' },
   { component: 'Auth', service: 'IBM Cloud IAM', purpose: 'Service-to-service authentication', href: 'https://cloud.ibm.com/iam' },
   { component: 'Monitoring', service: 'IBM Cloud Monitor', purpose: 'Agent performance and SLA tracking', href: 'https://cloud.ibm.com/monitor' },
