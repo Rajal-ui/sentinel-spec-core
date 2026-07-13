@@ -60,7 +60,7 @@ export async function logout(req: Request, res: Response, next: NextFunction) {
 // ── POST /api/auth/refresh ────────────────────────────────────────────
 export async function refresh(req: Request, res: Response, next: NextFunction) {
   try {
-    const oldRefresh = req.cookies?.refresh_token
+    const oldRefresh = req.cookies?.refresh_token ?? req.body?.refresh_token
     if (!oldRefresh) {
       res.status(401).json({ error: { message: 'Refresh token required', statusCode: 401 } })
       return

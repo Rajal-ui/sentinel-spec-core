@@ -7,34 +7,41 @@ export function setAuthCookies(
   accessToken: string,
   refreshToken: string,
 ) {
+  // Cross-origin (Vercel → Railway): SameSite=none + Secure required.
+  // Local dev: SameSite=lax is fine (same-site localhost).
+  const sameSite = isProduction() ? 'none' : 'lax'
+  const secure   = isProduction()
+
   res.cookie('access_token', accessToken, {
     httpOnly: true,
-    secure: isProduction(),
-    sameSite: isProduction() ? 'strict' : 'lax',
+    secure,
+    sameSite,
     path: '/',
     maxAge: 15 * 60 * 1000,               // 15 min
   })
 
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
-    secure: isProduction(),
-    sameSite: isProduction() ? 'strict' : 'lax',
-    path: '/api/auth',
+    secure,
+    sameSite,
+    path: '/',                            // Must be '/' so browser sends on any /api/* path
     maxAge: 7 * 24 * 60 * 60 * 1000,      // 7 days
   })
 
-  // Match the cookie the frontend middleware checks
+  // Readable by Next.js proxy middleware for route protection
   res.cookie('sentinel-auth', accessToken, {
-    httpOnly: false,                        // readable by JS for middleware
-    secure: isProduction(),
-    sameSite: isProduction() ? 'strict' : 'lax',
+    httpOnly: false,
+    secure,
+    sameSite,
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000,       // 7 days
   })
 }
 
 export function clearAuthCookies(res: Response) {
-  res.clearCookie('access_token', { path: '/' })
-  res.clearCookie('refresh_token', { path: '/api/auth' })
-  res.clearCookie('sentinel-auth', { path: '/' })
+  const isProduction = process.env.NODE_ENV === 'production'
+  const opts = { path: '/', secure: isProduction, sameSite: isProduction ? 'none' : 'lax' } as const
+  res.clearCookie('access_token',  opts)
+  res.clearCookie('refresh_token', opts)
+  res.clearCookie('sentinel-auth', opts)
 }

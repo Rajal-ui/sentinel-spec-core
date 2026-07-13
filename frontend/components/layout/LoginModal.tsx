@@ -252,7 +252,7 @@ export default function LoginModal() {
               </div>
 
               <a
-                href={`${process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:4000/api'}/auth/google`}
+                href={`${process.env.NEXT_PUBLIC_AUTH_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/auth/google`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -424,7 +424,7 @@ export default function LoginModal() {
               </div>
 
               <a
-                href={`${process.env.NEXT_PUBLIC_AUTH_API_URL || 'http://localhost:4000/api'}/auth/google`}
+                href={`${process.env.NEXT_PUBLIC_AUTH_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/auth/google`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
