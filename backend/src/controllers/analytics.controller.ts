@@ -12,7 +12,7 @@ export const summaryQuerySchema = z.object({
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function toLocalDate(d: Date): string {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return d.toISOString().slice(0, 10)
 }
 
 function toLocalMonth(d: Date): string {
@@ -86,6 +86,7 @@ export async function getSummary(
     }
     const trendData = Array.from(trendMap.entries())
       .map(([date, counts]) => ({ date, ...counts }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
     // ── Domain breakdown ──────────────────────────────────────────
     const domainMap = new Map<string, number>()

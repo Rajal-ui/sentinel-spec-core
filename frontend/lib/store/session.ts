@@ -545,6 +545,7 @@ export const useSessionStore = create<SessionStore>()(
 
         const allFindings: Finding[] = []
         const allDomains: string[] = []
+        let passedCount = 0
 
         for (const file of files) {
           set((s) => ({
@@ -583,6 +584,10 @@ export const useSessionStore = create<SessionStore>()(
           }
 
           const hasBlocking = fileFindings.some((f) => f.tier === 'blocking' || f.tier === 'warning')
+          if (!hasBlocking) {
+            passedCount++
+          }
+
           set((s) => ({
             fileQueue: s.fileQueue.map((item) =>
               item.filename === file.name
@@ -595,7 +600,6 @@ export const useSessionStore = create<SessionStore>()(
           allDomains.push(...fileDomains)
         }
 
-        const passedCount = files.length - (allFindings.length > 0 ? 1 : 0)
         const violationCount = allFindings.length
         let summary: string
         if (violationCount === 0) {

@@ -107,16 +107,32 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
                   </span>
                 </div>
 
-                {msg.findings && msg.findings.length > 0 ? (
-                  <AnalysisResults
-                    findings={selectedFileFilter ? msg.findings.filter((f) => f.filename === selectedFileFilter) : msg.findings}
-                    summary={msg.content}
-                    resolvedFindings={sessionResolvedMap}
-                    onApplyFix={onApplyFix}
-                    originalCode={originalCode}
-                    fileName={fileName}
-                  />
-                ) : (
+                {msg.findings && msg.findings.length > 0 ? (() => {
+                  const filteredFindings = selectedFileFilter
+                    ? msg.findings.filter((f) => f.filename === selectedFileFilter)
+                    : msg.findings
+
+                  let displaySummary = msg.content
+                  if (selectedFileFilter) {
+                    if (filteredFindings.length === 0) {
+                      displaySummary = `\`${selectedFileFilter}\` passed all compliance checks. No violations found.`
+                    } else {
+                      const domains = [...new Set(filteredFindings.map((f) => f.cited_adr).filter(Boolean))]
+                      displaySummary = `Found **${filteredFindings.length} violation${filteredFindings.length !== 1 ? 's' : ''}** in **${selectedFileFilter}** related to ${domains.map((d) => `**${d}**`).join(', ')}.`
+                    }
+                  }
+
+                  return (
+                    <AnalysisResults
+                      findings={filteredFindings}
+                      summary={displaySummary}
+                      resolvedFindings={sessionResolvedMap}
+                      onApplyFix={onApplyFix}
+                      originalCode={originalCode}
+                      fileName={fileName}
+                    />
+                  )
+                })() : (
                   <div
                     style={{
                       fontSize: 15,
