@@ -148,11 +148,6 @@ function LeftPanel() {
 
   const removeFile = (id: string) => setStagedFiles((prev) => prev.filter((f) => f.id !== id))
 
-  const ingestionTabs = [
-    { id: 'file', label: 'File Upload', icon: <Upload size={11} /> },
-    { id: 'paste', label: 'Paste Code', icon: <Code size={11} /> },
-  ]
-
   return (
     <div
       className="flex flex-col w-[280px] flex-shrink-0 h-full overflow-hidden border-l border-r border-slate-200/60 dark:border-[#1F2029]/70"
@@ -203,56 +198,97 @@ function LeftPanel() {
         <div style={{ marginBottom: 24 }}>
           <div style={SECTION_LABEL_STYLE}>Ingestion</div>
 
-          {/* Drop zone */}
-          <motion.div
-            animate={
-              isDragOver && !prefersReducedMotion
-                ? { scale: 1.02 }
-                : { scale: 1 }
-            }
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => fileInputRef.current?.click()}
+          {/* Mode toggle */}
+          <div
             style={{
-              border: `1px dashed ${isDragOver ? '#FF5C00' : 'var(--border)'}`,
-              borderRadius: 8,
-              padding: '14px 12px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              background: isDragOver ? 'rgba(255,92,0,0.07)' : 'var(--surface)',
-              transition: 'border-color 0.15s, background 0.15s',
+              display: 'flex',
+              gap: 2,
+              background: 'var(--surface-muted)',
+              borderRadius: 6,
+              padding: 3,
+              border: '1px solid var(--border)',
               marginBottom: 10,
             }}
           >
-            <Upload size={18} style={{ color: isDragOver ? '#FF5C00' : 'var(--text-muted)', marginBottom: 6 }} />
-            <div
-              className="font-mono-product"
-              style={{ fontSize: 12, color: isDragOver ? '#FF5C00' : 'var(--text-muted)', lineHeight: 1.5 }}
-            >
-              {isDragOver ? 'Drop files here' : 'Drag & drop files here'}
-            </div>
-          </motion.div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            style={{ display: 'none' }}
-            onChange={(e) => e.target.files && addFiles(e.target.files)}
-          />
-
-          {/* Input tabs */}
-          <div style={{ marginBottom: 10 }}>
-            <TabBar
-              tabs={ingestionTabs}
-              active={ingestionTab}
-              onChange={(id) => setIngestionTab(id as IngestionTab)}
-            />
+            {(['file', 'paste'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setIngestionTab(mode)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 5,
+                  padding: '5px 0',
+                  borderRadius: 4,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  transition: 'background 0.15s, color 0.15s',
+                  background: ingestionTab === mode ? 'var(--surface-raised)' : 'transparent',
+                  color: ingestionTab === mode ? 'var(--text)' : 'var(--text-secondary)',
+                  boxShadow: ingestionTab === mode ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                }}
+              >
+                {mode === 'file' ? <Upload size={11} /> : <Code size={11} />}
+                {mode === 'file' ? 'File' : 'Paste'}
+              </button>
+            ))}
           </div>
 
           {/* Tab content */}
           <AnimatePresence mode="wait">
+            {ingestionTab === 'file' && (
+              <motion.div
+                key="file"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={{ duration: 0.15 }}
+              >
+                {/* Drop zone */}
+                <motion.div
+                  animate={
+                    isDragOver && !prefersReducedMotion
+                      ? { scale: 1.02 }
+                      : { scale: 1 }
+                  }
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    border: `1px dashed ${isDragOver ? '#FF5C00' : 'var(--border)'}`,
+                    borderRadius: 8,
+                    padding: '14px 12px',
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: isDragOver ? 'rgba(255,92,0,0.07)' : 'var(--surface)',
+                    transition: 'border-color 0.15s, background 0.15s',
+                  }}
+                >
+                  <Upload size={18} style={{ color: isDragOver ? '#FF5C00' : 'var(--text-muted)', marginBottom: 6 }} />
+                  <div
+                    className="font-mono-product"
+                    style={{ fontSize: 12, color: isDragOver ? '#FF5C00' : 'var(--text-muted)', lineHeight: 1.5 }}
+                  >
+                    {isDragOver ? 'Drop files here' : 'Drag & drop or click to browse'}
+                  </div>
+                </motion.div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  style={{ display: 'none' }}
+                  onChange={(e) => e.target.files && addFiles(e.target.files)}
+                />
+              </motion.div>
+            )}
+
             {ingestionTab === 'paste' && (
               <motion.div
                 key="paste"
