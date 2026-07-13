@@ -68,7 +68,7 @@ export default function AnalysisResults({
           borderBottom: expanded ? '1px solid var(--glass-border)' : 'none',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {expanded ? (
             <ChevronDown size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
           ) : (
@@ -79,18 +79,6 @@ export default function AnalysisResults({
             style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}
           >
             {findings.length} violation{findings.length !== 1 ? 's' : ''} found
-          </span>
-          <span
-            className="font-mono-product"
-            style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {summary.length > 120 ? `${summary.slice(0, 120)}...` : summary}
           </span>
         </div>
       </div>

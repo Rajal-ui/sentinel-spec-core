@@ -133,3 +133,11 @@ export interface ThinkingStep {
   detail: string
   status: 'pending' | 'active' | 'done'
 }
+
+export type FileQueueStatus = 'queued' | 'analysing' | 'passed' | 'violations'
+
+export interface FileQueueItem {
+  filename: string
+  status: FileQueueStatus
+  violationCount?: number
+}

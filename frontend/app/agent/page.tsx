@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, type DragEvent, type Keyboard
 import AppShell from '@/components/layout/AppShell'
 import HistoryPanel from '@/components/HistoryPanel'
 import AnalysisFeed from '@/components/AnalysisFeed'
+import FileAnalysisQueue from '@/components/agent/FileAnalysisQueue'
 import { useAuthStore } from '@/lib/store/auth'
 import { useSessionStore } from '@/lib/store/session'
 import {
@@ -106,7 +107,7 @@ function TabBar({
 // ── Left Panel ─────────────────────────────────────────────────────────────────
 
 function LeftPanel() {
-  const { createSession, activeSessionId, sendMessage } = useSessionStore()
+  const { createSession, activeSessionId, sendMessage, analyzeFiles, clearFileQueue } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
 
   // Ingestion state
@@ -164,6 +165,7 @@ function LeftPanel() {
             createSession()
             setStagedFiles([])
             setPasteCode('')
+            clearFileQueue()
             if (fileInputRef.current) fileInputRef.current.value = ''
           }}
           className="font-display"
@@ -367,27 +369,12 @@ function LeftPanel() {
               <button
                 onClick={async () => {
                   if (!activeSessionId) createSession()
-                  let content = ''
-                  let originalCode: string | undefined
-                  let fileName: string | undefined
                   if (stagedFiles.length > 0) {
-                    const fileParts = stagedFiles.map(f => {
-                      const header = `# File: ${f.name} (${formatBytes(f.size)})`
-                      const body = f.content ? `\n${f.content}` : ''
-                      return `${header}${body}`
-                    })
-                    content = fileParts.join('\n\n')
-                    // Use the first file's raw content as the reconstruction source
-                    originalCode = stagedFiles[0].content ?? content
-                    fileName = stagedFiles[0].name
-                  } else if (pasteCode.trim()) {
-                    content = pasteCode
-                    originalCode = pasteCode
-                    fileName = 'pasted_code.py'
-                  }
-                  if (content) {
-                    await sendMessage(content, 'text', { originalCode, fileName })
+                    const files = stagedFiles.map((f) => ({ name: f.name, content: f.content ?? '' }))
                     setStagedFiles([])
+                    await analyzeFiles(files)
+                  } else if (pasteCode.trim()) {
+                    await sendMessage(pasteCode, 'text', { originalCode: pasteCode, fileName: 'pasted_code.py' })
                     setPasteCode('')
                   }
                 }}
@@ -435,7 +422,7 @@ function LeftPanel() {
 // ── Chat Canvas ────────────────────────────────────────────────────────────────
 
 function ChatCanvas() {
-  const { messages, isStreaming, activeSessionId, sendMessage, createSession, resolveFinding } = useSessionStore()
+  const { messages, isStreaming, activeSessionId, sendMessage, createSession, resolveFinding, fileQueue } = useSessionStore()
   const prefersReducedMotion = useReducedMotion()
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -498,7 +485,7 @@ function ChatCanvas() {
     >
       {/* Message area */}
       <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: '24px 28px' }}>
-        {isEmpty ? (
+        {isEmpty && fileQueue.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -573,7 +560,10 @@ function ChatCanvas() {
             </div>
           </motion.div>
         ) : (
-          <AnalysisFeed onApplyFix={handleApplyFix} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 820, margin: '0 auto', width: '100%' }}>
+            {fileQueue.length > 0 && <FileAnalysisQueue files={fileQueue} />}
+            <AnalysisFeed onApplyFix={handleApplyFix} />
+          </div>
         )}
       </div>
 

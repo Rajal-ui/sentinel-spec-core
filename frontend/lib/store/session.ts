@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AuditSession, Finding, Message, InputMode } from '@/lib/types'
+import type { AuditSession, Finding, Message, InputMode, FileQueueItem } from '@/lib/types'
 import api from '@/lib/api'
 
 // ── Mock analysis engine helpers ──────────────────────────────────────────────
@@ -196,11 +196,16 @@ interface SessionStore {
   isStreaming: boolean
   thinkingStepsVisible: boolean
   resolvedFindings: Record<string, Record<string, { resolved_at: string }>>
+  fileQueue: FileQueueItem[]
   createSession: () => void
   deleteSession: (id: string) => void
   renameSession: (id: string, name: string) => void
   setActiveSession: (id: string) => void
   sendMessage: (content: string, mode: InputMode, meta?: { originalCode?: string; fileName?: string }) => Promise<void>
+  analyzeFiles: (files: { name: string; content: string }[]) => Promise<void>
+  setFileQueue: (files: FileQueueItem[]) => void
+  updateFileStatus: (filename: string, status: FileQueueItem['status'], violationCount?: number) => void
+  clearFileQueue: () => void
   resolveFinding: (findingId: string) => Promise<void>
   setThinkingVisible: (v: boolean) => void
 }
@@ -217,6 +222,7 @@ export const useSessionStore = create<SessionStore>()(
       isStreaming: false,
       thinkingStepsVisible: false,
       resolvedFindings: {},
+      fileQueue: [],
 
       createSession: () => {
         const { activeSessionId, messages } = get()
@@ -491,6 +497,148 @@ export const useSessionStore = create<SessionStore>()(
       },
 
       setThinkingVisible: (v) => set({ thinkingStepsVisible: v }),
+
+      setFileQueue: (files) => set({ fileQueue: files }),
+
+      updateFileStatus: (filename, status, violationCount) =>
+        set((s) => ({
+          fileQueue: s.fileQueue.map((item) =>
+            item.filename === filename ? { ...item, status, ...(violationCount !== undefined ? { violationCount } : {}) } : item,
+          ),
+        })),
+
+      clearFileQueue: () => set({ fileQueue: [] }),
+
+      analyzeFiles: async (files) => {
+        if (!files.length) return
+
+        const { activeSessionId, createSession: create } = get()
+        if (!activeSessionId) create()
+
+        const queueItems: FileQueueItem[] = files.map((f) => ({
+          filename: f.name,
+          status: 'queued' as const,
+        }))
+        set({ fileQueue: queueItems, isStreaming: true })
+
+        const allFindings: Finding[] = []
+        const allDomains: string[] = []
+
+        for (const file of files) {
+          set((s) => ({
+            fileQueue: s.fileQueue.map((item) =>
+              item.filename === file.name ? { ...item, status: 'analysing' as const } : item,
+            ),
+          }))
+
+          await new Promise((r) => setTimeout(r, 900))
+
+          const contentLower = file.content.toLowerCase()
+          const fileFindings: Finding[] = []
+          const fileDomains: string[] = []
+          const matchedKeys = new Set<string>()
+
+          for (const entry of LINE_PATTERNS) {
+            if (matchedKeys.has(entry.lineKey)) continue
+            if (entry.pattern.test(file.content)) {
+              fileFindings.push(entry.finding.finding)
+              fileDomains.push(entry.finding.domain)
+              matchedKeys.add(entry.lineKey)
+            }
+          }
+
+          if (/billing|charge|payment|invoice/.test(contentLower)) {
+            fileFindings.push(makeFinding(BILLING_TEMPLATE))
+            fileDomains.push('billing abstraction (ADR-0042)')
+          }
+          if (/pii|email|log.*mask|logger\.(info|warn|error)/.test(contentLower)) {
+            fileFindings.push(makeFinding(PII_TEMPLATE))
+            fileDomains.push('PII handling (ADR-0019)')
+          }
+          if (/deprecated|legacy_sdk|internal\.(legacy|old)/.test(contentLower)) {
+            fileFindings.push(makeFinding(DEPRECATED_SDK_TEMPLATE))
+            fileDomains.push('SDK migration (ADR-0031)')
+          }
+
+          const hasBlocking = fileFindings.some((f) => f.tier === 'blocking' || f.tier === 'warning')
+          set((s) => ({
+            fileQueue: s.fileQueue.map((item) =>
+              item.filename === file.name
+                ? { ...item, status: hasBlocking ? 'violations' as const : 'passed' as const, violationCount: fileFindings.length || undefined }
+                : item,
+            ),
+          }))
+
+          allFindings.push(...fileFindings)
+          allDomains.push(...fileDomains)
+        }
+
+        const passedCount = files.length - (allFindings.length > 0 ? 1 : 0)
+        const violationCount = allFindings.length
+        let summary: string
+        if (violationCount === 0) {
+          summary = `Analysis complete. All **${files.length} files** passed compliance checks. No violations found.`
+        } else if (files.length === 1) {
+          summary = `Analysis complete. Found **${violationCount} violation${violationCount !== 1 ? 's' : ''}** in **${files[0].name}** related to ${allDomains.map((d) => `**${d}**`).join(', ')}.`
+        } else {
+          summary = `Analysis complete. **${passedCount}** file${passedCount !== 1 ? 's' : ''} passed, **${files.length - passedCount}** with violations. Found **${violationCount} total violation${violationCount !== 1 ? 's' : ''}** across ${allDomains.map((d) => `**${d}**`).join(', ')}.`
+        }
+
+        messageCounter++
+        const agentMsg: Message = {
+          id: `msg-${messageCounter}`,
+          role: 'agent',
+          content: summary,
+          timestamp: new Date().toISOString(),
+          findings: allFindings,
+        }
+
+        set((s) => {
+          const updated = [...s.messages, agentMsg]
+          const bySession = s.activeSessionId
+            ? { ...s.messagesBySessionId, [s.activeSessionId]: updated }
+            : s.messagesBySessionId
+          return {
+            messages: updated,
+            isStreaming: false,
+            messagesBySessionId: bySession,
+            sessions: s.sessions.map((x) => {
+              if (x.id !== s.activeSessionId) return x
+              const worstTier: AuditSession['worst_tier'] = allFindings.some((f) => f.tier === 'blocking')
+                ? 'blocking'
+                : allFindings.some((f) => f.tier === 'warning')
+                  ? 'warning'
+                  : allFindings.some((f) => f.tier === 'logged_only')
+                    ? 'logged_only'
+                    : null
+              return {
+                ...x,
+                status: allFindings.length > 0 ? 'VIOLATIONS' as const : 'PASSED' as const,
+                finding_count: allFindings.length,
+                worst_tier: worstTier,
+                blocking_count: allFindings.filter((f) => f.tier === 'blocking').length,
+                warning_count: allFindings.filter((f) => f.tier === 'warning').length,
+                logged_only_count: allFindings.filter((f) => f.tier === 'logged_only').length,
+              }
+            }),
+          }
+        })
+
+        if (allFindings.length > 0) {
+          try {
+            await api.post('/v1/findings/bulk', {
+              repo: 'payments-service',
+              actor: 'current-user@example.com',
+              trigger: 'ide_time',
+              diff_id: `diff-${Date.now()}`,
+              findings: allFindings,
+            })
+          } catch {
+            // Database unavailable — findings live in memory only until next analysis
+          }
+        }
+      },
+
     }),
     {
       name: 'sentinel-sessions',
