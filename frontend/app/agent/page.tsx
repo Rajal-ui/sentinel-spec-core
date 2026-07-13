@@ -280,29 +280,6 @@ function LeftPanel() {
                 />
               </motion.div>
             )}
-
-            {ingestionTab === 'file' && stagedFiles.length === 0 && (
-              <motion.div
-                key="file-empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }}
-                className="flex flex-col items-center gap-2 py-1.5"
-              >
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="font-mono-product bg-white/30 dark:bg-zinc-900/30 text-slate-900 dark:text-zinc-100 border border-slate-200 dark:border-zinc-800/80 hover:border-[#FF5C00] hover:text-[#FF5C00] rounded-md transition-[background,border-color,color] duration-150 backdrop-blur-sm"
-                  style={{
-                    padding: '6px 16px',
-                    fontSize: 11,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Browse Files
-                </button>
-              </motion.div>
-            )}
           </AnimatePresence>
 
           {/* File list */}
