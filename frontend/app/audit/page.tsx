@@ -7,7 +7,7 @@ import type { GovernanceRecord, Override } from '@/lib/types'
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '@/lib/api'
-import { Shield, Filter, Download, ChevronDown, ChevronRight, Check, X } from 'lucide-react'
+import { Shield, ShieldAlert, Filter, Download, ChevronDown, ChevronRight, Check, X } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ function KpiCard({ label, value }: { label: string; value: string }) {
   )
 }
 
-// ─── Filter Panel ─────────────────────────────────────────────────────────────
+// ─── Filter Drawer ────────────────────────────────────────────────────────────
 
 const DOMAIN_OPTIONS: PolicyDomainFilter[] = ['security', 'data_residency', 'api_contract', 'architecture']
 const TIER_OPTIONS: TierFilter[] = ['BLOCKING', 'WARNING', 'LOGGED_ONLY', 'REJECTED']
@@ -69,14 +69,27 @@ const DOMAIN_LABELS: Record<PolicyDomainFilter, string> = {
   architecture: 'architecture',
 }
 
-interface FilterPanelProps {
+const DEFAULT_FILTERS: FilterState = {
+  dateFrom: '',
+  dateTo: '',
+  domains: [],
+  tiers: [],
+  overrideStatus: 'all',
+  confidenceMin: 0,
+  confidenceMax: 100,
+}
+
+interface FilterDrawerProps {
+  open: boolean
+  onClose: () => void
   filters: FilterState
   onChange: (f: FilterState) => void
   onRun: () => void
   onExport: () => void
+  onClear: () => void
 }
 
-function FilterPanel({ filters, onChange, onRun, onExport }: FilterPanelProps) {
+function FilterDrawer({ open, onClose, filters, onChange, onRun, onExport, onClear }: FilterDrawerProps) {
   function toggleDomain(d: PolicyDomainFilter) {
     const next = filters.domains.includes(d)
       ? filters.domains.filter((x) => x !== d)
@@ -118,278 +131,394 @@ function FilterPanel({ filters, onChange, onRun, onExport }: FilterPanelProps) {
   }
 
   return (
-    // Left column: isolated scroll track — no sticky, no fit-content
-    <div className="w-[30%] flex-shrink-0 h-full overflow-y-auto custom-scrollbar
-                    bg-white/40 border border-slate-200/60 backdrop-blur-xl rounded-xl p-4
-                    dark:bg-zinc-900/40 dark:border-zinc-800/60">
-      {/* Panel header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 20 }}>
-        <Filter size={13} style={{ color: 'var(--text-muted)' }} />
-        <span
-          className="font-mono-product"
-          style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}
-        >
-          Filter Records
-        </span>
-      </div>
-
-      {/* Date range */}
-      <div style={sectionStyle}>
-        <span style={labelStyle}>Date Range</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div>
-            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>From</span>
-            <input
-              type="date"
-              value={filters.dateFrom}
-              onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>To</span>
-            <input
-              type="date"
-              value={filters.dateTo}
-              onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
-              style={inputStyle}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Policy domain chips */}
-      <div style={sectionStyle}>
-        <span style={labelStyle}>Policy Domain</span>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {DOMAIN_OPTIONS.map((d) => {
-            const active = filters.domains.includes(d)
-            return (
-              <button
-                key={d}
-                onClick={() => toggleDomain(d)}
-                className={
-                  active
-                    ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
-                    : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
-                }
-                style={{
-                  fontFamily: 'IBM Plex Mono, monospace',
-                  fontSize: 10,
-                  letterSpacing: '0.03em',
-                  padding: '4px 9px',
-                  borderRadius: 4,
-                  background: active ? undefined : 'var(--surface-muted)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {DOMAIN_LABELS[d]}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Finding tier checkboxes */}
-      <div style={sectionStyle}>
-        <span style={labelStyle}>Finding Tier</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          {TIER_OPTIONS.map((t) => {
-            const checked = filters.tiers.includes(t)
-            return (
-              <label
-                key={t}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  cursor: 'pointer',
-                  fontFamily: 'IBM Plex Mono, monospace',
-                  fontSize: 11,
-                  color: 'var(--text-secondary)',
-                  userSelect: 'none',
-                }}
-              >
-                <div
-                  onClick={() => toggleTier(t)}
-                  style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: 3,
-                    border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
-                    background: checked ? 'var(--primary)' : 'var(--surface-muted)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    transition: 'all 0.15s',
-                  }}
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 40,
+            }}
+          />
+          {/* Drawer */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className="fixed inset-y-0 right-0 z-50 w-85 overflow-y-auto custom-scrollbar"
+            style={{
+              background: 'var(--glass-bg)',
+              backdropFilter: 'blur(24px) saturate(1.8)',
+              WebkitBackdropFilter: 'blur(24px) saturate(1.8)',
+              borderLeft: '1px solid var(--border)',
+              boxShadow: '-8px 0 32px rgba(0,0,0,0.25)',
+              padding: 24,
+            }}
+          >
+            {/* Close + header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                <Filter size={14} style={{ color: 'var(--text-muted)' }} />
+                <span
+                  className="font-mono-product"
+                  style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}
                 >
-                  {checked && <Check size={9} style={{ color: '#fff' }} />}
-                </div>
-                <span onClick={() => toggleTier(t)}>{t}</span>
-              </label>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Override status radios */}
-      <div style={sectionStyle}>
-        <span style={labelStyle}>Override Status</span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-          {(['all', 'overridden', 'not_overridden'] as OverrideFilter[]).map((v) => {
-            const labels: Record<OverrideFilter, string> = {
-              all: 'All',
-              overridden: 'Overridden',
-              not_overridden: 'Not overridden',
-            }
-            const checked = filters.overrideStatus === v
-            return (
-              <label
-                key={v}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  cursor: 'pointer',
-                  fontFamily: 'IBM Plex Mono, monospace',
-                  fontSize: 11,
-                  color: 'var(--text-secondary)',
-                  userSelect: 'none',
-                }}
-                onClick={() => onChange({ ...filters, overrideStatus: v })}
-              >
-                <div
+                  Filter Records
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  onClick={onClear}
+                  className="font-mono-product"
                   style={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    fontSize: 11,
+                    color: 'var(--text-muted)',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '2px 4px',
+                    transition: 'color 0.12s',
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--primary)' }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)' }}
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={onClose}
+                  style={{
                     background: 'var(--surface-muted)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 5,
+                    width: 28,
+                    height: 28,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    flexShrink: 0,
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
                   }}
                 >
-                  {checked && (
-                    <div
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        background: 'var(--primary)',
-                      }}
-                    />
-                  )}
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Date range */}
+            <div style={sectionStyle}>
+              <span style={labelStyle}>Date Range</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div>
+                  <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>From</span>
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
+                    className="dark:[color-scheme:dark]"
+                    style={inputStyle}
+                  />
                 </div>
-                {labels[v]}
-              </label>
-            )
-          })}
-        </div>
-      </div>
+                <div>
+                  <span style={{ ...labelStyle, fontSize: 10, marginBottom: 3 }}>To</span>
+                  <input
+                    type="date"
+                    value={filters.dateTo}
+                    onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
+                    className="dark:[color-scheme:dark]"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
 
-      {/* Confidence range dual sliders */}
-      <div style={sectionStyle}>
-        <span style={labelStyle}>
-          Confidence Range — {filters.confidenceMin}%–{filters.confidenceMax}%
-        </span>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 24 }}>
-              Min
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={filters.confidenceMin}
-              onChange={(e) => {
-                const v = Number(e.target.value)
-                onChange({ ...filters, confidenceMin: Math.min(v, filters.confidenceMax) })
-              }}
-              style={{ flex: 1, accentColor: 'var(--primary)' }}
-            />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 24 }}>
-              Max
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={filters.confidenceMax}
-              onChange={(e) => {
-                const v = Number(e.target.value)
-                onChange({ ...filters, confidenceMax: Math.max(v, filters.confidenceMin) })
-              }}
-              style={{ flex: 1, accentColor: 'var(--primary)' }}
-            />
-          </div>
-        </div>
-      </div>
+            {/* Policy domain chips */}
+            <div style={sectionStyle}>
+              <span style={labelStyle}>Policy Domain</span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {DOMAIN_OPTIONS.map((d) => {
+                  const active = filters.domains.includes(d)
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => toggleDomain(d)}
+                      className={
+                        active
+                          ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
+                          : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
+                      }
+                      style={{
+                        fontFamily: 'IBM Plex Mono, monospace',
+                        fontSize: 10,
+                        letterSpacing: '0.03em',
+                        padding: '4px 9px',
+                        borderRadius: 4,
+                        background: active ? undefined : 'var(--surface-muted)',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {DOMAIN_LABELS[d]}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <button
-          onClick={onRun}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'var(--primary)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '9px 14px',
-            cursor: 'pointer',
-            fontFamily: 'IBM Plex Mono, monospace',
-            fontSize: 13,
-            fontWeight: 500,
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary-hover)')}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary)')}
-        >
-          <span>Run Query</span>
-          <span style={{ opacity: 0.7, fontSize: 11 }}>⌘↵</span>
-        </button>
-        <button
-          onClick={onExport}
-          className="relative z-20 pointer-events-auto"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
-            padding: '8px 14px',
-            cursor: 'pointer',
-            fontFamily: 'IBM Plex Mono, monospace',
-            fontSize: 12,
-            transition: 'border-color 0.15s, color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--text-muted)'
-            ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
-            ;(e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'
-          }}
-        >
-          <Download size={12} />
-          Export to PDF
-        </button>
-      </div>
-    </div>
+            {/* Finding tier checkboxes */}
+            <div style={sectionStyle}>
+              <span style={labelStyle}>Finding Tier</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {TIER_OPTIONS.map((t) => {
+                  const checked = filters.tiers.includes(t)
+                  return (
+                    <label
+                      key={t}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        cursor: 'pointer',
+                        fontFamily: 'IBM Plex Mono, monospace',
+                        fontSize: 11,
+                        color: 'var(--text-secondary)',
+                        userSelect: 'none',
+                      }}
+                    >
+                      <div
+                        onClick={() => toggleTier(t)}
+                        style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: 3,
+                          border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
+                          background: checked ? 'var(--primary)' : 'var(--surface-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {checked && <Check size={9} style={{ color: '#fff' }} />}
+                      </div>
+                      <span onClick={() => toggleTier(t)}>{t}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Override status radios */}
+            <div style={sectionStyle}>
+              <span style={labelStyle}>Override Status</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                {(['all', 'overridden', 'not_overridden'] as OverrideFilter[]).map((v) => {
+                  const labels: Record<OverrideFilter, string> = {
+                    all: 'All',
+                    overridden: 'Overridden',
+                    not_overridden: 'Not overridden',
+                  }
+                  const checked = filters.overrideStatus === v
+                  return (
+                    <label
+                      key={v}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        cursor: 'pointer',
+                        fontFamily: 'IBM Plex Mono, monospace',
+                        fontSize: 11,
+                        color: 'var(--text-secondary)',
+                        userSelect: 'none',
+                      }}
+                      onClick={() => onChange({ ...filters, overrideStatus: v })}
+                    >
+                      <div
+                        style={{
+                          width: 14,
+                          height: 14,
+                          borderRadius: '50%',
+                          border: checked ? '1px solid var(--primary)' : '1px solid var(--border)',
+                          background: 'var(--surface-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {checked && (
+                          <div
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: '50%',
+                              background: 'var(--primary)',
+                            }}
+                          />
+                        )}
+                      </div>
+                      {labels[v]}
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Confidence range — number inputs */}
+            <div style={sectionStyle}>
+              <span style={labelStyle}>
+                Confidence Range — {filters.confidenceMin}%–{filters.confidenceMax}%
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 28 }}>
+                    Min
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={filters.confidenceMin}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      onChange({ ...filters, confidenceMin: Math.min(v, filters.confidenceMax) })
+                    }}
+                    style={{ flex: 1, accentColor: 'var(--primary)' }}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={filters.confidenceMax}
+                    value={filters.confidenceMin}
+                    onChange={(e) => {
+                      const v = Math.max(0, Math.min(100, Number(e.target.value)))
+                      onChange({ ...filters, confidenceMin: Math.min(v, filters.confidenceMax) })
+                    }}
+                    style={{
+                      width: 56,
+                      background: 'var(--surface-muted)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 4,
+                      color: 'var(--text)',
+                      padding: '4px 6px',
+                      fontFamily: 'IBM Plex Mono, monospace',
+                      fontSize: 11,
+                      outline: 'none',
+                      textAlign: 'center',
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: 'var(--text-muted)', width: 28 }}>
+                    Max
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={filters.confidenceMax}
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      onChange({ ...filters, confidenceMax: Math.max(v, filters.confidenceMin) })
+                    }}
+                    style={{ flex: 1, accentColor: 'var(--primary)' }}
+                  />
+                  <input
+                    type="number"
+                    min={filters.confidenceMin}
+                    max={100}
+                    value={filters.confidenceMax}
+                    onChange={(e) => {
+                      const v = Math.max(0, Math.min(100, Number(e.target.value)))
+                      onChange({ ...filters, confidenceMax: Math.max(v, filters.confidenceMin) })
+                    }}
+                    style={{
+                      width: 56,
+                      background: 'var(--surface-muted)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 4,
+                      color: 'var(--text)',
+                      padding: '4px 6px',
+                      fontFamily: 'IBM Plex Mono, monospace',
+                      fontSize: 11,
+                      outline: 'none',
+                      textAlign: 'center',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+              <button
+                onClick={() => { onRun(); onClose() }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '9px 14px',
+                  cursor: 'pointer',
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary-hover)')}
+                onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = 'var(--primary)')}
+              >
+                <span>Run Query</span>
+                <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 8 }}>⌘↵</span>
+              </button>
+              <button
+                onClick={onExport}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 6,
+                  padding: '8px 14px',
+                  cursor: 'pointer',
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontSize: 12,
+                  transition: 'border-color 0.15s, color 0.15s',
+                }}
+                onMouseEnter={(e) => {
+                  ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--text-muted)'
+                  ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
+                }}
+                onMouseLeave={(e) => {
+                  ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+                  ;(e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'
+                }}
+              >
+                <Download size={12} />
+                Export to PDF
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -397,7 +526,6 @@ function FilterPanel({ filters, onChange, onRun, onExport }: FilterPanelProps) {
 
 function RecordRow({ record }: { record: GovernanceRecord }) {
   const [expanded, setExpanded] = useState(false)
-  // AMBER RULE: amber border only for override/violation records
   const isOverride = record.override.occurred
   const confidencePct = Math.round(record.classification.confidence * 100)
 
@@ -415,7 +543,6 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
 
   const tierColors: Record<string, React.CSSProperties> = {
     blocking: { background: 'rgba(244,63,94,0.10)', color: '#e11d48', borderColor: 'rgba(244,63,94,0.20)' },
-    // AMBER RULE: amber for warning tier badge only
     warning: { background: 'rgba(232,165,75,0.12)', color: 'var(--amber)', borderColor: 'rgba(232,165,75,0.28)' },
     logged_only: { background: 'rgba(74,85,104,0.12)', color: 'var(--text-muted)', borderColor: 'rgba(74,85,104,0.28)' },
     rejected: { background: 'rgba(16,185,129,0.10)', color: '#059669', borderColor: 'rgba(16,185,129,0.20)' },
@@ -428,13 +555,15 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
         ? 'OVERRIDDEN'
         : ({ blocking: 'BLOCKING', warning: 'WARNING', logged_only: 'PASSED', rejected: 'PASSED' } as Record<string, 'BLOCKING' | 'WARNING' | 'PASSED'>)[record.finding_tier]
 
+  const tierLabel = record.finding_tier.replace('_', ' ')
+  const showTierBadge = displayStatus === 'RESOLVED' || displayStatus === 'OVERRIDDEN' || displayStatus.toUpperCase() !== tierLabel.toUpperCase()
+
   return (
     <motion.div
       layout
       className="bg-white/55 border backdrop-blur-xl rounded-lg overflow-hidden
                  dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
       style={{
-        // AMBER RULE: amber border only when override occurred (violation signal)
         borderColor: isOverride ? 'rgba(232,165,75,0.35)' : undefined,
         boxShadow: isOverride ? '0 0 12px rgba(232,165,75,0.06)' : undefined,
       }}
@@ -482,12 +611,14 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
           </div>
         </div>
 
-        {/* Status + tier badges */}
+        {/* Status badge + conditionally tier badge */}
         <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
           <StatusLabel status={displayStatus} />
-          <span style={{ ...tierBadgeStyle, ...tierColors[record.finding_tier] }}>
-            {record.finding_tier.replace('_', ' ')}
-          </span>
+          {showTierBadge && (
+            <span style={{ ...tierBadgeStyle, ...tierColors[record.finding_tier] }}>
+              {tierLabel}
+            </span>
+          )}
         </div>
 
         {/* Confidence */}
@@ -550,128 +681,88 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
                 gap: 12,
               }}
             >
-              {/* Citation block */}
+              {/* Citation sources — hidden when empty */}
+              {record.classification.cited_chunk_ids.length > 0 && (
+                <div className="text-xs text-zinc-400">
+                  <span className="font-semibold text-zinc-500">Policy Sources:</span>{' '}
+                  {record.classification.cited_chunk_ids.join(', ')}
+                </div>
+              )}
+
+              {/* Critic verdict — humanized badges */}
               <div>
-                <div
-                  className="font-mono-product"
-                  style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                >
-                  Cited Chunks
-                </div>
-                <div
-                  className="code-block"
-                  style={{
-                    padding: '8px 12px',
-                  }}
-                >
-                  {record.classification.cited_chunk_ids.length > 0 ? (
-                    record.classification.cited_chunk_ids.map((id) => (
-                      <div
-                        key={id}
-                        className="font-mono-product"
-                        style={{ fontSize: 12, color: 'var(--text-code)' }}
-                      >
-                        {id}
-                      </div>
-                    ))
-                  ) : (
-                    <span className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      — no citations
-                    </span>
-                  )}
-                </div>
+                {record.critic_verdict.entailed ? (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded border font-mono-product"
+                    style={{ fontSize: 11, background: 'rgba(232,165,75,0.10)', color: '#e8a54b', borderColor: 'rgba(232,165,75,0.22)' }}
+                  >
+                    ✓ Critic Verified
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded border font-mono-product"
+                    style={{ fontSize: 11, background: 'rgba(16,185,129,0.10)', color: '#059669', borderColor: 'rgba(16,185,129,0.22)' }}
+                  >
+                    Dismissed as False Positive
+                  </span>
+                )}
               </div>
 
-              {/* Critic verdict */}
-              <div>
-                <div
-                  className="font-mono-product"
-                  style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-                >
-                  Critic Verdict
-                </div>
-                <div
-                  className="code-block"
-                  style={{
-                    padding: '8px 12px',
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 10,
-                  }}
-                >
-                  <span
-                    className="font-mono-product"
-                    style={{
-                      fontSize: 10,
-                      padding: '2px 7px',
-                      borderRadius: 3,
-                      border: '1px solid',
-                      flexShrink: 0,
-                      ...(record.critic_verdict.entailed
-                        ? { background: 'rgba(244,63,94,0.10)', color: '#e11d48', borderColor: 'rgba(244,63,94,0.20)' }
-                        : { background: 'rgba(16,185,129,0.10)', color: '#059669', borderColor: 'rgba(16,185,129,0.20)' }),
-                    }}
-                  >
-                    {record.critic_verdict.entailed ? 'ENTAILED' : 'NOT ENTAILED'}
-                  </span>
-                  <span
-                    className="font-mono-product"
-                    style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}
-                  >
-                    {record.critic_verdict.reasoning}
-                  </span>
-                </div>
-              </div>
-
-              {/* Override detail — AMBER RULE: amber text only here for override signal */}
+              {/* Override detail */}
               {isOverride && (
                 <div>
                   <div
                     className="font-mono-product"
-                    style={{
-                      fontSize: 10,
-                      // AMBER RULE: amber label only for override detail
-                      color: 'var(--amber)',
-                      marginBottom: 4,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                    }}
+                    style={{ fontSize: 10, color: 'var(--amber)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}
                   >
                     Override Applied
                   </div>
                   <div
                     style={{
                       background: 'rgba(232,165,75,0.06)',
-                      // AMBER RULE: amber border only for override block
                       border: '1px solid rgba(232,165,75,0.22)',
                       borderRadius: 4,
                       padding: '8px 12px',
                     }}
                   >
-                    <div
-                      className="font-mono-product"
-                      style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}
-                    >
+                    <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 }}>
                       Actor: {record.override.actor}
                     </div>
-                    <div
-                      className="font-mono-product"
-                      style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}
-                    >
+                    <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.5 }}>
                       {record.override.justification}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Meta */}
-              <div
-                className="font-mono-product"
-                style={{ fontSize: 10, color: 'var(--text-muted)' }}
-              >
-                diff_id: {record.diff_id} · violates_policy:{' '}
-                {String(record.classification.violates_policy)} · confidence:{' '}
-                {confidencePct}%
+              {/* Meta chips — diff_id + confidence only */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                <span
+                  className="font-mono-product"
+                  style={{
+                    fontSize: 10,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    background: 'rgba(100,116,139,0.08)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid rgba(100,116,139,0.18)',
+                  }}
+                >
+                  {record.diff_id}
+                </span>
+                <span
+                  className="font-mono-product"
+                  style={{
+                    fontSize: 10,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    background: 'rgba(100,116,139,0.08)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid rgba(100,116,139,0.18)',
+                  }}
+                >
+                  {confidencePct}% confidence
+                </span>
               </div>
             </div>
           </motion.div>
@@ -706,7 +797,6 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
   }
 
   return (
-    // AMBER RULE: amber border for override/violation pending card
     <div
       className="bg-white/55 border backdrop-blur-xl rounded-lg overflow-hidden mb-2
                  dark:bg-[#111116]/65"
@@ -738,10 +828,7 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
         </div>
 
         {/* Developer + submitted */}
-        <div
-          className="font-mono-product"
-          style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}
-        >
+        <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
           {ov.actor} · submitted{' '}
           {new Date(ov.submitted_at).toLocaleString('en-US', {
             month: 'short',
@@ -752,23 +839,11 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
         </div>
 
         {/* Justification */}
-        <div
-          className="code-block"
-          style={{
-            padding: '8px 12px',
-            marginBottom: 14,
-          }}
-        >
-          <div
-            className="font-mono-product"
-            style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}
-          >
+        <div className="code-block" style={{ padding: '8px 12px', marginBottom: 14 }}>
+          <div className="font-mono-product" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Justification
           </div>
-          <p
-            className="font-mono-product"
-            style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}
-          >
+          <p className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
             {ov.justification}
           </p>
         </div>
@@ -780,15 +855,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
               onClick={() => setShowApproveConfirm(true)}
               className="bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 dark:text-emerald-400"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                borderRadius: 5,
-                padding: '6px 14px',
-                fontSize: 12,
-                fontFamily: 'IBM Plex Mono, monospace',
-                cursor: 'pointer',
-                transition: 'background 0.15s',
+                display: 'flex', alignItems: 'center', gap: 5, borderRadius: 5,
+                padding: '6px 14px', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace', cursor: 'pointer', transition: 'background 0.15s',
               }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(16,185,129,0.18)')}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '')}
@@ -800,15 +868,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
               onClick={() => setShowRejectForm(true)}
               className="bg-rose-500/10 text-rose-600 border border-rose-500/20 dark:text-rose-400"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                borderRadius: 5,
-                padding: '6px 14px',
-                fontSize: 12,
-                fontFamily: 'IBM Plex Mono, monospace',
-                cursor: 'pointer',
-                transition: 'background 0.15s',
+                display: 'flex', alignItems: 'center', gap: 5, borderRadius: 5,
+                padding: '6px 14px', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace', cursor: 'pointer', transition: 'background 0.15s',
               }}
               onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(244,63,94,0.18)')}
               onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = '')}
@@ -829,10 +890,7 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
               transition={{ duration: 0.15 }}
               style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
             >
-              <div
-                className="font-mono-product"
-                style={{ fontSize: 11, color: 'var(--text-secondary)' }}
-              >
+              <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                 Type <strong style={{ color: '#059669' }}>APPROVE</strong> to confirm
               </div>
               <input
@@ -842,15 +900,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 placeholder="APPROVE"
                 autoFocus
                 style={{
-                  background: 'var(--surface-muted)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  color: 'var(--text)',
-                  padding: '6px 10px',
-                  fontFamily: 'IBM Plex Mono, monospace',
-                  fontSize: 13,
-                  outline: 'none',
-                  width: '100%',
+                  background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 4,
+                  color: 'var(--text)', padding: '6px 10px', fontFamily: 'IBM Plex Mono, monospace', fontSize: 13, outline: 'none', width: '100%',
                 }}
               />
               <div style={{ display: 'flex', gap: 8 }}>
@@ -862,12 +913,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                     background: confirmText === 'APPROVE' ? undefined : 'rgba(74,85,104,0.15)',
                     color: confirmText === 'APPROVE' ? undefined : 'var(--text-muted)',
                     border: confirmText === 'APPROVE' ? undefined : '1px solid var(--border)',
-                    borderRadius: 5,
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    cursor: confirmText === 'APPROVE' ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.15s',
+                    borderRadius: 5, padding: '6px 14px', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace',
+                    cursor: confirmText === 'APPROVE' ? 'pointer' : 'not-allowed', transition: 'all 0.15s',
                   }}
                 >
                   {loading ? 'Approving…' : 'Confirm Approve'}
@@ -875,14 +922,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 <button
                   onClick={() => { setShowApproveConfirm(false); setConfirmText('') }}
                   style={{
-                    background: 'transparent',
-                    color: 'var(--text-muted)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 5,
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    cursor: 'pointer',
+                    background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)',
+                    borderRadius: 5, padding: '6px 12px', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace', cursor: 'pointer',
                   }}
                 >
                   Cancel
@@ -902,10 +943,7 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
               transition={{ duration: 0.15 }}
               style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
             >
-              <div
-                className="font-mono-product"
-                style={{ fontSize: 11, color: 'var(--text-secondary)' }}
-              >
+              <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                 Rejection reason (required)
               </div>
               <textarea
@@ -913,18 +951,9 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="Provide a reason for rejection…"
                 style={{
-                  background: 'var(--surface-muted)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 4,
-                  color: 'var(--text)',
-                  padding: '7px 10px',
-                  fontFamily: 'IBM Plex Mono, monospace',
-                  fontSize: 12,
-                  resize: 'vertical',
-                  minHeight: 72,
-                  outline: 'none',
-                  width: '100%',
-                  lineHeight: 1.5,
+                  background: 'var(--surface-muted)', border: '1px solid var(--border)', borderRadius: 4,
+                  color: 'var(--text)', padding: '7px 10px', fontFamily: 'IBM Plex Mono, monospace', fontSize: 12,
+                  resize: 'vertical', minHeight: 72, outline: 'none', width: '100%', lineHeight: 1.5,
                 }}
               />
               <div style={{ display: 'flex', gap: 8 }}>
@@ -936,12 +965,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                     background: rejectReason.trim() ? undefined : 'rgba(74,85,104,0.15)',
                     color: rejectReason.trim() ? undefined : 'var(--text-muted)',
                     border: rejectReason.trim() ? undefined : '1px solid var(--border)',
-                    borderRadius: 5,
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    cursor: rejectReason.trim() ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.15s',
+                    borderRadius: 5, padding: '6px 14px', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace',
+                    cursor: rejectReason.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.15s',
                   }}
                 >
                   {loading ? 'Rejecting…' : 'Confirm Reject'}
@@ -949,14 +974,8 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
                 <button
                   onClick={() => { setShowRejectForm(false); setRejectReason('') }}
                   style={{
-                    background: 'transparent',
-                    color: 'var(--text-muted)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 5,
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    fontFamily: 'IBM Plex Mono, monospace',
-                    cursor: 'pointer',
+                    background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)',
+                    borderRadius: 5, padding: '6px 12px', fontSize: 12, fontFamily: 'IBM Plex Mono, monospace', cursor: 'pointer',
                   }}
                 >
                   Cancel
@@ -975,7 +994,6 @@ function PendingOverrideCard({ override: ov }: { override: Override }) {
 function HistoryCard({ override: ov }: { override: Override }) {
   const approved = ov.status === 'approved'
   return (
-    // AMBER RULE: amber border only for override history (violation signal)
     <div
       className="bg-white/55 border backdrop-blur-xl rounded-lg p-3 mb-2 dark:bg-[#111116]/65"
       style={{ borderColor: 'rgba(232,165,75,0.22)' }}
@@ -990,23 +1008,30 @@ function HistoryCard({ override: ov }: { override: Override }) {
           {ov.status.toUpperCase()}
         </span>
       </div>
-      <div
-        className="font-mono-product"
-        style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}
-      >
+      <div className="font-mono-product" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
         {ov.actor} · resolved by {ov.resolver ?? '—'} ·{' '}
         {ov.resolved_at
           ? new Date(ov.resolved_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
           : '—'}
       </div>
       {ov.rejection_reason && (
-        <div
-          className="font-mono-product"
-          style={{ fontSize: 11, color: 'var(--danger)', lineHeight: 1.4 }}
-        >
+        <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--danger)', lineHeight: 1.4 }}>
           Reason: {ov.rejection_reason}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
+function EmptyState({ icon: Icon, message }: { icon: typeof ShieldAlert; message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12" style={{ color: 'var(--text-muted)' }}>
+      <Icon size={32} style={{ color: 'var(--text-muted)', opacity: 0.5, marginBottom: 8 }} />
+      <p className="font-mono-product" style={{ fontSize: 13, textAlign: 'center', maxWidth: 280, lineHeight: 1.5 }}>
+        {message}
+      </p>
     </div>
   )
 }
@@ -1017,9 +1042,11 @@ interface ResultsFeedProps {
   records: GovernanceRecord[]
   activeTab: ActiveTab
   onTabChange: (t: ActiveTab) => void
+  onOpenFilter: () => void
+  activeFilterCount: number
 }
 
-function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
+function ResultsFeed({ records, activeTab, onTabChange, onOpenFilter, activeFilterCount }: ResultsFeedProps) {
   const { pendingOverrides, overrideHistory } = useFindingsStore()
 
   const tabStyle = (active: boolean): React.CSSProperties => ({
@@ -1036,16 +1063,39 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
   })
 
   return (
-    // Right column: independent scroll track
     <div className="flex-1 min-w-0 h-full overflow-y-auto custom-scrollbar space-y-3">
-      {/* Count line */}
-      <div
-        className="font-mono-product"
-        style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 14 }}
-      >
-        {activeTab === 'all' && `${records.length.toLocaleString()} records matching query`}
-        {activeTab === 'pending' && `${pendingOverrides.length} pending override${pendingOverrides.length !== 1 ? 's' : ''}`}
-        {activeTab === 'history' && `${overrideHistory.length} resolved override${overrideHistory.length !== 1 ? 's' : ''}`}
+      {/* Toolbar: filter button + count */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+          {activeTab === 'all' && `${records.length.toLocaleString()} records matching query`}
+          {activeTab === 'pending' && `${pendingOverrides.length} pending override${pendingOverrides.length !== 1 ? 's' : ''}`}
+          {activeTab === 'history' && `${overrideHistory.length} resolved override${overrideHistory.length !== 1 ? 's' : ''}`}
+        </div>
+        <button
+          onClick={onOpenFilter}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: activeFilterCount > 0 ? 'rgba(255,92,0,0.08)' : 'var(--surface-muted)',
+            border: `1px solid ${activeFilterCount > 0 ? 'rgba(255,92,0,0.25)' : 'var(--border)'}`,
+            borderRadius: 6, padding: '6px 12px', cursor: 'pointer',
+            fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
+            color: activeFilterCount > 0 ? 'var(--primary)' : 'var(--text-muted)',
+            transition: 'all 0.15s',
+          }}
+        >
+          <Filter size={12} />
+          Filter Records
+          {activeFilterCount > 0 && (
+            <span
+              style={{
+                background: 'var(--primary)', color: '#fff',
+                borderRadius: 8, padding: '1px 6px', fontSize: 10, fontWeight: 600,
+              }}
+            >
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Tabs */}
@@ -1058,12 +1108,7 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
           {pendingOverrides.length > 0 && (
             <span
               className="bg-[#FF5C00]/10 text-[#FF5C00]"
-              style={{
-                marginLeft: 6,
-                borderRadius: 8,
-                padding: '1px 6px',
-                fontSize: 10,
-              }}
+              style={{ marginLeft: 6, borderRadius: 8, padding: '1px 6px', fontSize: 10 }}
             >
               {pendingOverrides.length}
             </span>
@@ -1085,12 +1130,7 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
             transition={{ duration: 0.18 }}
           >
             {records.length === 0 ? (
-              <div
-                className="font-mono-product"
-                style={{ fontSize: 13, color: 'var(--text-muted)', padding: '32px 0', textAlign: 'center' }}
-              >
-                No records match the current filters.
-              </div>
+              <EmptyState icon={ShieldAlert} message="No records match the current filters. Try adjusting your filter criteria." />
             ) : (
               records.map((r) => <RecordRow key={r.record_id} record={r} />)
             )}
@@ -1106,12 +1146,7 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
             transition={{ duration: 0.18 }}
           >
             {pendingOverrides.length === 0 ? (
-              <div
-                className="font-mono-product"
-                style={{ fontSize: 13, color: 'var(--text-muted)', padding: '32px 0', textAlign: 'center' }}
-              >
-                No pending overrides.
-              </div>
+              <EmptyState icon={ShieldAlert} message="No pending architecture override requests found." />
             ) : (
               pendingOverrides.map((ov) => <PendingOverrideCard key={ov.id} override={ov} />)
             )}
@@ -1127,12 +1162,7 @@ function ResultsFeed({ records, activeTab, onTabChange }: ResultsFeedProps) {
             transition={{ duration: 0.18 }}
           >
             {overrideHistory.length === 0 ? (
-              <div
-                className="font-mono-product"
-                style={{ fontSize: 13, color: 'var(--text-muted)', padding: '32px 0', textAlign: 'center' }}
-              >
-                No override history.
-              </div>
+              <EmptyState icon={ShieldAlert} message="No override history yet. Resolved overrides will appear here." />
             ) : (
               overrideHistory.map((ov) => <HistoryCard key={ov.id} override={ov} />)
             )}
@@ -1160,35 +1190,16 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          gap: 16,
-          padding: 24,
-        }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16, padding: 24 }}>
         <Shield size={40} style={{ color: 'var(--text-muted)' }} />
-        <div
-          className="font-mono-product"
-          style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center' }}
-        >
+        <div className="font-mono-product" style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center' }}>
           Authentication required to access Audit Intelligence Console.
         </div>
         <button
           onClick={() => openLoginModal('/audit')}
           style={{
-            background: 'var(--primary)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '8px 20px',
-            fontSize: 13,
-            fontFamily: 'IBM Plex Mono, monospace',
-            cursor: 'pointer',
+            background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 6,
+            padding: '8px 20px', fontSize: 13, fontFamily: 'IBM Plex Mono, monospace', cursor: 'pointer',
           }}
         >
           Sign In
@@ -1211,19 +1222,21 @@ interface KpiData {
 }
 
 export default function AuditPage() {
-  const [filters, setFilters] = useState<FilterState>({
-    dateFrom: '',
-    dateTo: '',
-    domains: [],
-    tiers: [],
-    overrideStatus: 'all',
-    confidenceMin: 0,
-    confidenceMax: 100,
-  })
+  const [filters, setFilters] = useState<FilterState>({ ...DEFAULT_FILTERS })
   const [activeTab, setActiveTab] = useState<ActiveTab>('all')
   const [records, setRecords] = useState<GovernanceRecord[]>([])
   const [kpi, setKpi] = useState<KpiData>({ total_analyses: 0, violations_blocked_pct: 0, override_rate_pct: 0, resolution_rate_pct: 0, avg_confidence: 0 })
   const [loading, setLoading] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
+
+  const activeFilterCount =
+    (filters.dateFrom ? 1 : 0) +
+    (filters.dateTo ? 1 : 0) +
+    filters.domains.length +
+    filters.tiers.length +
+    (filters.overrideStatus !== 'all' ? 1 : 0) +
+    (filters.confidenceMin > 0 ? 1 : 0) +
+    (filters.confidenceMax < 100 ? 1 : 0)
 
   const fetchKpi = useCallback(async () => {
     try {
@@ -1270,13 +1283,17 @@ export default function AuditPage() {
     }
   }
 
+  function handleClearFilters() {
+    setFilters({ ...DEFAULT_FILTERS })
+    fetchFindings(DEFAULT_FILTERS)
+  }
+
   return (
     <AppShell title="Audit Intelligence Console" breadcrumb="Audit">
       <AuthGate>
-        {/* ── Root: fills the <main> flex-1 container exactly ── */}
         <div className="h-full w-full overflow-hidden flex flex-col bg-[#F8FAFC] dark:bg-[#08080A]">
 
-          {/* ── Static top header & KPI strip ── */}
+          {/* Static top header & KPI strip */}
           <div className="flex-shrink-0 p-6 pb-2 space-y-4">
             <motion.div
               className="flex gap-3"
@@ -1292,22 +1309,29 @@ export default function AuditPage() {
             </motion.div>
           </div>
 
-          {/* ── Dual-column scrollable workspace ── */}
-          <div className="flex-1 min-h-0 flex flex-row px-6 pb-6 gap-6 w-full">
-            <FilterPanel
-              filters={filters}
-              onChange={setFilters}
-              onRun={handleRunQuery}
-              onExport={handleExport}
-            />
+          {/* Full-width results (filter is now a floating drawer) */}
+          <div className="flex-1 min-h-0 flex flex-col px-6 pb-6 w-full">
             <ResultsFeed
               records={records}
               activeTab={activeTab}
               onTabChange={setActiveTab}
+              onOpenFilter={() => setFilterOpen(true)}
+              activeFilterCount={activeFilterCount}
             />
           </div>
 
         </div>
+
+        {/* Filter drawer */}
+        <FilterDrawer
+          open={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          filters={filters}
+          onChange={setFilters}
+          onRun={handleRunQuery}
+          onExport={handleExport}
+          onClear={handleClearFilters}
+        />
 
         {/* Loading overlay */}
         {loading && (

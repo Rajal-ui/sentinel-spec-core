@@ -65,7 +65,7 @@ export default function Leaderboard({ rows, groupBy }: LeaderboardProps) {
   })
 
   const COLS: { key: SortKey; label: string }[] = [
-    { key: 'repo', label: 'Repo' },
+    { key: 'repo', label: 'Service' },
     { key: 'team', label: 'Team' },
     { key: 'violations', label: 'Violations' },
     { key: 'override_rate', label: 'Override Rate %' },
@@ -82,10 +82,10 @@ export default function Leaderboard({ rows, groupBy }: LeaderboardProps) {
       style={{ borderRadius: 10, padding: 20, marginTop: 20 }}
     >
       <h2 className="font-display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>
-        Team / Repo Leaderboard
+        Service Compliance Directory
       </h2>
       <p className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 16px' }}>
-        click row to view audit detail · click header to sort
+        Interactive service health matrix · Click columns to sort
       </p>
 
       <div style={{ overflowX: 'auto' }}>

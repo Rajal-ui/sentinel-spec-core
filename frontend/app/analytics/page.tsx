@@ -34,7 +34,7 @@ interface AnalyticsSummary {
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type DateRange = '7d' | '30d' | '90d' | 'custom'
-type GroupBy = 'repo' | 'team' | 'policy_domain' | 'week'
+type GroupBy = 'team' | 'policy_domain' | 'week'
 
 // ── Domain colour map ──────────────────────────────────────────────────────────
 
@@ -93,7 +93,7 @@ function exportCSV(summary: AnalyticsSummary) {
   }
 
   if (summary.leaderboard.length > 0) {
-    rows.push(['Repo', 'Team', 'Violations', 'Override Rate %', 'Capture Rate %', 'Top Domain'])
+    rows.push(['Service', 'Team', 'Violations', 'Override Rate %', 'Capture Rate %', 'Top Domain'])
     for (const lb of summary.leaderboard) {
       rows.push([lb.repo, lb.team, String(lb.violations), String(lb.override_rate), String(lb.capture_rate), lb.top_domain])
     }
@@ -180,7 +180,6 @@ const DATE_RANGE_OPTIONS: { id: DateRange; label: string }[] = [
 ]
 
 const GROUP_BY_OPTIONS: { id: GroupBy; label: string }[] = [
-  { id: 'repo', label: 'Repo' },
   { id: 'team', label: 'Team' },
   { id: 'policy_domain', label: 'Policy Domain' },
   { id: 'week', label: 'Week' },
@@ -189,12 +188,15 @@ const GROUP_BY_OPTIONS: { id: GroupBy; label: string }[] = [
 interface TopControlsProps {
   dateRange: DateRange
   groupBy: GroupBy
+  customStartDate: string
+  customEndDate: string
   onDateRange: (v: DateRange) => void
   onGroupBy: (v: GroupBy) => void
+  onCustomDateChange: (which: 'start' | 'end', value: string) => void
   onExport: () => void
 }
 
-function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: TopControlsProps) {
+function TopControls({ dateRange, groupBy, customStartDate, customEndDate, onDateRange, onGroupBy, onCustomDateChange, onExport }: TopControlsProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -218,14 +220,13 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: T
               className={`font-mono-product ${
                 active
                   ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
-                  : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
+                  : 'bg-zinc-900/30 text-zinc-400 border border-zinc-800/60 hover:text-[#FF5C00]'
               }`}
               style={{
                 padding: '5px 12px',
                 borderRadius: 6,
                 fontSize: 12,
                 cursor: 'pointer',
-                background: active ? undefined : 'transparent',
                 transition: 'all 0.12s ease',
               }}
             >
@@ -234,6 +235,55 @@ function TopControls({ dateRange, groupBy, onDateRange, onGroupBy, onExport }: T
           )
         })}
       </div>
+
+      {/* Custom date picker — slides in below when custom selected */}
+      {dateRange === 'custom' && (
+        <div
+          className="flex items-center gap-2"
+          style={{
+            padding: '6px 10px',
+            background: 'rgba(15,15,20,0.5)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(31,32,41,0.8)',
+            borderRadius: 6,
+            animation: 'fadeIn 0.15s ease-out',
+          }}
+        >
+          <input
+            type="date"
+            value={customStartDate}
+            onChange={(e) => onCustomDateChange('start', e.target.value)}
+            className="dark:[color-scheme:dark]"
+            style={{
+              background: 'rgba(8,8,10,0.8)',
+              border: '1px solid rgba(31,32,41,0.9)',
+              borderRadius: 4,
+              padding: '4px 6px',
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              fontFamily: 'IBM Plex Mono, monospace',
+              outline: 'none',
+            }}
+          />
+          <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)' }}>—</span>
+          <input
+            type="date"
+            value={customEndDate}
+            onChange={(e) => onCustomDateChange('end', e.target.value)}
+            className="dark:[color-scheme:dark]"
+            style={{
+              background: 'rgba(8,8,10,0.8)',
+              border: '1px solid rgba(31,32,41,0.9)',
+              borderRadius: 4,
+              padding: '4px 6px',
+              fontSize: 11,
+              color: 'var(--text-secondary)',
+              fontFamily: 'IBM Plex Mono, monospace',
+              outline: 'none',
+            }}
+          />
+        </div>
+      )}
 
       {/* Separator */}
       <div style={{ width: 1, height: 22, background: 'var(--border)' }} />
@@ -486,7 +536,7 @@ function InsightCards({ data }: { data: AnalyticsSummary }) {
   const insights: { id: string; text: string }[] = [
     {
       id: 'i-1',
-      text: `${data.leaderboard.length} tracked repos · ${data.total_analyses} total analyses this period`,
+      text: `${data.leaderboard.length} active service${data.leaderboard.length === 1 ? '' : 's'} · ${data.total_analyses} total analyses this period`,
     },
     {
       id: 'i-2',
@@ -575,14 +625,18 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState<DateRange>('30d')
-  const [groupBy, setGroupBy] = useState<GroupBy>('repo')
+  const [groupBy, setGroupBy] = useState<GroupBy>('policy_domain')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchSummary = useCallback(async () => {
     setLoading(true)
     try {
-      const params = dateRangeToParams(dateRange)
+      const params: { dateFrom?: string; dateTo?: string } = dateRange === 'custom'
+        ? { ...(customStartDate ? { dateFrom: customStartDate } : {}), ...(customEndDate ? { dateTo: customEndDate } : {}) }
+        : dateRangeToParams(dateRange)
       const res = await api.get('/v1/analytics/summary', { params })
       setSummary(res.data)
     } catch {
@@ -590,11 +644,24 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }, [dateRange])
+  }, [dateRange, customStartDate, customEndDate])
 
   useEffect(() => {
     fetchSummary()
   }, [fetchSummary])
+
+  const handleCustomDateChange = useCallback((which: 'start' | 'end', value: string) => {
+    if (which === 'start') setCustomStartDate(value)
+    else setCustomEndDate(value)
+  }, [])
+
+  const handleDateRangeChange = useCallback((range: DateRange) => {
+    setDateRange(range)
+    if (range !== 'custom') {
+      setCustomStartDate('')
+      setCustomEndDate('')
+    }
+  }, [])
 
   if (loading && !summary) {
     return (
@@ -641,8 +708,11 @@ export default function AnalyticsPage() {
             <TopControls
               dateRange={dateRange}
               groupBy={groupBy}
-              onDateRange={setDateRange}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onDateRange={handleDateRangeChange}
               onGroupBy={setGroupBy}
+              onCustomDateChange={handleCustomDateChange}
               onExport={handleExport}
             />
           </div>
@@ -652,12 +722,31 @@ export default function AnalyticsPage() {
 
             {/* Charts: span 2 of 3 xl columns */}
             <div className="xl:col-span-2 flex flex-col gap-6">
-              {/* 2-up chart row */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <ViolationTrendPanel data={summary?.trend_data ?? []} />
-                <DomainBarPanelFilled data={summary?.domain_data ?? []} />
-              </div>
-              <OverrideRatePanel data={summary?.override_trend ?? []} />
+              {groupBy === 'week' ? (
+                <>
+                  <OverrideRatePanel data={summary?.override_trend ?? []} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ViolationTrendPanel data={summary?.trend_data ?? []} />
+                    <DomainBarPanelFilled data={summary?.domain_data ?? []} />
+                  </div>
+                </>
+              ) : groupBy === 'team' ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <ViolationTrendPanel data={summary?.trend_data ?? []} />
+                    <DomainBarPanelFilled data={summary?.domain_data ?? []} />
+                  </div>
+                  <OverrideRatePanel data={summary?.override_trend ?? []} />
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <DomainBarPanelFilled data={summary?.domain_data ?? []} />
+                    <ViolationTrendPanel data={summary?.trend_data ?? []} />
+                  </div>
+                  <OverrideRatePanel data={summary?.override_trend ?? []} />
+                </>
+              )}
 
               {/* Leaderboard */}
               {summary && summary.leaderboard.length > 0 && (
