@@ -259,8 +259,8 @@ function TokenHandler() {
         )
       }
 
-      // 3. Set first-party cookie so proxy.ts can verify on protected routes
-      document.cookie = `sentinel-token=${token}; path=/; max-age=900; Secure; SameSite=Lax`
+      // 3. Set first-party cookie so middleware.ts can verify on protected routes
+      document.cookie = `sentinel-auth=${token}; path=/; max-age=900; Secure; SameSite=Lax`
       document.cookie = `refresh_token=${refreshToken}; path=/; max-age=604800; Secure; SameSite=Lax`
 
       // 4. Redirect to intended destination or /agent

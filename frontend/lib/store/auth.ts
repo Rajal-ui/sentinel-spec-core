@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware'
 import type { User, LoginCredentials, RegisterCredentials } from '@/lib/types'
 import api from '@/lib/api'
 
-const COOKIE_NAME = 'sentinel-token'
+const COOKIE_NAME = 'sentinel-auth'
 
 function getTokenFromCookie(): string | null {
   if (typeof document === 'undefined') return null
@@ -13,7 +13,7 @@ function getTokenFromCookie(): string | null {
 }
 
 function resolveInitialToken(): string | null {
-  // 1. Check the sentinel-token cookie first (set by TokenHandler after OAuth)
+  // 1. Check the sentinel-auth cookie first (set by TokenHandler after OAuth)
   const fromCookie = getTokenFromCookie()
   if (fromCookie) return fromCookie
 
@@ -142,7 +142,7 @@ export const useAuthStore = create<AuthStore>()(
       }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted ?? {}) }
-        // The sentinel-token cookie is the single source of truth on every pageload.
+        // The sentinel-auth cookie is the single source of truth on every pageload.
         // If a valid cookie exists, it must override any stale persisted state
         // (e.g. isAuthenticated: false from a prior logout or missing persist key).
         const cookieToken = getTokenFromCookie()

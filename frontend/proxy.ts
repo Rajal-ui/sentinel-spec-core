@@ -7,7 +7,7 @@ export default function proxy(request: NextRequest) {
   const isProtected = PROTECTED_ROUTES.some((r) =>
     request.nextUrl.pathname.startsWith(r)
   )
-  const token = request.cookies.get('sentinel-token')
+  const token = request.cookies.get('sentinel-auth')
 
   if (isProtected && !token) {
     const next = encodeURIComponent(request.nextUrl.pathname)
