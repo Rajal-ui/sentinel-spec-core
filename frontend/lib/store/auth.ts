@@ -67,28 +67,36 @@ export const useAuthStore = create<AuthStore>()(
       login: async (credentials) => {
         const { data } = await api.post('/auth/login', credentials)
         const redirect = get().loginRedirect ?? '/agent'
+        const accessToken: string = data.accessToken ?? data.token
         set({
           user: data.user,
-          token: data.token,
+          token: accessToken,
           isAuthenticated: true,
           showLoginModal: false,
           loginRedirect: null,
         })
-        document.cookie = `${COOKIE_NAME}=${data.token}; path=/; max-age=604800; Secure; SameSite=Lax`
+        // Persist tokens so localStorage interceptor and cookie proxy both work
+        localStorage.setItem('token', accessToken)
+        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken)
+        document.cookie = `${COOKIE_NAME}=${accessToken}; path=/; max-age=604800; Secure; SameSite=Lax`
         window.location.href = redirect
       },
 
       register: async (credentials) => {
         const { data } = await api.post('/auth/register', credentials)
         const redirect = get().loginRedirect ?? '/agent'
+        const accessToken: string = data.accessToken ?? data.token
         set({
           user: data.user,
-          token: data.token,
+          token: accessToken,
           isAuthenticated: true,
           showLoginModal: false,
           loginRedirect: null,
         })
-        document.cookie = `${COOKIE_NAME}=${data.token}; path=/; max-age=604800; Secure; SameSite=Lax`
+        // Persist tokens so localStorage interceptor and cookie proxy both work
+        localStorage.setItem('token', accessToken)
+        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken)
+        document.cookie = `${COOKIE_NAME}=${accessToken}; path=/; max-age=604800; Secure; SameSite=Lax`
         window.location.href = redirect
       },
 
@@ -100,6 +108,8 @@ export const useAuthStore = create<AuthStore>()(
         }
         set({ user: null, token: null, isAuthenticated: false })
         document.cookie = `${COOKIE_NAME}=; path=/; max-age=0`
+        localStorage.removeItem('token')
+        localStorage.removeItem('refresh_token')
         window.location.href = '/'
       },
 
