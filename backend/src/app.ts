@@ -15,6 +15,7 @@ import analyticsRoutes from './routes/analytics.routes.js'
 import './config/passport.js'
 
 const app = express()
+app.set('trust proxy', 1)
 
 // ── Security headers ──────────────────────────────────────────────────
 app.use(helmet())

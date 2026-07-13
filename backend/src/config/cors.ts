@@ -2,11 +2,12 @@ import type { CorsOptions } from 'cors'
 import { env } from './env.js'
 
 const allowedOrigins = [
+  process.env.FRONTEND_URL,
   env.CLIENT_URL,                                          // primary (set in .env / Railway)
   'http://localhost:3000',
   'http://localhost:3001',
   'https://sentinel-spec-core.vercel.app',
-].filter(Boolean)
+].filter(Boolean) as string[]
 
 export const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
