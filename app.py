@@ -3,6 +3,7 @@
 Endpoints:
   POST /evaluate          — synchronous compliance check (watsonx Orchestrate / CI gate)
   POST /evaluate/stream   — SSE streaming with live agent thinking log
+  POST /override          — log a human override / policy rejection to watsonx.governance
   GET  /compliance/matrix — returns the full 22-rule compliance matrix
   GET  /analytics/summary — returns aggregated analytics data
   GET  /health            — liveness probe
@@ -16,15 +17,17 @@ import time
 from typing import Any
 from collections.abc import AsyncGenerator
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from adapters.ibm import COMPLIANCE_MATRIX, IBMAIEngine
 from adapters.local import LocalAIEngine
+from adapters.watsonx_governance_adapter import WatsonxGovernanceAdapter
 from domain.models import CodeSnippet, FileInput, MultiFileRequest
 from ports.ai_engine_port import AIEnginePort
+from ports.governance_port import GovernancePort
 
 # ---------------------------------------------------------------------------
 # App bootstrap
@@ -37,7 +40,12 @@ def _bootstrap_engine() -> AIEnginePort:
     return IBMAIEngine()
 
 
+def _bootstrap_governance() -> GovernancePort:
+    return WatsonxGovernanceAdapter()
+
+
 _engine: AIEnginePort = _bootstrap_engine()
+_gov: GovernancePort = _bootstrap_governance()
 
 app = FastAPI(
     title="Sentinel Spec Compliance Engine",
@@ -102,6 +110,13 @@ class HealthResponse(BaseModel):
     mock_mode: bool
 
 
+class OverrideRequest(BaseModel):
+    finding_id: str = Field(..., description="The ID of the finding being overridden")
+    justification: str = Field(..., description="Developer's business justification")
+    user: str = Field(default="developer@example.com", description="Developer email or identity")
+
+
+
 class MatrixRuleResponse(BaseModel):
     rule_id: str
     domain: str
@@ -136,12 +151,20 @@ def _violation_to_response(v: Any) -> ViolationResponse:
     )
 
 
+async def _log_evaluation_event_task(
+    findings: list[Any],
+    metadata: dict[str, Any],
+) -> None:
+    asset_id = os.getenv("WATSONX_GOV_USE_CASE_ID", "019f5c23-34c8-75c6-a452-a014919d7e56")
+    await _gov.log_evaluation_event(asset_id, findings, metadata)
+
+
 # ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
 @app.post("/evaluate", response_model=ComplianceReportResponse)
-def evaluate(request: EvaluateRequest) -> ComplianceReportResponse:
+def evaluate(request: EvaluateRequest, background_tasks: BackgroundTasks) -> ComplianceReportResponse:
     """Synchronous compliance check — run the full dual-agent DAG and return structured results.
 
     Supports two payload shapes:
@@ -177,6 +200,14 @@ def evaluate(request: EvaluateRequest) -> ComplianceReportResponse:
                 all_violations.append(_violation_to_response(v))
 
         duration_ms = round((time.monotonic() - t0) * 1000, 1)
+
+        # Enqueue governance logging task asynchronously
+        background_tasks.add_task(
+            _log_evaluation_event_task,
+            all_violations,
+            all_metadata,
+        )
+
         return ComplianceReportResponse(
             is_compliant=len(all_violations) == 0,
             violations=all_violations,
@@ -197,6 +228,13 @@ def evaluate(request: EvaluateRequest) -> ComplianceReportResponse:
     )
     report = _engine.evaluate_code(snippet, filename=resolved_filename)
     duration_ms = round((time.monotonic() - t0) * 1000, 1)
+
+    # Enqueue governance logging task asynchronously
+    background_tasks.add_task(
+        _log_evaluation_event_task,
+        report.violations,
+        report.metadata,
+    )
 
     return ComplianceReportResponse(
         is_compliant=report.is_compliant,
@@ -267,6 +305,13 @@ async def evaluate_stream(request: EvaluateRequest) -> StreamingResponse:
                             "payload": step.payload,
                         })
                         yield f"data: {data}\n\n"
+                        if step.phase == "complete" and step.payload:
+                            asyncio.create_task(
+                                _log_evaluation_event_task(
+                                    step.payload.get("violations", []),
+                                    step.payload.get("metadata", {}),
+                                )
+                            )
                         await asyncio.sleep(0)
             except Exception as exc:
                 error_data = json.dumps({"agent": "system", "phase": "error", "detail": str(exc), "payload": {}})
@@ -299,6 +344,13 @@ async def evaluate_stream(request: EvaluateRequest) -> StreamingResponse:
                     "payload": step.payload,
                 })
                 yield f"data: {data}\n\n"
+                if step.phase == "complete" and step.payload:
+                    asyncio.create_task(
+                        _log_evaluation_event_task(
+                            step.payload.get("violations", []),
+                            step.payload.get("metadata", {}),
+                        )
+                    )
                 await asyncio.sleep(0)
         except Exception as exc:
             error_data = json.dumps({"agent": "system", "phase": "error", "detail": str(exc), "payload": {}})
@@ -392,7 +444,19 @@ def health() -> HealthResponse:
         mock_mode=is_mock,
     )
 
+@app.post("/override")
+async def override(request: OverrideRequest) -> dict[str, Any]:
+    """Log a human override or policy rejection event to watsonx.governance."""
+    success = await _gov.log_human_override(
+        finding_id=request.finding_id,
+        justification=request.justification,
+        user=request.user,
+    )
+    return {"success": success}
+
+
 # ---------------------------------------------------------------------------
 # Mount Frontend
 # ---------------------------------------------------------------------------
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
