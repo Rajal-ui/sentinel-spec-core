@@ -46,12 +46,13 @@ function QueueRow({
         background: isSelected
           ? 'rgba(255, 92, 0, 0.08)'
           : 'var(--surface)',
-        border: `1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
+        borderLeft: isSelected ? '3px solid var(--primary)' : '3px solid transparent',
         borderRadius: 8,
         position: 'relative',
         overflow: 'hidden',
         cursor: clickable ? 'pointer' : 'default',
-        transition: 'background 0.15s, border-color 0.15s',
+        transition: 'background 0.15s',
+        boxShadow: isSelected ? '0 0 12px rgba(255,92,0,0.10)' : undefined,
       }}
     >
       {isAnalysing && (

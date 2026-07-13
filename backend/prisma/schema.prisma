@@ -68,6 +68,7 @@ model Finding {
   timestamp       DateTime  @default(now())
   actor           String
   repo            String
+  filename        String?
   trigger         String
   diffId          String    @map("diff_id")
   violatesPolicy  Boolean   @map("violates_policy") @default(true)

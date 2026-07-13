@@ -7,7 +7,7 @@ import type { GovernanceRecord, Override } from '@/lib/types'
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '@/lib/api'
-import { Shield, ShieldAlert, Filter, Download, ChevronDown, ChevronRight, Check, X } from 'lucide-react'
+import { Shield, ShieldAlert, Filter, Download, ChevronDown, ChevronRight, Check, X, FileCode } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,8 +32,7 @@ function KpiCard({ label, value }: { label: string; value: string }) {
   return (
     <motion.div
       className="flex-1 min-w-0 flex flex-col gap-1.5 rounded-xl p-5
-                 bg-white/55 border border-white/70 backdrop-blur-xl shadow-sm
-                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
+                 bg-zinc-900/30 backdrop-blur-sm"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -253,8 +252,8 @@ function FilterDrawer({ open, onClose, filters, onChange, onRun, onExport, onCle
                       onClick={() => toggleDomain(d)}
                       className={
                         active
-                          ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
-                          : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
+                          ? 'bg-[#FF5C00]/10 text-[#FF5C00] font-medium shadow-[0_0_12px_rgba(255,92,0,0.12)]'
+                          : 'text-slate-600 dark:text-zinc-400 transition-all duration-300 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_12px_rgba(249,115,22,0.12)]'
                       }
                       style={{
                         fontFamily: 'IBM Plex Mono, monospace',
@@ -494,21 +493,22 @@ function FilterDrawer({ open, onClose, filters, onChange, onRun, onExport, onCle
                   gap: 6,
                   background: 'transparent',
                   color: 'var(--text-secondary)',
-                  border: '1px solid var(--border)',
                   borderRadius: 6,
                   padding: '8px 14px',
                   cursor: 'pointer',
                   fontFamily: 'IBM Plex Mono, monospace',
                   fontSize: 12,
-                  transition: 'border-color 0.15s, color 0.15s',
+                  transition: 'all 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--text-muted)'
-                  ;(e.currentTarget as HTMLElement).style.color = 'var(--text)'
+                  ;(e.currentTarget as HTMLElement).style.background = 'rgba(255,92,0,0.08)'
+                  ;(e.currentTarget as HTMLElement).style.color = 'var(--primary)'
+                  ;(e.currentTarget as HTMLElement).style.boxShadow = '0 0 12px rgba(255,92,0,0.12)'
                 }}
                 onMouseLeave={(e) => {
-                  ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
+                  ;(e.currentTarget as HTMLElement).style.background = 'transparent'
                   ;(e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'
+                  ;(e.currentTarget as HTMLElement).style.boxShadow = 'none'
                 }}
               >
                 <Download size={12} />
@@ -561,10 +561,9 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
   return (
     <motion.div
       layout
-      className="bg-white/55 border backdrop-blur-xl rounded-lg overflow-hidden
-                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
+      className="bg-zinc-900/30 backdrop-blur-sm rounded-lg overflow-hidden"
       style={{
-        borderColor: isOverride ? 'rgba(232,165,75,0.35)' : undefined,
+        borderLeft: isOverride ? '3px solid rgba(232,165,75,0.35)' : undefined,
         boxShadow: isOverride ? '0 0 12px rgba(232,165,75,0.06)' : undefined,
       }}
     >
@@ -573,8 +572,8 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
-          padding: '12px 14px',
+          gap: 10,
+          padding: '10px 14px',
           cursor: 'pointer',
         }}
         onClick={() => setExpanded((x) => !x)}
@@ -585,7 +584,7 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
         </div>
 
         {/* Record ID + timestamp */}
-        <div style={{ minWidth: 0, flex: '0 0 auto', maxWidth: 160 }}>
+        <div style={{ minWidth: 0, flex: '0 0 auto', maxWidth: 130 }}>
           <div
             className="font-mono-product"
             style={{
@@ -611,30 +610,64 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
           </div>
         </div>
 
-        {/* Status badge + conditionally tier badge */}
+        {/* Status badge + tier badge (tier muted when resolved/overridden) */}
         <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
           <StatusLabel status={displayStatus} />
           {showTierBadge && (
-            <span style={{ ...tierBadgeStyle, ...tierColors[record.finding_tier] }}>
+            <span
+              className="font-mono-product"
+              style={{
+                ...tierBadgeStyle,
+                ...(isOverride || record.status === 'RESOLVED'
+                  ? { background: 'transparent', color: 'var(--text-muted)', borderColor: 'var(--border)' }
+                  : tierColors[record.finding_tier]),
+              }}
+            >
               {tierLabel}
             </span>
           )}
         </div>
 
-        {/* Confidence */}
-        <div
-          className="font-mono-product"
-          style={{ fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 }}
-        >
-          {confidencePct}%
+        {/* Filename + service */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, minWidth: 0, maxWidth: 180 }}>
+          <FileCode size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <span
+            className="font-mono-product"
+            style={{ fontSize: 11, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {record.filename || 'unknown'}
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>·</span>
+          <span
+            className="font-mono-product"
+            style={{ fontSize: 10, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {record.repo}
+          </span>
         </div>
+
+        {/* Confidence pill */}
+        <span
+          className="font-mono-product"
+          style={{
+            flexShrink: 0,
+            fontSize: 10,
+            padding: '2px 7px',
+            borderRadius: 99,
+            background: 'rgba(31,32,41,0.6)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-muted)',
+          }}
+        >
+          {confidencePct}% conf
+        </span>
 
         {/* Description (one-liner) */}
         <div
           style={{
             flex: 1,
             minWidth: 0,
-            fontSize: 13,
+            fontSize: 12,
             color: 'var(--text-secondary)',
             fontFamily: 'Inter, sans-serif',
             overflow: 'hidden',
@@ -645,20 +678,21 @@ function RecordRow({ record }: { record: GovernanceRecord }) {
           {record.critic_verdict.reasoning}
         </div>
 
-        {/* Actor + repo + trigger */}
-        <div style={{ flexShrink: 0, textAlign: 'right' }}>
-          <div
+        {/* Actor + trigger — right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <span
             className="font-mono-product"
-            style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
+            style={{ fontSize: 10, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}
           >
             {record.actor.split('@')[0]}
-          </div>
-          <div
+          </span>
+          <span style={{ width: 1, height: 12, background: 'var(--border)', flexShrink: 0 }} />
+          <span
             className="font-mono-product"
             style={{ fontSize: 10, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
           >
-            {record.repo} · {record.trigger}
-          </div>
+            {record.trigger === 'ide_time' ? 'IDE' : 'CI'}
+          </span>
         </div>
       </div>
 
@@ -1076,11 +1110,11 @@ function ResultsFeed({ records, activeTab, onTabChange, onOpenFilter, activeFilt
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             background: activeFilterCount > 0 ? 'rgba(255,92,0,0.08)' : 'var(--surface-muted)',
-            border: `1px solid ${activeFilterCount > 0 ? 'rgba(255,92,0,0.25)' : 'var(--border)'}`,
             borderRadius: 6, padding: '6px 12px', cursor: 'pointer',
             fontFamily: 'IBM Plex Mono, monospace', fontSize: 11,
             color: activeFilterCount > 0 ? 'var(--primary)' : 'var(--text-muted)',
             transition: 'all 0.15s',
+            boxShadow: activeFilterCount > 0 ? '0 0 12px rgba(255,92,0,0.12)' : undefined,
           }}
         >
           <Filter size={12} />

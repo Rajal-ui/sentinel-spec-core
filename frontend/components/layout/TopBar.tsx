@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { ChevronDown, LogOut, Shield, AlertTriangle, TrendingUp, Clock, Home, User, Settings } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuthStore } from '@/lib/store/auth'
 import { useSessionStore } from '@/lib/store/session'
 import api from '@/lib/api'
@@ -23,6 +23,18 @@ export default function TopBar({ title, breadcrumb }: Props) {
   const { messages, activeSessionId, resolvedFindings } = useSessionStore()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [dbSummary, setDbSummary] = useState<DbSummary | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!dropdownOpen) return
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [dropdownOpen])
 
   // ── Fetch aggregate DB metrics for fallback display ──
   useEffect(() => {
@@ -109,7 +121,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
 
   return (
     <header
-      className="w-full max-w-[100vw] px-6 mx-auto sticky top-0 z-50 transition-all bg-white/60 dark:bg-[#08080A]/60 backdrop-blur-xl border-b border-slate-200/40 dark:border-zinc-800/40"
+      className="w-full max-w-[100vw] px-6 mx-auto sticky top-0 z-50 transition-all bg-white/60 dark:bg-[#08080A]/60 backdrop-blur-xl"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -162,7 +174,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
         {/* Right: avatar dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {user && (
-            <div style={{ position: 'relative' }}>
+            <div ref={dropdownRef} style={{ position: 'relative' }}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="prism-glass-interactive"
@@ -199,7 +211,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
 
               {dropdownOpen && (
                 <div
-                  className="bg-white/70 backdrop-blur-md border border-white/60 shadow-lg dark:bg-[#111116]/80 dark:backdrop-blur-md dark:border-[#1F2029]/80"
+                  className="bg-zinc-950/95 backdrop-blur-md border border-zinc-900 shadow-xl z-50"
                   style={{
                     position: 'absolute',
                     top: '110%',
@@ -207,12 +219,11 @@ export default function TopBar({ title, breadcrumb }: Props) {
                     minWidth: 180,
                     borderRadius: 10,
                     padding: 6,
-                    zIndex: 100,
                   }}
                 >
-                  <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--glass-border)', marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
-                    <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{user.email}</div>
+                  <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, color: '#F1F5F9', fontFamily: 'Inter, sans-serif' }}>{user.name}</div>
+                    <div className="font-mono-product" style={{ fontSize: 11, color: '#94A3B8' }}>{user.email}</div>
                   </div>
 
                   <Link
@@ -227,7 +238,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                       borderRadius: 6,
                       fontSize: 13,
                       fontFamily: 'Inter, sans-serif',
-                      color: 'var(--text)',
+                      color: '#CBD5E1',
                       textDecoration: 'none',
                     }}
                   >
@@ -247,7 +258,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                       borderRadius: 6,
                       fontSize: 13,
                       fontFamily: 'Inter, sans-serif',
-                      color: 'var(--text)',
+                      color: '#CBD5E1',
                       textDecoration: 'none',
                     }}
                   >
@@ -255,7 +266,7 @@ export default function TopBar({ title, breadcrumb }: Props) {
                     Settings
                   </Link>
 
-                  <div style={{ height: 1, background: 'var(--glass-border)', margin: '4px 0' }} />
+                  <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
 
                   <button
                     onClick={() => { logout(); setDropdownOpen(false) }}

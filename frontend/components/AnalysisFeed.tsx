@@ -78,7 +78,7 @@ export default function AnalysisFeed({ onApplyFix }: AnalysisFeedProps) {
           >
             {msg.role === 'user' ? (
               <div
-                className="bg-white/40 dark:bg-zinc-900/40 border border-slate-200 dark:border-zinc-800 backdrop-blur-[12px]"
+                className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-[12px]"
                 style={{
                   maxWidth: '68%',
                   padding: '11px 15px',

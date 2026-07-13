@@ -62,7 +62,7 @@ export default function FindingCard({ finding, onOverride, onApplyFix, onViewRea
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(12px) saturate(1.4)',
         WebkitBackdropFilter: 'blur(12px) saturate(1.4)',
-        border: `1px solid ${borderColor}`,
+        borderLeft: `3px solid ${borderColor}`,
         boxShadow: glowStyle,
       }}
       whileHover={prefersReducedMotion ? {} : { scale: 1.008 }}

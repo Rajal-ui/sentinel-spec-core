@@ -187,7 +187,6 @@ html, body {
   letter-spacing: 0.04em;
   padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid;
 }
 
 /* ── Status fills — migrated to Tailwind classes in StatusBadge.tsx ── */

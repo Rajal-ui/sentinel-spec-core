@@ -21,13 +21,13 @@ function MetricPill({ count, label, activeClass }: MetricPillProps) {
     <span
       className={[
         'inline-flex items-center font-mono-product',
-        'px-1.5 py-0.5 rounded border',
+        'px-1.5 py-0.5 rounded',
         'text-[10px] font-semibold tracking-wide',
         'backdrop-blur-[12px]',
         'transition-all duration-200',
         isActive
           ? activeClass
-          : 'bg-white/5 dark:bg-white/[0.03] text-slate-400 dark:text-zinc-600 border-slate-200/30 dark:border-zinc-800/50 opacity-40',
+          : 'bg-white/5 dark:bg-white/[0.03] text-slate-400 dark:text-zinc-600 opacity-40',
       ].join(' ')}
     >
       {isUnknown ? '—' : count}&nbsp;{label}
@@ -55,7 +55,7 @@ export default function HistoryPanel() {
   if (sessions.length === 0) {
     return (
       <div
-        className="font-mono-product bg-white/20 dark:bg-zinc-900/10 border border-dashed border-slate-200/40 dark:border-zinc-800/40 backdrop-blur-[8px] rounded-lg"
+        className="font-mono-product bg-white/20 dark:bg-zinc-900/10 border border-dashed border-slate-200/20 dark:border-zinc-800/20 backdrop-blur-[8px] rounded-lg"
         style={{
           fontSize: 12,
           color: 'var(--text-muted)',
@@ -91,13 +91,13 @@ export default function HistoryPanel() {
                 onClick={() => setActiveSession(session.id)}
                 className={[
                   'group flex flex-col',
-                  'border-t border-b border-r transition-all duration-200 ease-out',
+                  'transition-all duration-200 ease-out',
                   isActive
-                    ? 'border-l-2 border-l-[#FF5C00] bg-white/50 dark:bg-zinc-900/50 border-t-slate-200/40 border-b-slate-200/40 border-r-slate-200/40 dark:border-t-zinc-800/40 dark:border-b-zinc-800/40 dark:border-r-zinc-800/40'
-                    : 'bg-white/20 border border-slate-200/40 dark:bg-zinc-900/10 dark:border-zinc-800/40',
+                    ? 'border-l-2 border-l-[#FF5C00] bg-white/50 dark:bg-zinc-900/50'
+                    : 'bg-white/20 dark:bg-zinc-900/10',
                   'hover:bg-white/60 dark:hover:bg-zinc-900/40',
-                  'hover:border-slate-300/80 dark:hover:border-zinc-700/60',
-                  'hover:-translate-y-[1px] hover:shadow-sm dark:hover:shadow-none',
+                  'hover:shadow-[0_0_12px_rgba(255,92,0,0.08)]',
+                  'hover:-translate-y-[1px]',
                   'backdrop-blur-[8px]',
                   'rounded-md cursor-pointer',
                 ].join(' ')}
@@ -151,20 +151,20 @@ export default function HistoryPanel() {
                     <MetricPill
                       count={0}
                       label="PENDING"
-                      activeClass="bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20 dark:border-teal-500/15"
+                      activeClass="bg-teal-500/10 text-teal-600 dark:text-teal-400"
                     />
                   ) : isPassed && fnd === 0 ? (
                     // Clean run — single PASSED pill, all others muted
                     <MetricPill
                       count={1}
                       label="PASSED"
-                      activeClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 dark:border-emerald-500/15"
+                      activeClass="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                     />
                   ) : (
                     <MetricPill
                       count={fnd}
                       label="Fnd"
-                      activeClass="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20"
+                      activeClass="bg-orange-500/10 text-orange-600 dark:text-orange-400"
                     />
                   )}
                 </div>

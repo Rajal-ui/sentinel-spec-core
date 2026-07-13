@@ -151,7 +151,7 @@ function LeftPanel() {
 
   return (
     <div
-      className="flex flex-col w-[280px] flex-shrink-0 h-full overflow-hidden border-l border-r border-slate-200/60 dark:border-[#1F2029]/70"
+      className="flex flex-col w-[280px] flex-shrink-0 h-full overflow-hidden"
       style={{
         background: 'var(--glass-bg)',
         backdropFilter: 'blur(20px) saturate(1.8)',
@@ -303,7 +303,7 @@ function LeftPanel() {
                   value={pasteCode}
                   onChange={(e) => setPasteCode(e.target.value)}
                   placeholder="Paste code here..."
-                  className="font-mono-product w-full bg-white/30 dark:bg-zinc-900/30 text-slate-950 dark:text-zinc-50 border border-slate-200 dark:border-zinc-800/80 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF5C00] focus:border-[#FF5C00] placeholder-slate-400 dark:placeholder-zinc-500 transition-[border-color,box-shadow] duration-150"
+                  className="font-mono-product w-full bg-white/30 dark:bg-zinc-900/30 text-slate-950 dark:text-zinc-50 border border-slate-200/40 dark:border-zinc-800/40 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF5C00] focus:border-[#FF5C00] placeholder-slate-400 dark:placeholder-zinc-500 transition-[border-color,box-shadow] duration-150"
                   style={{
                     padding: 8,
                     fontSize: 11,
@@ -332,7 +332,6 @@ function LeftPanel() {
                     gap: 6,
                     padding: 6,
                     background: 'var(--surface-raised)',
-                    border: '1px solid var(--border)',
                     borderRadius: 5,
                     backdropFilter: 'blur(4px)',
                     WebkitBackdropFilter: 'blur(4px)',
@@ -575,7 +574,7 @@ function ChatCanvas() {
 
       {/* ── Input area ── */}
       <div
-        className="flex-shrink-0 bg-white/40 dark:bg-[#08080A]/50 backdrop-blur-xl border-t border-slate-200/40 dark:border-zinc-800/40"
+        className="flex-shrink-0 bg-white/40 dark:bg-[#08080A]/50 backdrop-blur-xl"
         style={{
           padding: '12px 16px 14px',
         }}
@@ -589,9 +588,10 @@ function ChatCanvas() {
             onKeyDown={handleKeyDown}
             placeholder={'Ask a question or describe what to review...'}
             disabled={isStreaming}
-            className="flex-1 font-sans text-sm resize-none leading-[1.55] min-h-[42px] max-h-[200px] transition-[border-color,box-shadow] duration-150 rounded-lg outline-none bg-white/30 dark:bg-zinc-900/30 text-slate-950 dark:text-zinc-50 border border-slate-200 dark:border-zinc-800/80 placeholder-slate-400 dark:placeholder-zinc-500 focus:ring-1 focus:ring-[#FF5C00] focus:border-[#FF5C00]"
+            className="flex-1 font-sans text-sm resize-none leading-[1.55] min-h-[42px] max-h-[200px] transition-[border-color,box-shadow] duration-150 rounded-lg outline-none bg-white/30 dark:bg-zinc-900/30 text-slate-950 dark:text-zinc-50 border border-slate-200/40 dark:border-zinc-800/40 placeholder-slate-400 dark:placeholder-zinc-500 focus:ring-1 focus:ring-[#FF5C00] focus:border-[#FF5C00]"
             style={{
               padding: '10px 12px',
+              overflow: 'hidden',
               backdropFilter: 'blur(4px)',
               WebkitBackdropFilter: 'blur(4px)',
             }}
@@ -669,7 +669,7 @@ export default function AgentWorkspacePage() {
 
   if (!initialized) {
     return (
-      <AppShell title="Agent Workspace" breadcrumb="sentinel-spec / agent">
+      <AppShell title="Workspace" breadcrumb="Workspace / Compliance Agent">
         <div
           style={{
             display: 'flex',
@@ -691,7 +691,7 @@ export default function AgentWorkspacePage() {
 
   if (!isAuthenticated) {
     return (
-      <AppShell title="Agent Workspace" breadcrumb="sentinel-spec / agent">
+      <AppShell title="Workspace" breadcrumb="Workspace / Compliance Agent">
         <div
           style={{
             display: 'flex',
@@ -712,7 +712,7 @@ export default function AgentWorkspacePage() {
   }
 
   return (
-    <AppShell title="Agent Workspace" breadcrumb="sentinel-spec / agent">
+    <AppShell title="Workspace" breadcrumb="Workspace / Compliance Agent">
       <div className="flex h-full w-full overflow-hidden" style={{ background: 'transparent' }}>
         <LeftPanel />
         <ChatCanvas />

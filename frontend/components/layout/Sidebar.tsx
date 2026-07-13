@@ -75,8 +75,8 @@ export default function Sidebar() {
                 <div className="font-display" style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
                   Sentinel Spec
                 </div>
-                <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>
-                  ibm-bob-workspace
+                <div className="font-mono-product truncate" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1, maxWidth: 160 }}>
+                  Governance Control
                 </div>
               </motion.div>
             )}

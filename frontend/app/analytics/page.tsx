@@ -1,7 +1,7 @@
 'use client'
 import AppShell from '@/components/layout/AppShell'
 import { useAuthStore } from '@/lib/store/auth'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import StatsRow from '@/components/shared/StatsRow'
 import type { StatItem } from '@/components/shared/StatsRow'
@@ -118,8 +118,7 @@ const ChartTooltip = ({ active, payload, label, override }: any) => {
   const isHigh = override && rate !== undefined && rate > 5
   return (
     <div
-      className="bg-white/55 border border-white/70 backdrop-blur-xl rounded-lg
-                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
+      className="bg-zinc-900/70 backdrop-blur-xl rounded-lg"
       style={{ borderRadius: 6, padding: '8px 12px' }}
     >
       <div className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4 }}>{label}</div>
@@ -151,8 +150,7 @@ interface PanelProps {
 function ChartPanel({ title, subtitle, children, delay = 0 }: PanelProps) {
   return (
     <motion.div
-      className="bg-white/55 border border-white/70 backdrop-blur-xl shadow-sm rounded-xl p-5 flex flex-col gap-1.5
-                 dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
+      className="bg-zinc-900/30 backdrop-blur-sm rounded-xl p-5 flex flex-col gap-1.5"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, delay }}
@@ -217,17 +215,16 @@ function TopControls({ dateRange, groupBy, customStartDate, customEndDate, onDat
             <button
               key={opt.id}
               onClick={() => onDateRange(opt.id)}
-              className={`font-mono-product ${
+              className={`font-mono-product transition-all duration-300 ${
                 active
-                  ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
-                  : 'bg-zinc-900/30 text-zinc-400 border border-zinc-800/60 hover:text-[#FF5C00]'
+                  ? 'bg-[#FF5C00]/10 text-[#FF5C00] font-medium shadow-[0_0_15px_rgba(255,92,0,0.15)]'
+                  : 'bg-zinc-900/30 text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]'
               }`}
               style={{
                 padding: '5px 12px',
                 borderRadius: 6,
                 fontSize: 12,
                 cursor: 'pointer',
-                transition: 'all 0.12s ease',
               }}
             >
               [{opt.label}]
@@ -300,10 +297,10 @@ function TopControls({ dateRange, groupBy, customStartDate, customEndDate, onDat
               <button
                 key={opt.id}
                 onClick={() => onGroupBy(opt.id)}
-                className={`font-mono-product ${
+                className={`font-mono-product transition-all duration-300 ${
                   active
-                    ? 'bg-[#FF5C00]/10 text-[#FF5C00] border border-[#FF5C00]/30 font-medium'
-                    : 'text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60 hover:text-[#FF5C00]'
+                    ? 'bg-[#FF5C00]/10 text-[#FF5C00] font-medium shadow-[0_0_15px_rgba(255,92,0,0.15)]'
+                    : 'text-slate-600 dark:text-zinc-400 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]'
                 }`}
                 style={{
                   padding: '5px 10px',
@@ -311,7 +308,6 @@ function TopControls({ dateRange, groupBy, customStartDate, customEndDate, onDat
                   fontSize: 12,
                   cursor: 'pointer',
                   background: active ? undefined : 'transparent',
-                  transition: 'all 0.12s ease',
                 }}
               >
                 {opt.label}
@@ -327,22 +323,13 @@ function TopControls({ dateRange, groupBy, customStartDate, customEndDate, onDat
       {/* Export button */}
       <button
         onClick={onExport}
-        className="font-mono-product text-slate-600 dark:text-zinc-400 border border-slate-200/60 dark:border-zinc-700/60"
+        className="font-mono-product text-slate-600 dark:text-zinc-400 transition-all duration-300 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]"
         style={{
           padding: '6px 16px',
           borderRadius: 6,
           fontSize: 12,
           cursor: 'pointer',
           background: 'transparent',
-          transition: 'border-color 0.12s ease, color 0.12s ease',
-        }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#FF5C00'
-          ;(e.currentTarget as HTMLButtonElement).style.color = '#FF5C00'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.borderColor = ''
-          ;(e.currentTarget as HTMLButtonElement).style.color = ''
         }}
       >
         Export Report
@@ -567,8 +554,7 @@ function InsightCards({ data }: { data: AnalyticsSummary }) {
           initial={{ opacity: 0, x: 8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.18, delay: 0.34 + i * 0.06 }}
-          className="bg-white/55 border border-white/70 backdrop-blur-xl rounded-lg
-                     dark:bg-[#111116]/65 dark:border-[#1F2029]/80"
+          className="bg-zinc-900/30 backdrop-blur-sm rounded-lg"
           style={{
             borderRadius: 8,
             padding: '12px 14px',
@@ -663,6 +649,26 @@ export default function AnalyticsPage() {
     }
   }, [])
 
+  const handleExport = useCallback(() => {
+    if (summary) exportCSV(summary)
+  }, [summary])
+
+  const filteredTrendData = useMemo(() => {
+    if (!summary?.trend_data) return []
+    if (dateRange === 'custom' && (customStartDate || customEndDate)) {
+      return summary.trend_data.filter((pt) => {
+        const d = new Date(pt.date)
+        if (customStartDate && d < new Date(customStartDate)) return false
+        if (customEndDate && d > new Date(customEndDate + 'T23:59:59.999Z')) return false
+        return true
+      })
+    }
+    const now = new Date()
+    const days = dateRange === '7d' ? 7 : dateRange === '30d' ? 30 : 90
+    const cutoff = new Date(now.getTime() - days * 86400000)
+    return summary.trend_data.filter((pt) => new Date(pt.date) >= cutoff)
+  }, [summary?.trend_data, dateRange, customStartDate, customEndDate])
+
   if (loading && !summary) {
     return (
       <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
@@ -692,10 +698,6 @@ export default function AnalyticsPage() {
         { label: 'Avg Confidence', value: `${Math.round(summary!.avg_confidence * 100)}%`, sub: 'classifier score' },
       ]
 
-  const handleExport = () => {
-    if (summary) exportCSV(summary)
-  }
-
   return (
     <AppShell title="Analytics" breadcrumb="governance · metrics · trends">
       <AuthGate>
@@ -720,33 +722,13 @@ export default function AnalyticsPage() {
           {/* ── Bottom data canvas: independent scrolling grid ── */}
           <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-6 pt-0 grid grid-cols-1 xl:grid-cols-3 gap-6 content-start">
 
-            {/* Charts: span 2 of 3 xl columns */}
+            {/* Charts: fixed layout — never reorders */}
             <div className="xl:col-span-2 flex flex-col gap-6">
-              {groupBy === 'week' ? (
-                <>
-                  <OverrideRatePanel data={summary?.override_trend ?? []} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ViolationTrendPanel data={summary?.trend_data ?? []} />
-                    <DomainBarPanelFilled data={summary?.domain_data ?? []} />
-                  </div>
-                </>
-              ) : groupBy === 'team' ? (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ViolationTrendPanel data={summary?.trend_data ?? []} />
-                    <DomainBarPanelFilled data={summary?.domain_data ?? []} />
-                  </div>
-                  <OverrideRatePanel data={summary?.override_trend ?? []} />
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <DomainBarPanelFilled data={summary?.domain_data ?? []} />
-                    <ViolationTrendPanel data={summary?.trend_data ?? []} />
-                  </div>
-                  <OverrideRatePanel data={summary?.override_trend ?? []} />
-                </>
-              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <DomainBarPanelFilled data={summary?.domain_data ?? []} />
+                <ViolationTrendPanel data={filteredTrendData} />
+              </div>
+              <OverrideRatePanel data={summary?.override_trend ?? []} />
 
               {/* Leaderboard */}
               {summary && summary.leaderboard.length > 0 && (

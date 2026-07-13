@@ -49,7 +49,6 @@ export default function AnalysisResults({
     <div
       className="prism-glass-card"
       style={{
-        border: '1px solid var(--glass-border)',
         borderRadius: 8,
         overflow: 'hidden',
         background: 'var(--glass-bg)',

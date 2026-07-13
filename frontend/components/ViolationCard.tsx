@@ -40,8 +40,8 @@ export default function ViolationCard({
     : {
         blocking: 'rgba(232,93,74,0.28)',
         warning: 'rgba(232,165,75,0.25)',
-        logged_only: 'rgba(100,116,139,0.20)',
-        rejected: 'rgba(100,116,139,0.15)',
+        logged_only: 'rgba(100,116,139,0.12)',
+        rejected: 'rgba(100,116,139,0.08)',
       }[finding.tier]
 
   const headerBg = isResolved
@@ -95,7 +95,7 @@ export default function ViolationCard({
     <motion.div
       className="prism-glass-card rounded-xl overflow-hidden"
       style={{
-        border: `1px solid ${borderColor}`,
+        borderLeft: `3px solid ${borderColor}`,
         opacity: isResolved ? 0.82 : 1,
       }}
       whileHover={
@@ -242,7 +242,7 @@ export default function ViolationCard({
                 {!isResolved ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); onApplyFix(finding.id) }}
-                    className="border border-slate-200 dark:border-zinc-800 text-slate-800 dark:text-zinc-300 hover:border-[#FF5C00] hover:text-[#FF5C00] dark:hover:border-[#FF5C00] dark:hover:text-[#FF5C00]"
+                    className="text-slate-800 dark:text-zinc-300 transition-all duration-300 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_15px_rgba(249,115,22,0.15)]"
                     style={{
                       background: 'transparent',
                       borderRadius: 6,

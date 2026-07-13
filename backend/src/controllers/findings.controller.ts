@@ -38,6 +38,7 @@ function toGovernanceRecord(finding: {
   timestamp: Date
   actor: string
   repo: string
+  filename: string | null
   trigger: string
   diffId: string
   violatesPolicy: boolean
@@ -55,6 +56,7 @@ function toGovernanceRecord(finding: {
     trigger: finding.trigger,
     actor: finding.actor,
     repo: finding.repo,
+    filename: finding.filename ?? undefined,
     diff_id: finding.diffId,
     classification: {
       violates_policy: finding.violatesPolicy,
@@ -165,6 +167,7 @@ export const bulkCreateSchema = z.object({
       trace_id: z.string(),
       timestamp: z.string(),
       record_id: z.string(),
+      filename: z.string().optional(),
     }),
   ),
 })
@@ -212,6 +215,7 @@ export async function bulkCreate(
       policyDomain: derivePolicyDomain(f.cited_adr),
       actor,
       repo,
+      filename: f.filename ?? null,
       trigger,
       diffId,
       violatesPolicy: f.tier === 'blocking' || f.tier === 'warning',

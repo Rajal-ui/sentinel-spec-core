@@ -11,6 +11,7 @@ export interface GovernanceRecord {
   trigger: TriggerType
   actor: string
   repo: string
+  filename?: string
   diff_id: string
   classification: {
     violates_policy: boolean

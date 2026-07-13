@@ -29,6 +29,7 @@ function makeFinding(overrides: Partial<Finding> & { title: string; description:
     trace_id: `trace-${Date.now()}-${findingIdCounter}`,
     timestamp: new Date().toISOString(),
     record_id: `rec-dyn-${findingIdCounter}`,
+    filename: overrides.filename,
   }
 }
 
@@ -562,22 +563,22 @@ export const useSessionStore = create<SessionStore>()(
           for (const entry of LINE_PATTERNS) {
             if (matchedKeys.has(entry.lineKey)) continue
             if (entry.pattern.test(file.content)) {
-              fileFindings.push({ ...makeFinding(entry.template), filename: file.name })
+              fileFindings.push(makeFinding({ ...entry.template, filename: file.name }))
               fileDomains.push(entry.domain)
               matchedKeys.add(entry.lineKey)
             }
           }
 
           if (/billing|charge|payment|invoice/.test(contentLower)) {
-            fileFindings.push({ ...makeFinding(BILLING_TEMPLATE), filename: file.name })
+            fileFindings.push(makeFinding({ ...BILLING_TEMPLATE, filename: file.name }))
             fileDomains.push('billing abstraction (ADR-0042)')
           }
           if (/pii|email|log.*mask|logger\.(info|warn|error)/.test(contentLower)) {
-            fileFindings.push({ ...makeFinding(PII_TEMPLATE), filename: file.name })
+            fileFindings.push(makeFinding({ ...PII_TEMPLATE, filename: file.name }))
             fileDomains.push('PII handling (ADR-0019)')
           }
           if (/deprecated|legacy_sdk|internal\.(legacy|old)/.test(contentLower)) {
-            fileFindings.push({ ...makeFinding(DEPRECATED_SDK_TEMPLATE), filename: file.name })
+            fileFindings.push(makeFinding({ ...DEPRECATED_SDK_TEMPLATE, filename: file.name }))
             fileDomains.push('SDK migration (ADR-0031)')
           }
 
