@@ -306,7 +306,6 @@ export default function LandingPage() {
       </Suspense>
       {/* ── NAV ── */}
       <nav
-        className="prism-glass-card"
         style={{
           position: 'fixed',
           top: 16,
@@ -320,6 +319,10 @@ export default function LandingPage() {
           gap: 40,
           width: 'calc(100% - 64px)',
           maxWidth: 1100,
+          background: theme === 'dark' ? 'rgba(11, 11, 15, 0.97)' : 'rgba(255, 255, 255, 0.97)',
+          border: theme === 'dark' ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.10)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -337,7 +340,7 @@ export default function LandingPage() {
             return (
               <Link key={label} href={href}
                 style={{
-                  fontSize: 13, color: isActive ? '#FF5C00' : 'rgb(207 211 217)',
+                  fontSize: 13, color: isActive ? '#FF5C00' : (theme === 'dark' ? 'rgb(207 211 217)' : '#1e293b'),
                   textDecoration: 'none', fontFamily: 'Inter, sans-serif',
                   fontWeight: isActive ? 500 : 400,
                   borderBottom: isActive ? '1px solid #FF5C00' : 'none',
