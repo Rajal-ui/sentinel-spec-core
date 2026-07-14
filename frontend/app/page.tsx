@@ -337,7 +337,7 @@ export default function LandingPage() {
             return (
               <Link key={label} href={href}
                 style={{
-                  fontSize: 13, color: isActive ? '#FF5C00' : '#475569',
+                  fontSize: 13, color: isActive ? '#FF5C00' : 'rgb(207 211 217)',
                   textDecoration: 'none', fontFamily: 'Inter, sans-serif',
                   fontWeight: isActive ? 500 : 400,
                   borderBottom: isActive ? '1px solid #FF5C00' : 'none',
