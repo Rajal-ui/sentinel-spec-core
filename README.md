@@ -1,209 +1,149 @@
-# Sentinel Spec
+﻿# Sentinel Spec
 
-### Autonomous Architecture Compliance Reviewer for IBM Bob IDE
+### Universal Architecture Compliance Reviewer — Any IDE, Any Pipeline
 
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat-square&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-16.2.10-black?style=flat-square&logo=next.js)
-![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=flat-square&logo=react)
+![Next.js](https://img.shields.io/badge/Next.js-15.x-black?style=flat-square&logo=next.js)
+![React](https://img.shields.io/badge/React-19.x-61DAFB?style=flat-square&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)
-![IBM Granite](https://img.shields.io/badge/IBM%20Granite-4--h-small--0F62FE?style=flat-square&logo=ibm)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![IBM Granite](https://img.shields.io/badge/IBM%20Granite-4--h--small-0F62FE?style=flat-square&logo=ibm)
 ![MCP](https://img.shields.io/badge/MCP-Enabled-orange?style=flat-square&logo=markdown)
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 ---
 
 ## Description
 
-Sentinel Spec is an autonomous architecture-compliance reviewer that intercepts policy violations at authorship time — inside IBM Bob IDE — and as a hard blocking gate in CI/CD pipelines, before a pull request ever exists. Engineers submit source files or code diffs through the analysis workspace; a dual-agent IBM Granite pipeline (Sentinel Classifier → Adversarial Critic) cross-references every submission against a 22-rule compliance matrix spanning secrets management, injection vectors, PII handling, API contracts, and architecture decisions. Each finding is returned with a severity tier, confidence score, cited ADR, machine-generated inline fix, and a full diff block. Every action — finding, override, approval — is written as an immutable lineage record, producing an auditor-ready decision trail that satisfies SOC 2, ISO 27001, and financial-services regulatory requirements.
+Sentinel Spec is a universal, IDE-agnostic architecture compliance reviewer that intercepts policy violations at authorship time and enforces them as hard blocking gates in CI/CD pipelines — before a pull request ever exists. Engineers submit source files or code diffs through any supported integration surface (Web Dashboard, CLI, MCP Server, or IDE bridge); a dual-agent IBM Granite pipeline — **Sentinel Classifier → Adversarial Critic** — cross-references every submission against a **22-rule compliance matrix** spanning secrets management, injection vectors, PII handling, API contracts, and architecture decisions.
 
-The system is a three-service monorepo. The **Python compliance engine** (`app.py`) implements a hexagonal ports-and-adapters architecture: the domain layer has zero framework dependencies, a typed `AIEnginePort` abstract interface is satisfied by either the IBM Granite adapter (production) or a local regex engine (offline / `MOCK_MODE`), and the FastAPI surface exposes both synchronous and SSE-streaming evaluation endpoints. The **Node.js auth service** (`backend/`) is an Express + Prisma server that manages JWT authentication, Google OAuth 2.0, and the PostgreSQL user and findings ledger. The **Next.js frontend** (`frontend/`) is a React 19 dashboard providing the analysis workspace, governance audit console, analytics, and API export surface, with all client state managed by Zustand persistent stores and route protection enforced at the edge.
+Each finding is returned with a severity tier, confidence score, cited ADR, machine-generated inline fix, and a full diff block. Every action — finding, override, approval — is written as an immutable lineage record and forwarded to IBM watsonx.governance, producing an auditor-ready decision trail that satisfies SOC 2, ISO 27001, and financial-services regulatory requirements.
+
+**MCP (Model Context Protocol) support** is the primary driver for IDE-agnostic integration: the compliance engine can be registered as an MCP server, enabling any MCP-compatible IDE (Cursor, VS Code + Copilot, Windsurf, JetBrains AI, Claude Desktop, and others) to invoke compliance checks directly from the editor without any custom plugin.
+
+The system is a three-service monorepo. The **Python compliance engine** (`app.py`) implements a hexagonal ports-and-adapters architecture: the domain layer has zero framework dependencies, a typed `AIEnginePort` abstract interface is satisfied by either the IBM Granite adapter (production) or a local regex engine (`MOCK_MODE`), and the FastAPI surface exposes synchronous, SSE-streaming, multi-file, and conversational evaluation endpoints. The **Node.js auth service** (`backend/`) is an Express + Prisma server managing JWT authentication, Google OAuth 2.0, and the PostgreSQL user and findings ledger. The **Next.js frontend** (`frontend/`) is a React 19 dashboard providing the analysis workspace, governance audit console, analytics, and OpenAPI export surface, with all client state managed by Zustand persistent stores and route protection enforced at the edge.
 
 ---
 
 ## Key Features
 
-- **Dual-Agent IBM Granite Pipeline:** Agent 1 (Sentinel Classifier) evaluates the submitted code against the 22-rule compliance matrix using `ibm/granite-4-h-small` via the watsonx.ai SDK. Agent 2 (Adversarial Critic) independently verifies every classification through strict entailment checking to eliminate false positives before findings are emitted.
+- **Dual-Agent IBM Granite Pipeline:** Agent 1 (Sentinel Classifier) evaluates submitted code against the 22-rule compliance matrix using `ibm/granite-4-h-small` via the watsonx.ai SDK. Agent 2 (Adversarial Critic) independently verifies every classification through strict entailment checking to eliminate false positives before findings are emitted.
 
-- **22-Rule Compliance Matrix:** Covers `SEC` (secrets, injection, transport), `ADR` (architecture decisions), `PII` (data residency, logging), and `API` (contract, versioning) domains. Each rule carries a `severity` (`CRITICAL` → `INFO`), a `FindingTier` routing decision (`blocking` → `logged_only`), and a human-readable remediation suggestion.
+- **22-Rule Compliance Matrix:** Covers `SEC` (secrets, injection, transport), `ARCH` (architecture decisions, hexagonal domain leakage, direct DB calls), `PII` (data residency, logging), and `QUAL` (unsafe deserialization, API contract) domains. Each rule carries a `severity` (`CRITICAL` → `INFO`), a `FindingTier` routing decision (`blocking` → `logged_only`), and a human-readable remediation suggestion.
 
-- **SSE Streaming with Live Thinking Log:** The `/evaluate/stream` endpoint yields granular `AgentThinkingStep` events — one per phase of the dual-agent DAG — so the IBM Bob IDE panel and the dashboard's ThinkingDrawer can animate the analysis in real time.
+- **IDE-Agnostic Integration via MCP:** The compliance engine registers as a Model Context Protocol (MCP) server, allowing any MCP-compatible IDE or AI assistant to call compliance checks as structured tool invocations — no custom plugins required.
 
-- **MOCK_MODE Zero-Cost Fallback:** Setting `MOCK_MODE=true` swaps the IBM adapter for `LocalAIEngine` — a pure-Python regex engine that covers the most critical rule patterns with no SDK or cloud dependency. The same port interface is satisfied; no domain or API code changes.
+- **Multi-File & Streaming Evaluation:** The `/evaluate` endpoint accepts both single-file and multi-file payloads. The `/evaluate/stream` SSE endpoint yields granular `AgentThinkingStep` events per phase of the dual-agent DAG so any connected IDE panel or the dashboard ThinkingDrawer can animate the analysis in real time.
 
-- **Governance Audit Console:** The full finding ledger is filterable by policy domain, finding tier, confidence range, override status, and date window. Override requests carry a full approval workflow (submit → approve / reject) with every state transition persisted and auditable.
+- **MOCK_MODE Zero-Cost Fallback:** Setting `MOCK_MODE=true` swaps the IBM adapter for `LocalAIEngine` — a pure-Python regex engine covering the most critical rule patterns with no SDK or cloud dependency. The same port interface is satisfied; no domain or API code changes.
 
-- **Full-File Patch Download:** On finding resolution the dashboard reconstructs the complete corrected source file (`diff_old → diff_new` substitution against the original ingestion buffer) and triggers a named browser download (`billing_fixed.py`), eliminating manual apply steps.
+- **watsonx.governance Lineage Tracking:** Every evaluation event and human override is asynchronously logged to IBM watsonx.governance via `WatsonxGovernanceAdapter`, producing a tamper-evident audit trail for model risk management frameworks.
+
+- **Override Workflow with Full Approval Chain:** Override requests carry a structured approval workflow (submit → approve / reject) with every state transition persisted and auditable through the Governance Audit Console.
+
+- **Full-File Patch Download:** On finding resolution, the dashboard reconstructs the complete corrected source file (`diff_old → diff_new` substitution) and triggers a browser download, eliminating manual apply steps.
+
+- **OpenAPI 3.1.0 Export:** The full machine-readable API specification is available at `sentinel_spec_openapi.json` and rendered in-app at `/export`, enabling direct import into watsonx Orchestrate as a reusable Agent-as-Code skill.
 
 ---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            IBM Bob IDE / Browser                             │
-└────────────────────────────────────┬─────────────────────────────────────────┘
-                                     │
-                    ┌────────────────▼────────────────┐
-                    │   Next.js Frontend  :3000        │
-                    │   (React 19, Zustand, Tailwind)  │
-                    │                                  │
-                    │  Edge Middleware (proxy.ts)       │
-                    │  → cookie-guard on /agent /audit │
-                    └──────────┬──────────────┬────────┘
-                               │              │
-              ┌────────────────▼──┐    ┌──────▼──────────────────────┐
-              │  Auth API  :4000  │    │  Compliance Engine  :8080   │
-              │  Express + Prisma │    │  FastAPI + Uvicorn           │
-              │  PostgreSQL (JWT) │    │                              │
-              │  Google OAuth 2.0 │    │  POST /evaluate              │
-              └───────────────────┘    │  POST /evaluate/stream (SSE) │
-                                       │  GET  /compliance/matrix     │
-                                       │  GET  /analytics/summary     │
-                                       │  GET  /health                │
-                                       │                              │
-                                       │  ┌──────────────────────┐   │
-                                       │  │  AIEnginePort (ABC)   │   │
-                                       │  └────────┬─────────┬───┘   │
-                                       │           │         │        │
-                                       │    ┌──────▼──┐  ┌───▼─────┐ │
-                                       │    │IBM      │  │Local    │ │
-                                       │    │Adapter  │  │Adapter  │ │
-                                       │    │Granite  │  │(regex)  │ │
-                                       │    │+ COS    │  │MOCK_MODE│ │
-                                       │    └─────────┘  └─────────┘ │
-                                       └──────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│               Trigger Surface  (choose any or all)                        │
+│                                                                           │
+│   ┌─────────────────┐   ┌──────────────────┐   ┌───────────────────────┐ │
+│   │  Web Dashboard  │   │  CLI  (main.py)  │   │  MCP Server / IDE     │ │
+│   │  (Next.js :3000)│   │  Direct engine   │   │  (any MCP-compatible  │ │
+│   │                 │   │  invocation      │   │  IDE or AI assistant) │ │
+│   └────────┬────────┘   └────────┬─────────┘   └──────────┬────────────┘ │
+└────────────┼─────────────────────┼────────────────────────┼──────────────┘
+             │                     │                         │
+             ▼                     │                         │
+  ┌──────────────────────┐         │                         │
+  │  Next.js Frontend    │         │                         │
+  │  (React 19, Zustand) │         │                         │
+  │  Edge Middleware     │         │                         │
+  │  → cookie-guard on   │         │                         │
+  │    /agent /audit     │         │                         │
+  └──────────┬───────────┘         │                         │
+             │                     │                         │
+     ┌───────▼───────┐             └──────────┬──────────────┘
+     │  Auth API     │                        │
+     │  :4000        │             ┌──────────▼──────────────────────────┐
+     │  Express +    │             │       Compliance Engine  :8080       │
+     │  Prisma       │             │       FastAPI + Uvicorn              │
+     │  PostgreSQL   │             │                                      │
+     │  JWT + Google │             │  POST /evaluate          (sync)      │
+     │  OAuth 2.0    │             │  POST /evaluate/stream   (SSE)       │
+     └───────────────┘             │  POST /override                      │
+                                   │  GET  /compliance/matrix             │
+                                   │  GET  /analytics/summary             │
+                                   │  GET  /health                        │
+                                   │                                      │
+                                   │  ┌──────────────────────────────┐   │
+                                   │  │       AIEnginePort (ABC)      │   │
+                                   │  └──────────┬──────────┬─────────┘  │
+                                   │             │          │             │
+                                   │      ┌──────▼──┐  ┌────▼──────┐    │
+                                   │      │IBM      │  │Local      │    │
+                                   │      │Adapter  │  │Adapter    │    │
+                                   │      │Granite  │  │(regex)    │    │
+                                   │      │+ Gov.   │  │MOCK_MODE  │    │
+                                   │      └─────────┘  └───────────┘    │
+                                   └─────────────────────────────────────┘
 ```
 
 **Request flow:**
-1. Bob IDE / browser submits a code snippet or file diff
-2. Next.js edge middleware validates the `sentinel-auth` session cookie
-3. Frontend calls `POST /evaluate` (or `/evaluate/stream` for live thinking)
-4. Compliance engine routes to `IBMAIEngine` or `LocalAIEngine` based on `MOCK_MODE`
-5. Agent 1 classifies; Agent 2 critiques; findings are tier-routed and returned
-6. Execution record is persisted to IBM Cloud Object Storage (when COS creds are set)
-7. Frontend persists findings to the auth service's PostgreSQL ledger via `/v1/findings/bulk`
+1. A trigger surface (Web Dashboard, CLI, MCP server, or IDE bridge) submits a code snippet or file diff
+2. Next.js edge middleware validates the `sentinel-auth` session cookie (dashboard path only)
+3. The engine receives `POST /evaluate` (sync) or `POST /evaluate/stream` (SSE with live thinking)
+4. The compliance engine routes to `IBMAIEngine` or `LocalAIEngine` based on `MOCK_MODE`
+5. Agent 1 (Sentinel Classifier) classifies; Agent 2 (Adversarial Critic) verifies; findings are tier-routed and returned
+6. `WatsonxGovernanceAdapter` asynchronously logs the evaluation event to IBM watsonx.governance
+7. The frontend or calling client persists findings to the auth service PostgreSQL ledger via `/v1/findings/bulk`
 
 ---
 
-## Technology Stack
+## IDE-Agnostic Integration
 
-### Compliance Engine (Python)
+Sentinel Spec exposes its compliance engine as an **MCP (Model Context Protocol) server**, making it natively callable from any MCP-compatible IDE or AI coding assistant.
 
-| Technology | Version | Purpose |
+### Supported Integration Surfaces
+
+| Surface | Mechanism | Notes |
 |---|---|---|
-| Python | 3.13 | Runtime |
-| FastAPI | 0.115.6 | REST API framework + SSE streaming |
-| Uvicorn | 0.32.1 | ASGI server (2 workers, port 8080) |
-| ibm-watsonx-ai | 1.5.14 | IBM Granite model inference SDK |
-| ibm-cos-sdk | 2.13.6 | IBM Cloud Object Storage — execution record persistence |
-| Pydantic | 2.10.4 | Request/response schema validation |
-| httpx | 0.28.1 | Async HTTP client |
+| **Cursor** | MCP Server (`.cursor/mcp.json`) | Register the engine URL as an MCP tool |
+| **VS Code + GitHub Copilot** | MCP Server (`.vscode/mcp.json`) | Requires Copilot with MCP support |
+| **Windsurf** | MCP Server config | Point to `http://localhost:8080` |
+| **JetBrains AI** | MCP Server config | Configure in IDE AI settings |
+| **Claude Desktop** | MCP Server (`claude_desktop_config.json`) | Full tool call support |
+| **watsonx Orchestrate** | OpenAPI skill import | Import `sentinel_spec_openapi.json` as Agent-as-Code skill |
+| **Web Dashboard** | Next.js frontend `:3000` | Full governance UI with audit console |
+| **CLI** | `python main.py` / `python bob_bridge.py` | Direct engine invocation, JSON output |
+| **CI/CD Gate** | `curl POST /evaluate` | Hard-blocking gate before PR creation |
 
-### Auth Service (Node.js)
+### MCP Server Registration
 
-| Technology | Version | Purpose |
-|---|---|---|
-| Node.js | 20.x | Runtime |
-| Express | 4.21.x | HTTP server |
-| Prisma | 6.2.x | PostgreSQL ORM + migrations |
-| jsonwebtoken | 9.0.x | JWT access + refresh token issuance |
-| passport-google-oauth20 | 2.0.x | Google OAuth 2.0 strategy |
-| bcryptjs | 2.4.x | Password hashing |
-| Zod | 4.4.x | Request body validation |
-| helmet + express-rate-limit | latest | Security hardening |
+Add this block to your IDE MCP config file (e.g., `.cursor/mcp.json`, `.vscode/mcp.json`, or `claude_desktop_config.json`):
 
-### Frontend (Next.js)
-
-| Technology | Version | Purpose |
-|---|---|---|
-| Next.js | 16.2.10 | App Router, SSR, edge middleware |
-| React | 19.2.4 | UI component model |
-| TypeScript | 5.x | Static typing |
-| Tailwind CSS | 4.x | Utility-first glassmorphic styling |
-| Zustand | 5.0.14 | Persistent client state management |
-| Framer Motion | 12.x | Animations, streaming cursor, transitions |
-| Recharts | 3.x | Trend charts, domain bar charts |
-| Axios | 1.18.x | HTTP client with auth interceptors |
-| Zod | 4.x | Form schema validation |
-
----
-
-## Project Structure
-
-```
-sentinel-spec/
-│
-├── app.py                        # FastAPI compliance engine entrypoint
-├── main.py                       # CLI entrypoint (direct engine invocation)
-├── bob_bridge.py                 # IBM Bob IDE execution bridge (stdout JSON)
-├── requirements.txt              # Python production dependencies (pinned)
-├── Dockerfile                    # Multi-stage Python 3.13-slim image (port 8080)
-├── .dockerignore
-├── SEC-POLICY-credential-handling.md  # Accepted security ADR (SEC-001, SEC-013, TLS-001)
-├── sentinel_spec_openapi.json    # OpenAPI 3.1.0 spec (served by /export page)
-│
-├── domain/                       # Zero-dependency domain layer
-│   ├── models.py                 # Frozen dataclasses: CodeSnippet, ComplianceReport,
-│   │                             #   ComplianceViolation, ClassificationResult,
-│   │                             #   CriticVerdict, AgentThinkingStep, ExecutionRecord
-│   └── __init__.py
-│
-├── ports/                        # Abstract interface layer
-│   ├── ai_engine_port.py         # AIEnginePort ABC — evaluate_code / evaluate_code_stream
-│   └── __init__.py
-│
-├── adapters/                     # Concrete port implementations
-│   ├── ibm.py                    # IBMAIEngine — Granite dual-agent + COS persistence
-│   ├── local.py                  # LocalAIEngine — regex engine, MOCK_MODE fallback
-│   └── __init__.py
-│
-├── backend/                      # Auth & data service (Node.js / Express)
-│   ├── src/
-│   │   ├── app.ts                # Express server bootstrap
-│   │   ├── config/               # env, CORS, database, Passport config
-│   │   ├── controllers/          # auth, findings, analytics, user controllers
-│   │   ├── middleware/           # authenticate, validate, errorHandler
-│   │   ├── routes/               # auth, findings, analytics, user route handlers
-│   │   ├── services/             # auth, OAuth, token services
-│   │   ├── types/                # Shared TypeScript types
-│   │   └── utils/                # cookies, errors, snakecase helpers
-│   ├── prisma/                   # Prisma schema + migrations
-│   ├── package.json
-│   └── .env.example
-│
-├── frontend/                     # Next.js dashboard (React 19)
-│   ├── app/
-│   │   ├── page.tsx              # Landing page (public)
-│   │   ├── layout.tsx            # Root layout — theme init, AuthSyncProvider
-│   │   ├── agent/page.tsx        # Primary analysis workspace (protected)
-│   │   ├── audit/page.tsx        # Governance audit console (protected)
-│   │   ├── analytics/page.tsx    # KPI dashboards and trend charts (protected)
-│   │   ├── export/page.tsx       # OpenAPI spec viewer and download
-│   │   ├── docs/page.tsx         # Architecture blueprint
-│   │   ├── how-it-works/         # Pipeline explainer
-│   │   └── ibm-integration/      # IBM watsonx services detail
-│   ├── components/
-│   │   ├── AnalysisFeed.tsx      # Streaming chat-style message thread
-│   │   ├── HistoryPanel.tsx      # Session history with metric chip strip
-│   │   ├── ViolationCard.tsx     # Finding card with diff + patch download
-│   │   ├── layout/               # AppShell, TopBar, Sidebar, LoginModal, ThinkingDrawer
-│   │   └── shared/               # CodeBlock, ConfidenceBar, StatusBadge, StatsRow, Leaderboard
-│   ├── lib/
-│   │   ├── api.ts                # Axios singleton with Bearer token interceptors
-│   │   ├── types.ts              # Canonical TypeScript domain interfaces
-│   │   └── store/                # Zustand stores: auth, session, findings, theme
-│   ├── proxy.ts                  # Next.js edge middleware — route protection
-│   └── package.json
-│
-├── Documentation/                # Extended design and architecture documents
-├── Testing-example-files/        # Example source files for manual engine testing
-└── deploy/                       # Deployment manifests (IBM Code Engine, etc.)
+```json
+{
+  "mcpServers": {
+    "sentinel-spec": {
+      "url": "http://localhost:8080",
+      "description": "Sentinel Spec — Universal Architecture Compliance Engine"
+    }
+  }
+}
 ```
 
+Once registered, invoke compliance checks directly from your IDE AI assistant chat or command palette.
+
 ---
 
-## Getting Started
+## Installation
 
 ### Prerequisites
 
@@ -213,7 +153,7 @@ sentinel-spec/
 | Node.js | 20.x | Auth service + frontend |
 | npm | 10.x | Package management |
 | PostgreSQL | 15.x | Auth service database |
-| IBM Cloud account | — | Required for `MOCK_MODE=false` only |
+| IBM Cloud account | — | Required only when `MOCK_MODE=false` |
 
 ---
 
@@ -243,7 +183,7 @@ MOCK_MODE=false uvicorn app:app --host 0.0.0.0 --port 8080 --reload
 
 ```bash
 curl http://localhost:8080/health
-# {"status":"ok"}
+# {"status":"ok","engine":"LocalAIEngine","model":"local","mock_mode":true}
 
 curl -X POST http://localhost:8080/evaluate \
   -H "Content-Type: application/json" \
@@ -264,11 +204,12 @@ python main.py
 #   Suggested fix: Remove the hard-coded credential and inject it at runtime via IBM Secrets Manager.
 ```
 
-**Bob IDE bridge:**
+**IDE bridge (stdout JSON, auto-fallback to local engine):**
 
 ```bash
 python bob_bridge.py path/to/target_file.py
-# Outputs a JSON array of Bob-structured diagnostic findings to stdout
+# Outputs a JSON array of structured diagnostic findings to stdout.
+# Automatically falls back to LocalAIEngine if IBM credentials are unavailable.
 ```
 
 ---
@@ -278,19 +219,15 @@ python bob_bridge.py path/to/target_file.py
 ```bash
 cd backend
 
-# Install dependencies
 npm install
 
-# Copy and edit environment variables
 cp .env.example .env
 # Edit .env — set DATABASE_URL, JWT secrets, Google OAuth credentials
 
-# Initialise the database
 npm run db:generate   # generate Prisma client
 npm run db:push       # push schema to PostgreSQL (dev)
 # npm run db:migrate  # use migrations in production
 
-# Start the development server
 npm run dev
 # Auth API available at http://localhost:4000
 ```
@@ -302,15 +239,118 @@ npm run dev
 ```bash
 cd frontend
 
-# Install dependencies
 npm install
 
-# Configure environment
 echo "NEXT_PUBLIC_AUTH_API_URL=http://localhost:4000/api" > .env.local
 
-# Start the development server
 npm run dev
 # Dashboard available at http://localhost:3000
+```
+
+---
+
+## Technology Stack
+
+### Compliance Engine (Python)
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Python | 3.13 | Runtime |
+| FastAPI | 0.115.x | REST API framework + SSE streaming |
+| Uvicorn | 0.32.x | ASGI server (2 workers, port 8080) |
+| ibm-watsonx-ai | 1.5.x | IBM Granite model inference + governance SDK |
+| ibm-cos-sdk | 2.13.x | IBM Cloud Object Storage — execution record persistence |
+| Pydantic | 2.10.x | Request/response schema validation |
+| httpx | 0.28.x | Async HTTP client |
+
+### Auth Service (Node.js)
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Node.js | 20.x | Runtime |
+| Express | 4.21.x | HTTP server |
+| Prisma | 6.2.x | PostgreSQL ORM + migrations |
+| jsonwebtoken | 9.0.x | JWT access + refresh token issuance |
+| passport-google-oauth20 | 2.0.x | Google OAuth 2.0 strategy |
+| bcryptjs | 2.4.x | Password hashing |
+| Zod | 4.x | Request body validation |
+| helmet + express-rate-limit | latest | Security hardening |
+
+### Frontend (Next.js)
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Next.js | 15.x | App Router, SSR, edge middleware |
+| React | 19.x | UI component model |
+| TypeScript | 5.x | Static typing |
+| Tailwind CSS | 4.x | Utility-first glassmorphic styling |
+| Zustand | 5.x | Persistent client state management |
+| Framer Motion | 12.x | Animations, streaming cursor, transitions |
+| Recharts | 3.x | Trend charts, domain bar charts |
+| Axios | 1.x | HTTP client with auth interceptors |
+
+---
+
+## Project Structure
+
+```
+sentinel-spec/
+│
+├── app.py                        # FastAPI compliance engine (v2.0.0)
+├── main.py                       # CLI entrypoint (direct engine invocation)
+├── bob_bridge.py                 # IDE execution bridge (stdout JSON, auto-fallback)
+├── requirements.txt              # Python production dependencies (pinned)
+├── Dockerfile                    # Multi-stage Python 3.13-slim image (port 8080)
+├── sentinel_spec_openapi.json    # OpenAPI 3.1.0 spec (served at /export; importable as watsonx skill)
+│
+├── domain/                       # Zero-dependency domain layer
+│   └── models.py                 # Frozen dataclasses: CodeSnippet, ComplianceReport,
+│                                 #   ComplianceViolation, ClassificationResult,
+│                                 #   CriticVerdict, AgentThinkingStep, ExecutionRecord
+│
+├── ports/                        # Abstract interface layer
+│   ├── ai_engine_port.py         # AIEnginePort ABC — evaluate_code / evaluate_code_stream
+│   └── governance_port.py        # GovernancePort ABC — log_evaluation_event / log_human_override
+│
+├── adapters/                     # Concrete port implementations
+│   ├── ibm.py                    # IBMAIEngine — Granite dual-agent + COS persistence
+│   ├── local.py                  # LocalAIEngine — regex engine, MOCK_MODE fallback
+│   └── watsonx_governance_adapter.py  # WatsonxGovernanceAdapter — lineage tracking via ibm-watsonx-ai SDK
+│
+├── backend/                      # Auth & data service (Node.js / Express)
+│   ├── src/
+│   │   ├── app.ts                # Express server bootstrap
+│   │   ├── config/               # env, CORS, database, Passport config
+│   │   ├── controllers/          # auth, findings, analytics, user controllers
+│   │   ├── middleware/           # authenticate, validate, errorHandler
+│   │   ├── routes/               # auth, findings, analytics, user route handlers
+│   │   ├── services/             # auth, OAuth, token services
+│   │   └── types/                # Shared TypeScript types
+│   ├── prisma/                   # Prisma schema + migrations
+│   └── package.json
+│
+├── frontend/                     # Next.js dashboard (React 19)
+│   ├── app/
+│   │   ├── page.tsx              # Landing page (public)
+│   │   ├── agent/page.tsx        # Primary analysis workspace (protected)
+│   │   ├── audit/page.tsx        # Governance audit console (protected)
+│   │   ├── analytics/page.tsx    # KPI dashboards and trend charts (protected)
+│   │   ├── export/page.tsx       # OpenAPI spec viewer and download
+│   │   ├── docs/page.tsx         # Architecture blueprint
+│   │   └── how-it-works/         # Pipeline explainer
+│   ├── components/
+│   │   ├── AnalysisFeed.tsx      # Streaming chat-style message thread
+│   │   ├── ViolationCard.tsx     # Finding card with diff + patch download
+│   │   └── layout/               # AppShell, TopBar, Sidebar, ThinkingDrawer
+│   ├── lib/
+│   │   ├── api.ts                # Axios singleton with Bearer token interceptors
+│   │   ├── types.ts              # Canonical TypeScript domain interfaces
+│   │   └── store/                # Zustand stores: auth, session, findings, theme
+│   └── proxy.ts                  # Next.js edge middleware — route protection
+│
+├── Documentation/                # Extended design and architecture documents
+├── Testing-example-files/        # Example source files for manual engine testing
+└── deploy/                       # Deployment manifests (IBM Code Engine, etc.)
 ```
 
 ---
@@ -326,6 +366,8 @@ npm run dev
 | `WATSONX_URL` | watsonx.ai service URL | Only if `MOCK_MODE=false` | `https://us-south.ml.cloud.ibm.com` |
 | `WATSONX_PROJECT_ID` | watsonx.ai project GUID | Only if `MOCK_MODE=false` | `a1b2c3d4-...` |
 | `WATSONX_MODEL_ID` | Granite model ID | N | `ibm/granite-4-h-small` |
+| `WATSONX_GOV_USE_CASE_ID` | watsonx.governance use case ID | N | `019f5c23-...` |
+| `WATSONX_INVENTORY_ID` | watsonx.governance model inventory ID | N | `019f5c00-...` |
 | `COS_API_KEY` | IBM COS API key for execution record persistence | N | `abc123...` |
 | `COS_INSTANCE_CRN` | IBM COS service instance CRN | N | `crn:v1:bluemix:...` |
 | `COS_ENDPOINT` | IBM COS regional endpoint | N | `https://s3.us-south.cloud-object-storage.appdomain.cloud` |
@@ -336,7 +378,6 @@ npm run dev
 | Variable | Description | Required | Example |
 |---|---|---|---|
 | `PORT` | Server port | N | `4000` |
-| `NODE_ENV` | Runtime environment | N | `development` |
 | `DATABASE_URL` | PostgreSQL connection string | **Y** | `postgresql://user:pass@localhost:5432/sentinel` |
 | `JWT_ACCESS_SECRET` | 64-char secret for access token signing | **Y** | `change-me-...` |
 | `JWT_REFRESH_SECRET` | 64-char secret for refresh token signing | **Y** | `change-me-...` |
@@ -363,10 +404,10 @@ The `Dockerfile` builds a two-stage Python 3.13-slim image targeting IBM Code En
 # Build
 docker build -t sentinel-spec-engine .
 
-# Run in MOCK_MODE
+# Run in MOCK_MODE (no credentials required)
 docker run -p 8080:8080 -e MOCK_MODE=true sentinel-spec-engine
 
-# Run with IBM credentials
+# Run with IBM Granite (production)
 docker run -p 8080:8080 \
   -e MOCK_MODE=false \
   -e WATSONX_API_KEY=your_key \
@@ -379,19 +420,27 @@ docker run -p 8080:8080 \
 
 ## API Reference
 
+### Compliance Engine (`:8080`)
+
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/evaluate` | Synchronous compliance check — returns `ComplianceReport` |
+| `POST` | `/evaluate` | Synchronous compliance check — single-file or multi-file payload, returns `ComplianceReport` |
 | `POST` | `/evaluate/stream` | SSE streaming — yields `AgentThinkingStep` events then final report |
+| `POST` | `/override` | Log a human override or policy rejection to watsonx.governance |
 | `GET` | `/compliance/matrix` | Returns all 22 rules with domain, severity, and rule ID |
-| `GET` | `/analytics/summary` | Aggregated analytics (violation counts, trends) |
-| `GET` | `/health` | Liveness probe — `{"status": "ok"}` |
+| `GET` | `/analytics/summary` | Aggregated analytics (violation counts, trends, agent latency) |
+| `GET` | `/health` | Liveness probe — `{"status": "ok", "engine": "...", "mock_mode": bool}` |
+
+### Auth Service (`:4000`)
+
+| Method | Path | Description |
+|---|---|---|
 | `POST` | `/api/auth/login` | Authenticate with email + password → JWT |
 | `POST` | `/api/auth/register` | Register new user account |
 | `POST` | `/api/auth/logout` | Invalidate session |
 | `GET` | `/api/auth/google` | Initiate Google OAuth 2.0 flow |
 | `GET` | `/api/user/me` | Fetch authenticated user profile |
-| `GET` | `/api/findings` | List governance findings (filterable) |
+| `GET` | `/api/findings` | List governance findings (filterable by domain, tier, severity, date) |
 | `POST` | `/api/findings/bulk` | Persist a batch of findings from an analysis run |
 | `PATCH` | `/api/findings/:id/resolve` | Mark a finding as resolved |
 | `GET` | `/api/analytics/summary` | KPI summary for the dashboard |
@@ -424,5 +473,3 @@ The full OpenAPI 3.1.0 specification is available at `sentinel_spec_openapi.json
 ## License
 
 This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for the full text.
-
-
