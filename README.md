@@ -271,7 +271,7 @@ npm run dev
 | Express | 4.21.x | HTTP server |
 | Prisma | 6.2.x | PostgreSQL ORM + migrations |
 | jsonwebtoken | 9.0.x | JWT access + refresh token issuance |
-| passport-google-oauth20 | 2.0.x | Google OAuth 2.0 strategy |
+| passport-google-oauth2 | 2.0.x | Google OAuth 2.0 strategy |
 | bcryptjs | 2.4.x | Password hashing |
 | Zod | 4.x | Request body validation |
 | helmet + express-rate-limit | latest | Security hardening |
