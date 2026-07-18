@@ -32,142 +32,154 @@ interface Capability {
 
 const CAPABILITIES: Capability[] = [
   {
-    id: 'rag',
+    id: 'matrix',
     icon: '⬡',
-    title: 'RAG Policy Retrieval',
-    summary: 'Milvus-lite vector store, cosine similarity, top-k=6 chunks retrieved per analysis.',
+    title: '22-Rule Compliance Matrix',
+    summary: 'SEC, ARCH, PII, and QUAL domains. Every rule has severity, FindingTier, and a remediation suggestion.',
     prose:
-      'At analysis time the policy retriever embeds the incoming code diff using the same encoder used at ingestion time. A cosine-similarity ANN query runs against the Milvus-lite collection scoped to the requesting tenant. The top-k=6 chunks are returned with their source ADR identifiers and scores. These chunks form the grounding context injected into every downstream Granite prompt, ensuring classifications always cite specific policy text rather than hallucinating rules.',
+      'The compliance matrix is the static rule set that both the IBMAIEngine and the LocalAIEngine evaluate code against. It spans four domains: SEC (secrets management, injection vectors, transport), ARCH (hexagonal domain leakage, direct DB calls from domain, architecture decisions), PII (data residency, PII logged in plaintext), and QUAL (unsafe deserialization, API contract violations). Each rule carries a rule_id, domain, name, severity (CRITICAL → INFO), a FindingTier routing decision (blocking → logged_only), and a human-readable remediation suggestion. The full matrix is served at GET /compliance/matrix.',
     schema:
-      `// PolicyChunk schema
+      `// Example rule from COMPLIANCE_MATRIX
 {
-  "chunk_id": "adr-42-para-3",
-  "team_scope": "payments",
-  "embedding": [0.014, -0.223, ...],  // 1024-dim
-  "text": "All payment handlers MUST ...",
-  "source_adr": "ADR-0042",
-  "version": "2026-01-15"
-}`,
+  "rule_id": "SEC-001",
+  "domain": "SEC",
+  "name": "Hard-coded credential",
+  "severity": "CRITICAL",
+  "tier": "blocking",
+  "remediation": "Remove the hard-coded credential and inject it at runtime via IBM Secrets Manager."
+}
+
+// GET /compliance/matrix → returns all 22 rules`,
   },
   {
-    id: 'granite',
+    id: 'classifier',
     icon: '⬡',
-    title: 'Violation Classification (Granite)',
-    summary: 'Granite 4 Haiku Small via watsonx.ai, structured JSON output, confidence scoring.',
+    title: 'Sentinel Classifier (Agent 1)',
+    summary: 'IBMAIEngine uses ibm/granite-4-h-small via watsonx.ai SDK. LocalAIEngine uses pure-Python regex in MOCK_MODE.',
     prose:
-      'The classification agent sends the retrieved policy chunks plus the diff to Granite 4 Haiku Small running inside the caller\'s IBM Cloud tenancy via the watsonx.ai inference endpoint. The prompt template enforces structured JSON output using a response_format schema. Each finding carries a rule_id (mapped to the source ADR), a severity (blocking / warning / logged_only), a confidence float in [0.0, 1.0], a plain-language rationale, and a remediation suggestion. Temperature is set to 0 for deterministic output.',
+      'Agent 1 (Sentinel Classifier) evaluates the submitted code snippet or file diff against the 22-rule compliance matrix. In production, IBMAIEngine calls ibm/granite-4-h-small via the watsonx.ai inference SDK with a structured prompt that enforces JSON output. Each ClassificationResult carries a rule_id, severity, confidence float in [0.0, 1.0], line_number, rationale, cited_chunk_ids, and a suggested_fix. In MOCK_MODE the LocalAIEngine satisfies the same AIEnginePort ABC with a pure-Python regex engine — no SDK or cloud dependency required.',
     schema:
-      `// Classification response (Granite 4 Haiku Small structured output)
-{
-  "findings": [
-    {
-      "rule_id": "ADR-0042",
-      "severity": "blocking",
-      "confidence": 0.94,
-      "rationale": "Direct Stripe SDK call bypasses...",
-      "remediation": "Use PaymentGatewayPort instead of..."
-    }
-  ],
-  "model": "granite-4-h-small",
-  "latency_ms": 312
-}`,
+      `// ClassificationResult (domain/models.py)
+@dataclass(frozen=True)
+class ClassificationResult:
+    violates_policy: bool
+    confidence: float          # [0.0, 1.0]
+    rationale: str
+    cited_chunk_ids: list[str]
+    rule_id: str
+    severity: str
+    line_number: int
+    suggested_fix: str
+
+// AIEnginePort ABC (ports/ai_engine_port.py)
+class AIEnginePort(ABC):
+    def evaluate_code(self, snippet, filename) -> ComplianceReport: ...
+    async def evaluate_code_stream(self, snippet, filename) -> AsyncGenerator[AgentThinkingStep]: ...`,
   },
   {
     id: 'critic',
     icon: '⬡',
-    title: 'Adversarial Compliance Critic',
-    summary: 'Second Granite 4 Haiku Small pass, validates classification, reduces false positives by 60%.',
+    title: 'Adversarial Critic (Agent 2)',
+    summary: 'Second Granite pass validates every classification. Eliminates false positives before findings are emitted.',
     prose:
-      'After the primary classification the critic agent runs a second Granite 4 Haiku Small inference with an adversarial prompt: it is explicitly instructed to find reasons the primary classification might be wrong. If the critic disagrees with a finding\'s severity the confidence is down-weighted and the discrepancy is logged. Empirically this two-pass pattern reduces false positives by ~60% compared to single-pass classification. The critic output is merged into the final finding list before routing.',
+      'After the primary classification, Agent 2 (Adversarial Critic) runs a second Granite inference with an adversarial prompt explicitly instructed to find reasons the primary classification might be wrong. If the critic disagrees with a finding the confidence is down-weighted and the discrepancy is recorded. A CriticVerdict carries entailed (bool), reasoning (str), and adjusted_confidence (float). Only findings that survive both passes are emitted as ComplianceViolations in the final ComplianceReport.',
     schema:
-      `// Critic prompt pattern (IBM Plex Mono)
+      `// CriticVerdict (domain/models.py)
+@dataclass(frozen=True)
+class CriticVerdict:
+    entailed: bool
+    reasoning: str
+    adjusted_confidence: float
+
+// Critic adversarial prompt pattern
 SYSTEM: You are an adversarial compliance critic.
         Find reasons the following findings are WRONG.
-
-INPUT:
-  findings: {{ primary_findings | json }}
-  diff:     {{ diff_text }}
-  policy:   {{ policy_chunks }}
-
-OUTPUT FORMAT: { "overrides": [...], "rationale": "..." }`,
+INPUT:  findings, diff_text, rule_context
+OUTPUT: { "entailed": bool, "reasoning": "...", "adjusted_confidence": 0.0–1.0 }`,
   },
   {
     id: 'routing',
     icon: '⬡',
-    title: 'Confidence Banding & Routing',
-    summary: 'blocking ≥85%, warning 50-84%, logged_only <50% — maps to CI enforcement.',
+    title: 'FindingTier Routing & Confidence Banding',
+    summary: 'blocking ≥85%, warning 50–84%, logged_only <50% — drives CI enforcement and governance logging.',
     prose:
-      'Post-critique confidence scores drive the routing decision that determines pipeline behaviour. A finding with confidence ≥ 0.85 is promoted to BLOCKING, which causes the CI gate to fail and returns exit code 1 to the pipeline runner. Scores in [0.50, 0.85) become WARNINGS: they appear in the IBM Bob inline panel and are written to the governance lineage store but do not block the build. Scores below 0.50 are downgraded to LOGGED_ONLY — silently recorded for trend analysis without surfacing noise to the developer.',
+      'Post-critique confidence scores drive the FindingTier routing decision that determines pipeline behaviour. A finding with confidence ≥ 0.85 is promoted to BLOCKING — the CI gate returns exit code 1 and the PR cannot merge. Scores in [0.50, 0.85) become WARNING — logged to watsonx.governance without blocking the build. Scores below 0.50 are downgraded to LOGGED_ONLY — silently recorded for trend analysis. The /compliance/matrix endpoint exposes the per-rule default tier; the engine may promote or demote tier based on adjusted_confidence from the critic.',
     schema:
-      `// Routing table
-confidence >= 0.85  → severity: "blocking"  → CI exit 1
-confidence 0.50-0.84 → severity: "warning"  → logged, no block
-confidence < 0.50   → severity: "logged_only" → silent record
+      `// FindingTier enum (domain/models.py)
+class FindingTier(str, Enum):
+    BLOCKING    = "blocking"     # CI exit 1 · PR cannot merge
+    WARNING     = "warning"      # logged, no block
+    LOGGED_ONLY = "logged_only" # silent record
+    REJECTED    = "rejected"    # critic overrode finding
 
-// CI integration (GitHub Actions / Tekton)
-- exit_code: 1   → step fails, PR cannot merge
-- exit_code: 0   → step passes, warnings in annotations`,
+// Confidence banding
+confidence >= 0.85  → BLOCKING  → exit_code: 1
+confidence 0.50-0.84 → WARNING  → logged, no block
+confidence < 0.50   → LOGGED_ONLY → silent`,
   },
   {
-    id: 'lineage',
+    id: 'streaming',
+    icon: '⬡',
+    title: 'SSE Streaming & Multi-File Evaluation',
+    summary: 'POST /evaluate/stream yields AgentThinkingStep events. POST /evaluate accepts single-file or multi-file payloads.',
+    prose:
+      'The /evaluate/stream endpoint is a Server-Sent Events (SSE) endpoint that yields one AgentThinkingStep JSON object per phase of the dual-agent DAG — classifier, critic, router, system — so the Web Dashboard ThinkingDrawer or any MCP-connected IDE panel can animate the analysis in real time. The final event (phase == "complete") carries the full ComplianceReport in its payload field. Both /evaluate and /evaluate/stream accept single-file {content, file_path, language} and multi-file {files: [{filename, content, language}]} payloads. A mode="qa" field enables conversational query without running the engine.',
+    schema:
+      `// AgentThinkingStep (domain/models.py)
+@dataclass(frozen=True)
+class AgentThinkingStep:
+    agent: str   # "classifier" | "critic" | "router" | "system"
+    phase: str   # human-readable phase label
+    detail: str  # prose content
+    payload: dict[str, Any]
+
+// SSE stream event format
+data: {"agent": "classifier", "phase": "evaluating", "detail": "...", "payload": {}}
+data: {"agent": "critic",     "phase": "validating", "detail": "...", "payload": {}}
+data: {"agent": "system",     "phase": "complete",   "detail": "...", "payload": {ComplianceReport}}`,
+  },
+  {
+    id: 'governance',
     icon: '⬡',
     title: 'Immutable Governance Lineage',
-    summary: 'watsonx.governance lineage records, append-only, approver-attributed overrides.',
+    summary: 'WatsonxGovernanceAdapter logs every evaluation and override to watsonx.governance as an append-only lineage record.',
     prose:
-      'Every finding, suppression, and human override is written as an append-only record to watsonx.governance. Records include the finding content, the Granite 4 Haiku Small model version, the policy chunk IDs used, a timestamp, and the identity of any human who approved an exception. Records are cryptographically signed and cannot be edited — only new records can supersede previous ones. This produces an auditor-ready decision trail that satisfies SOC 2, ISO 27001, and financial-services regulatory requirements without any additional tooling.',
+      'Every evaluation event and human override is asynchronously forwarded to IBM watsonx.governance via the WatsonxGovernanceAdapter (adapters/watsonx_governance_adapter.py), which satisfies the GovernancePort ABC. Records include the finding content, model version, rule IDs matched, timestamp, and the identity of any human who approved an exception via POST /override. Lineage records cannot be edited — only new records can supersede previous ones. This produces an auditor-ready decision trail satisfying SOC 2, ISO 27001, and financial-services regulatory requirements. In MOCK_MODE the governance adapter is a no-op.',
     schema:
-      `// LineageRecord (watsonx.governance schema)
-{
-  "record_id": "lr-uuid-v4",
-  "type": "finding" | "override" | "suppression",
-  "finding_id": "f-abc123",
-  "actor": "system" | "user@company.com",
-  "approved_by": null | "manager@company.com",
-  "timestamp": "2026-01-15T14:22:33Z",
-  "immutable": true,
-  "signature": "sha256:..."
-}`,
-  },
-  {
-    id: 'multitenancy',
-    icon: '⬡',
-    title: 'Multi-tenant Policy Isolation',
-    summary: 'team_scope field on PolicyChunk, per-tenant vector partitioning.',
-    prose:
-      'Every PolicyChunk carries a team_scope string that is enforced at both ingestion and query time. Vector partitioning in Milvus ensures a query from the payments team never reaches the data-platform team\'s policy corpus. Tenants ingest their own ADRs through the policy management API; the ingestion pipeline validates the calling identity against IBM Cloud IAM before writing. Platform-wide rules (e.g. global security baseline) are written into a shared partition that is always merged into every tenant\'s retrieval context.',
-    schema:
-      `// Ingestion call (policy management API)
-POST /api/policies/ingest
-Authorization: Bearer <IAM token>
+      `// GovernancePort ABC (ports/governance_port.py)
+class GovernancePort(ABC):
+    async def log_evaluation_event(asset_id, findings, metadata) -> None: ...
+    async def log_human_override(finding_id, justification, user) -> bool: ...
 
+// POST /override — log a human override to watsonx.governance
 {
-  "source_adr": "ADR-0101",
-  "team_scope": "payments",    // ← tenant isolation key
-  "chunks": [
-    { "text": "...", "paragraph": 1 },
-    ...
-  ]
+  "finding_id": "f-abc123",
+  "justification": "Accepted risk — legacy system, tracked in ADR-0077",
+  "user": "developer@company.com"
 }`,
   },
 ]
 
-// ── IBM Services table data ───────────────────────────────────────────────────
+// ── Integration & Services table data ────────────────────────────────────────
 const IBM_SERVICES = [
-  { component: 'LLM', service: 'IBM Granite 4 Haiku Small via watsonx.ai', purpose: 'Violation classification and adversarial critique', href: 'https://www.ibm.com/docs/watsonx' },
-  { component: 'Vector Store', service: 'Milvus via watsonx.data', purpose: 'Policy chunk storage and retrieval', href: 'https://www.ibm.com/products/watsonx-data' },
-  { component: 'Governance', service: 'watsonx.governance', purpose: 'Immutable lineage records for all decisions', href: 'https://www.ibm.com/products/watsonx-governance' },
-  { component: 'Orchestration', service: 'watsonx Orchestrate', purpose: 'Agent pipeline coordination', href: 'https://www.ibm.com/products/watsonx-orchestrate' },
-  { component: 'IDE / AI Assistant', service: 'MCP Server — any MCP-compatible IDE', purpose: 'Universal IDE integration via Model Context Protocol — Cursor, VS Code, Windsurf, JetBrains AI, Claude Desktop, and others', href: 'https://modelcontextprotocol.io' },
-  { component: 'Auth', service: 'IBM Cloud IAM', purpose: 'Service-to-service authentication', href: 'https://cloud.ibm.com/iam' },
-  { component: 'Monitoring', service: 'IBM Cloud Monitor', purpose: 'Agent performance and SLA tracking', href: 'https://cloud.ibm.com/monitor' },
-  { component: 'Secrets', service: 'IBM Secrets Manager', purpose: 'API key and credential management', href: 'https://cloud.ibm.com/secrets' },
+  { component: 'LLM (prod)', service: 'IBM Granite 4 Haiku Small via watsonx.ai', purpose: 'Dual-agent violation classification and adversarial critique via IBMAIEngine', href: 'https://www.ibm.com/docs/watsonx' },
+  { component: 'LLM (fallback)', service: 'LocalAIEngine — pure-Python regex', purpose: 'MOCK_MODE=true fallback; satisfies AIEnginePort ABC; no SDK or cloud dependency', href: 'https://fastapi.tiangolo.com' },
+  { component: 'Governance', service: 'watsonx.governance', purpose: 'Immutable lineage records for every evaluation event and human override', href: 'https://www.ibm.com/products/watsonx-governance' },
+  { component: 'IDE / AI Assistant', service: 'MCP Server — any MCP-compatible IDE', purpose: 'Universal integration via Model Context Protocol — Cursor, VS Code, Windsurf, JetBrains AI, Claude Desktop, and others', href: 'https://modelcontextprotocol.io' },
+  { component: 'Compliance Engine', service: 'FastAPI + Uvicorn :8080', purpose: 'Hexagonal-architecture REST API with sync, SSE-streaming, multi-file, and QA endpoints', href: 'https://fastapi.tiangolo.com' },
+  { component: 'Auth & Ledger', service: 'Express + Prisma + PostgreSQL :4000', purpose: 'JWT auth, Google OAuth 2.0, findings ledger, override approval workflow', href: 'https://www.prisma.io' },
+  { component: 'Frontend', service: 'Next.js 15 App Router :3000', purpose: 'Analysis workspace, governance audit console, analytics, and OpenAPI export surface', href: 'https://nextjs.org' },
+  { component: 'Secrets', service: 'IBM Secrets Manager', purpose: 'API key and credential management for production deployments', href: 'https://cloud.ibm.com/secrets' },
 ]
 
 // ── Tech stack badges ─────────────────────────────────────────────────────────
 const TECH_BADGES = [
-  'Next.js 15', 'TypeScript', 'Tailwind v4', 'Framer Motion',
-  'Zustand', 'React Hook Form', 'Zod', 'Recharts',
-  'Lucide React', 'Milvus-lite', 'IBM Granite 4', 'watsonx.governance',
+  'Python 3.13', 'FastAPI 0.115', 'Uvicorn', 'Pydantic v2',
+  'ibm-watsonx-ai', 'ibm-cos-sdk', 'httpx',
+  'Node.js 20', 'Express 4', 'Prisma 6', 'PostgreSQL 15',
+  'Next.js 15', 'React 19', 'TypeScript 5', 'Tailwind v4',
+  'Zustand 5', 'Framer Motion 12', 'Recharts 3', 'IBM Granite 4',
+  'watsonx.governance', 'MCP',
 ]
 
 // ── Pipeline step data ────────────────────────────────────────────────────────
@@ -866,12 +878,15 @@ export default function DocsPage() {
                   marginBottom: 16,
                 }}
               >
-                Sentinel Spec is an autonomous architecture-compliance reviewer that
-                runs inside IBM Bob IDE at authorship time and as a blocking gate in
-                CI/CD pipelines. It uses a Retrieve → Classify → Critique → Surface
-                pipeline powered by IBM Granite and watsonx services to enforce
-                Architecture Decision Records (ADRs) and compliance rules before a
-                pull request ever exists.
+                Sentinel Spec is a universal, IDE-agnostic architecture compliance
+                reviewer that intercepts policy violations at authorship time and
+                enforces them as blocking gates in CI/CD pipelines — before a pull
+                request ever exists. Engineers submit source files or code diffs
+                through any supported surface (Web Dashboard, CLI, MCP-connected IDE,
+                or CI hook); a dual-agent IBM Granite pipeline — Sentinel Classifier →
+                Adversarial Critic — cross-references every submission against a
+                22-rule compliance matrix spanning secrets, injection, PII, API
+                contracts, and architecture decisions.
               </p>
               <p
                 style={{
@@ -882,10 +897,10 @@ export default function DocsPage() {
                   marginBottom: 16,
                 }}
               >
-                Every finding, override, and approval is written as an immutable
-                lineage record to watsonx.governance — producing an auditor-ready
-                decision trail that satisfies SOC 2, ISO 27001, and financial-services
-                regulatory requirements with zero additional tooling.
+                Every finding, override, and approval is asynchronously forwarded to
+                IBM watsonx.governance as an immutable lineage record — producing an
+                auditor-ready decision trail that satisfies SOC 2, ISO 27001, and
+                financial-services regulatory requirements with zero additional tooling.
               </p>
               {/* Callout */}
               <div
@@ -906,7 +921,7 @@ export default function DocsPage() {
                     marginRight: 8,
                   }}
                 >
-                  Dual-trigger model.
+                  Any IDE. Any pipeline.
                 </span>
                 <span
                   style={{
@@ -915,9 +930,9 @@ export default function DocsPage() {
                     fontFamily: 'Inter, sans-serif',
                   }}
                 >
-                  Runs as an advisory panel in IBM Bob (IDE-time) and as an enforcing
-                  gate in CI (CI-time). Same pipeline, same rules, different exit
-                  behaviour.
+                  MCP server registration lets Cursor, VS Code, Windsurf, JetBrains
+                  AI, Claude Desktop, and any other MCP-compatible IDE invoke
+                  compliance checks directly — no custom plugin required.
                 </span>
               </div>
             </section>
@@ -1049,9 +1064,9 @@ export default function DocsPage() {
               </div>
             </section>
 
-            {/* ══ IBM SERVICES ══════════════════════════════════════════════ */}
+            {/* ══ INTEGRATION & SERVICES ════════════════════════════════════ */}
             <section id="ibm-services" style={{ marginBottom: 72 }}>
-              <SectionHeading>IBM Services</SectionHeading>
+              <SectionHeading>Integration &amp; Services</SectionHeading>
               <p
                 style={{
                   fontSize: 15,
@@ -1061,8 +1076,9 @@ export default function DocsPage() {
                   marginBottom: 28,
                 }}
               >
-                Sentinel Spec is built on eight IBM Cloud and watsonx services. Each
-                has a local fallback that activates when{' '}
+                Sentinel Spec is a three-service monorepo. IBM Cloud and watsonx
+                services power the production path; every adapter has a local
+                fallback that activates when{' '}
                 <code
                   className="font-mono-product"
                   style={{
@@ -1199,9 +1215,12 @@ export default function DocsPage() {
                   marginBottom: 24,
                 }}
               >
-                The frontend is a Next.js 15 App Router application with TypeScript
-                throughout. The backend pipeline is Python with hexagonal-architecture
-                adapters for every IBM service.
+                The compliance engine is Python 3.13 with a hexagonal ports-and-adapters
+                architecture — zero framework dependencies in the domain layer, typed
+                port interfaces for AI and governance, and FastAPI exposing sync, SSE,
+                multi-file, and QA endpoints. The auth service is Node.js 20 / Express
+                + Prisma + PostgreSQL. The dashboard is Next.js 15 App Router with
+                React 19, Zustand, and Framer Motion throughout.
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {TECH_BADGES.map((badge) => (
@@ -1235,10 +1254,11 @@ export default function DocsPage() {
                   marginBottom: 32,
                 }}
               >
-                The same four-agent pipeline is triggered in two modes. IDE-time runs
-                in advisory mode — findings appear inline in IBM Bob without blocking
-                anything. CI-time runs in enforcement mode — BLOCKING findings fail the
-                pipeline and prevent the PR from merging.
+                The dual-agent pipeline can be triggered from any surface — Web
+                Dashboard, MCP-connected IDE, CLI, or CI hook. IDE-time runs in
+                advisory mode — findings stream back via SSE without blocking anything.
+                CI-time runs in enforcement mode — BLOCKING findings (FindingTier.BLOCKING)
+                fail the pipeline and prevent the PR from merging.
               </p>
 
               {/* Dual trigger row */}
@@ -1563,7 +1583,7 @@ export default function DocsPage() {
           className="font-mono-product"
           style={{ fontSize: 12, color: 'var(--text-muted)' }}
         >
-          IBM Granite 4 · watsonx.governance · IBM Bob · 2026
+          IBM Granite 4 · watsonx.governance · MCP · Any IDE · 2026
         </div>
       </footer>
     </>
