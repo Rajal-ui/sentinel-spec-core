@@ -540,14 +540,14 @@ export default function LandingPage() {
                   textTransform: 'uppercase',
                 }}
               >
-                watsonx.governance
+                MCP · Any IDE
               </span>
             </div>
             <h1 className="font-display" style={{ fontSize: 'clamp(42px, 6vw, 72px)', fontWeight: 800, color: 'var(--text)', lineHeight: 1.08, letterSpacing: '-0.02em', marginBottom: 20 }}>
               Stop violations<br />before the PR exists.
             </h1>
             <p style={{ fontSize: 20, color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', lineHeight: 1.67, marginBottom: 32, maxWidth: 460 }}>
-              Autonomous architecture and compliance review, inside IBM Bob IDE, with an immutable audit trail for every decision.
+              Universal architecture compliance review — any IDE, any pipeline — with an immutable audit trail for every decision.
             </p>
             <div style={{ display: 'flex', gap: 12, marginBottom: 28, flexWrap: 'wrap' }}>
               <button onClick={() => openLoginModal('/')}
@@ -560,7 +560,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              {['✓ Runs in IBM Bob IDE', '✓ Immutable audit trail', '✓ Zero code leaves your tenancy'].map((p) => (
+              {['✓ Any IDE via MCP', '✓ Immutable audit trail', '✓ Zero code leaves your tenancy'].map((p) => (
                 <span key={p} className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)', letterSpacing: '0.02em' }}>{p}</span>
               ))}
             </div>
@@ -575,7 +575,7 @@ export default function LandingPage() {
       <RevealSection>
         <div style={{ borderTop: '1px solid rgba(255,92,0,0.12)', borderBottom: '1px solid rgba(255,92,0,0.12)', padding: '18px 32px', textAlign: 'center' }}>
           <span className="font-mono-product" style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Trusted by engineering teams on IBM Cloud
+            Trusted by engineering teams across platforms
           </span>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 40, marginTop: 14, flexWrap: 'wrap' }}>
             {['Acme Financial', 'TechCore', 'DataVault', 'CloudOps', 'RegulaTech'].map((n) => (
@@ -622,10 +622,10 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <RevealSection>
             <h2 className="font-display" style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', textAlign: 'center', marginBottom: 8 }}>
-              Four agents. One governed pipeline.
+              Dual-agent pipeline. One governed decision trail.
             </h2>
             <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif', fontSize: 18, marginBottom: 56 }}>
-              Runs twice — IDE-time advisory, CI-time enforcing.
+              Triggered via Web Dashboard, CLI, or any MCP-connected IDE. Enforced at authorship and in CI.
             </p>
           </RevealSection>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0, position: 'relative', alignItems: 'start' }}>
@@ -639,10 +639,10 @@ export default function LandingPage() {
               />
             </div>
             {[
-              { n: '01', title: 'Retrieve', desc: 'RAG lookup against policy corpus — ADRs, architecture decisions, compliance rules.' },
-              { n: '02', title: 'Classify', desc: 'Granite 4 Haiku Small classifies the diff against retrieved policy chunks with confidence scoring.' },
-              { n: '03', title: 'Critique', desc: 'Adversarial critic validates the classification — eliminates false positives.' },
-              { n: '04', title: 'Surface', desc: 'Findings rendered inline in IBM Bob with diff and remediation, logged to governance.' },
+              { n: '01', title: 'Submit', desc: 'Code snippet or diff submitted via Web Dashboard, CLI, MCP-connected IDE, or CI/CD pipeline hook.' },
+              { n: '02', title: 'Classify', desc: 'Sentinel Classifier (Granite 4 Haiku Small) evaluates the submission against the 22-rule compliance matrix with confidence scoring.' },
+              { n: '03', title: 'Critique', desc: 'Adversarial Critic runs a second Granite pass to validate every classification and eliminate false positives.' },
+              { n: '04', title: 'Surface', desc: 'Findings returned with severity, diff, and fix. Every decision logged to watsonx.governance as an immutable lineage record.' },
             ].map((step, i) => (
               <RevealSection key={step.n} delay={i * 0.07}>
                 <div style={{ textAlign: 'center', padding: '0 16px', position: 'relative', zIndex: 1 }}>
@@ -671,14 +671,14 @@ export default function LandingPage() {
       <section id="ibm-integration" style={{ padding: '96px 32px', maxWidth: 1200, margin: '0 auto' }}>
         <RevealSection>
           <h2 className="font-display" style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', textAlign: 'center', marginBottom: 48 }}>
-            Built on IBM infrastructure.
+            Built on IBM infrastructure. Open to any IDE.
           </h2>
         </RevealSection>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
           {[
-            { cat: 'IDE Integration', title: 'IBM Bob IDE', body: 'Native MCP registration. Findings appear inline at the point of authorship — not after the PR exists. No context switch.' },
-            { cat: 'Language Model', title: 'IBM Granite 4 Haiku Small via watsonx.ai', body: 'Granite 4 Haiku Small for classification and critique. Runs in your IBM Cloud tenancy — zero data egress, enterprise SLA.' },
-            { cat: 'Governance', title: 'watsonx.governance', body: 'Every finding, override, and approval is an immutable lineage record. Auditor-ready export. Full decision trail.' },
+            { cat: 'IDE-Agnostic Integration', title: 'MCP Server — Any IDE', body: 'Register the compliance engine as an MCP server in Cursor, VS Code, Windsurf, JetBrains AI, Claude Desktop, or any MCP-compatible tool. Findings surface inline at the point of authorship — no custom plugin required.' },
+            { cat: 'Language Model', title: 'IBM Granite 4 Haiku Small via watsonx.ai', body: 'Granite 4 Haiku Small for classification and critique. Runs in your IBM Cloud tenancy — zero data egress, enterprise SLA. Falls back to local regex engine (MOCK_MODE) with no code changes.' },
+            { cat: 'Governance', title: 'watsonx.governance', body: 'Every finding, override, and approval is an immutable lineage record forwarded to watsonx.governance. Auditor-ready export. Satisfies SOC 2, ISO 27001, and financial-services requirements.' },
           ].map((card, i) => (
             <RevealSection key={card.title} delay={i * 0.07}>
               <motion.div
@@ -715,12 +715,12 @@ export default function LandingPage() {
               </thead>
               <tbody>
                 {[
-                  ['LLM', 'IBM Granite 4 Haiku Small via watsonx.ai', 'Ollama llama3.1:8b (MOCK_MODE)'],
-                  ['Vector Store', 'watsonx.data / Milvus', 'Milvus-lite (embedded)'],
-                  ['Governance', 'watsonx.governance', 'JSON file store (MOCK_MODE)'],
-                  ['IDE Integration', 'IBM Bob MCP', 'stdio local MCP server'],
-                  ['Orchestration', 'watsonx Orchestrate', 'Direct Python agents'],
-                  ['Auth', 'IBM Cloud IAM', 'Mock JWT (MOCK_MODE)'],
+                  ['LLM', 'IBM Granite 4 Haiku Small via watsonx.ai', 'LocalAIEngine regex (MOCK_MODE)'],
+                  ['Governance', 'watsonx.governance', 'No-op (MOCK_MODE)'],
+                  ['IDE Integration', 'MCP Server — any compatible IDE', 'CLI / bridge.py (stdout JSON)'],
+                  ['Compliance Engine', 'FastAPI + Uvicorn :8080', 'Same engine, MOCK_MODE=true'],
+                  ['Auth', 'Express + Prisma + PostgreSQL', 'Same service (local DB)'],
+                  ['Frontend', 'Next.js 15 dashboard :3000', 'Same (npm run dev)'],
                 ].map(([comp, ibm, fallback], i) => (
                   <tr key={comp} style={{ background: i % 2 === 0 ? 'var(--surface)' : 'var(--surface-raised)' }}>
                     <td className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-code)', padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>{comp}</td>
@@ -808,7 +808,7 @@ export default function LandingPage() {
                 </Link>
               </div>
               <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                IBM Granite 4 · watsonx.governance · IBM Bob · 2026
+                IBM Granite 4 · watsonx.governance · MCP · Any IDE · 2026
               </div>
             </div>
           </RevealSection>
@@ -827,7 +827,7 @@ export default function LandingPage() {
           ))}
         </div>
         <div className="font-mono-product" style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          IBM Granite 4 · watsonx.governance · IBM Bob · 2026
+          IBM Granite 4 · watsonx.governance · MCP · Any IDE · 2026
         </div>
       </footer>
     </>

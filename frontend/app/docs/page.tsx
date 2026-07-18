@@ -157,7 +157,7 @@ const IBM_SERVICES = [
   { component: 'Vector Store', service: 'Milvus via watsonx.data', purpose: 'Policy chunk storage and retrieval', href: 'https://www.ibm.com/products/watsonx-data' },
   { component: 'Governance', service: 'watsonx.governance', purpose: 'Immutable lineage records for all decisions', href: 'https://www.ibm.com/products/watsonx-governance' },
   { component: 'Orchestration', service: 'watsonx Orchestrate', purpose: 'Agent pipeline coordination', href: 'https://www.ibm.com/products/watsonx-orchestrate' },
-  { component: 'IDE', service: 'IBM Bob', purpose: 'Native MCP tool registration and finding display', href: 'https://ibm.com/bob' },
+  { component: 'IDE / AI Assistant', service: 'MCP Server — any MCP-compatible IDE', purpose: 'Universal IDE integration via Model Context Protocol — Cursor, VS Code, Windsurf, JetBrains AI, Claude Desktop, and others', href: 'https://modelcontextprotocol.io' },
   { component: 'Auth', service: 'IBM Cloud IAM', purpose: 'Service-to-service authentication', href: 'https://cloud.ibm.com/iam' },
   { component: 'Monitoring', service: 'IBM Cloud Monitor', purpose: 'Agent performance and SLA tracking', href: 'https://cloud.ibm.com/monitor' },
   { component: 'Secrets', service: 'IBM Secrets Manager', purpose: 'API key and credential management', href: 'https://cloud.ibm.com/secrets' },
@@ -193,8 +193,8 @@ const PIPELINE_STEPS = [
   {
     n: '04',
     title: 'Surface',
-    desc: 'Findings rendered inline in IBM Bob with diff context and remediation. Every decision written to watsonx.governance lineage.',
-    annotation: '// MCP tool · immutable record',
+    desc: 'Findings returned with severity tier, diff, and inline fix to the calling surface — Web Dashboard, MCP-connected IDE, CLI, or CI gate. Every decision written to watsonx.governance as an immutable lineage record.',
+    annotation: '// MCP tool · SSE stream · immutable record',
   },
 ]
 
